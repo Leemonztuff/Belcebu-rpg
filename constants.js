@@ -1,0 +1,792 @@
+// ========== 全局常量定义 ==========
+// 稀有度等级
+const RARITY = {
+    COMMON: 0,      // 普通(白)
+    NORMAL: 1,      // 普通强化(白)
+    MAGIC: 2,       // 魔法(蓝)
+    RARE: 3,        // 稀有(黄)
+    UNIQUE: 4,      // 暗金(金)
+    SET: 5          // 套装(绿)
+};
+
+// 物品类型
+const ITEM_TYPE = {
+    WEAPON: 'weapon',
+    ARMOR: 'armor',
+    HELM: 'helm',
+    BELT: 'belt',
+    GLOVES: 'gloves',
+    BOOTS: 'boots',
+    RING: 'ring',
+    AMULET: 'amulet',
+    POTION: 'potion',
+    SCROLL: 'scroll',
+    GOLD: 'gold'
+};
+
+// 消耗品名称
+const CONSUMABLE_NAME = {
+    HEALTH_POTION: '治疗药剂',
+    MANA_POTION: '法力药剂',
+    TOWN_PORTAL: '回城卷轴'
+};
+
+// 工具函数：检查是否为受保护物品（不可丢弃）
+function isProtectedItem(item) {
+    if (!item) return false;
+    return item.rarity >= RARITY.UNIQUE ||
+        item.name === CONSUMABLE_NAME.HEALTH_POTION ||
+        item.name === CONSUMABLE_NAME.MANA_POTION ||
+        item.name === CONSUMABLE_NAME.TOWN_PORTAL;
+}
+
+const TILE_SIZE = 40;
+const MAP_WIDTH = 60;
+const MAP_HEIGHT = 60;
+
+const COLORS = {
+    // 基础颜色
+    white: '#ffffff',
+    blue: '#4850b8',
+    yellow: '#ffff00',
+    gold: '#908858',
+    red: '#c23b22',
+    green: '#00ff00',
+    ice: '#00ccff',
+
+    // 地图元素
+    floor: '#0c0c0c',
+    floorAlt: '#080808',
+    wall: '#2C2C2C',
+    townFloor: '#1a1a1a',
+    exit: '#0055aa',
+    entrance: '#aa5500',
+
+    // 稀有度颜色（物品）
+    rarityCommon: '#ffffff',     // 白色
+    rarityMagic: '#4850b8',      // 蓝色
+    rarityRare: '#ffff00',       // 黄色
+    rarityUnique: '#908858',     // 暗金
+    raritySet: '#20ff20',        // 套装绿
+
+    // 战斗反馈
+    damage: '#ff0000',           // 伤害数字
+    critical: '#ffff00',         // 暴击
+    heal: '#00ff00',             // 治疗
+    thornsDamage: '#88ff88',     // 荆棘反伤
+    manaCost: '#0066ff',         // 法力消耗
+    revive: '#ff00ff',           // 复活
+
+    // 提示/警告
+    warning: '#ff4444',          // 警告（背包满等）
+    error: '#ff0000',            // 错误
+    success: '#00ff00',          // 成功
+    info: '#4d94ff',             // 信息
+
+    // 元素伤害
+    fire: '#ff4400',             // 火焰
+    lightning: '#ffff00',        // 闪电
+    cold: '#00ccff',             // 冰霜
+    poison: '#00ff00',           // 毒素
+
+    // NPC/敌人
+    npc: '#00ff00',              // NPC标记
+    enemy: '#ff0000',            // 敌人
+    boss: '#ff00ff',             // BOSS
+    elite: '#ffaa00'             // 精英怪
+};
+
+// 工具函数：根据稀有度获取颜色
+function getRarityColor(rarity) {
+    const colorMap = {
+        [RARITY.COMMON]: COLORS.rarityCommon,
+        [RARITY.NORMAL]: COLORS.rarityCommon,
+        [RARITY.MAGIC]: COLORS.rarityMagic,
+        [RARITY.RARE]: COLORS.rarityRare,
+        [RARITY.UNIQUE]: COLORS.rarityUnique,
+        [RARITY.SET]: COLORS.raritySet
+    };
+    return colorMap[rarity] || COLORS.white;
+}
+
+// ========== 地牢层名称配置 ==========
+const FLOOR_NAMES = {
+    // 森林群系 (1-10层)
+    forest: [
+        '荒芜旷野',     // 1
+        '黑暗丛林',     // 2
+        '蜘蛛洞穴',     // 3
+        '遗忘高塔',     // 4
+        '腐败神殿',     // 5
+        '毒沼深处',     // 6
+        '枯木墓地',     // 7
+        '古树之心',     // 8
+        '德鲁伊圣所',   // 9
+        '世界之树'      // 10
+    ],
+    // 冰原群系 (11-20层)
+    ice: [
+        '冰封山道',     // 11
+        '霜狼巢穴',     // 12
+        '冻结废墟',     // 13
+        '寒冰墓穴',     // 14
+        '暴风祭坛',     // 15
+        '冰晶洞窟',     // 16
+        '极寒深渊',     // 17
+        '冰霜王座',     // 18
+        '永冬神殿',     // 19
+        '冰封圣殿'      // 20
+    ],
+    // 熔岩群系 (21+层，循环)
+    fire: [
+        '灼热裂隙',     // 21/31/41...
+        '熔岩河谷',     // 22/32/42...
+        '燃烧矿坑',     // 23/33/43...
+        '烈焰祭坛',     // 24/34/44...
+        '硫磺深渊',     // 25/35/45...
+        '恶魔熔炉',     // 26/36/46...
+        '毁灭圣堂',     // 27/37/47...
+        '炼狱之心',     // 28/38/48...
+        '混沌裂口',     // 29/39/49...
+        '世界之石'      // 30/40/50...
+    ],
+    // 周目前缀 (21层后，每10层一个周目)
+    cyclePrefix: ['', '深渊', '虚空', '永恒', '混沌', '末日']
+};
+
+// 获取层数对应的名称
+// 传送小站系统配置 (Waypoints Configuration)
+const WAYPOINT_CONFIG = {
+    // 传送小站所处楼层 (0 为罗格营地，其余为普通地牢楼层)
+    floors: [0, 1, 3, 5, 7, 10],
+    // 关卡标签与图标
+    floorIcons: {
+        0: '⛺',
+        1: '🌲',
+        3: '🏰',
+        5: '🥩',
+        7: '🕳️',
+        10: '👑'
+    }
+};
+
+function getFloorName(floor, isHell = false) {
+    if (typeof I18N !== 'undefined' && I18N.getFloorName) {
+        return I18N.getFloorName(floor, isHell);
+    }
+    if (floor <= 0) return '罗格营地';
+
+    // 地狱模式：统一用熔岩名称
+    if (isHell) {
+        const index = ((floor - 1) % 10);
+        return `地狱·${FLOOR_NAMES.fire[index]}`;
+    }
+
+    // 森林群系 1-10
+    if (floor <= 10) {
+        return FLOOR_NAMES.forest[floor - 1];
+    }
+
+    // 冰原群系 11-20
+    if (floor <= 20) {
+        return FLOOR_NAMES.ice[floor - 11];
+    }
+
+    // 熔岩群系 21+（循环）
+    const fireIndex = ((floor - 21) % 10);
+    const cycle = Math.floor((floor - 21) / 10);  // 0=首次, 1=深渊, 2=虚空...
+    const prefix = FLOOR_NAMES.cyclePrefix[Math.min(cycle, FLOOR_NAMES.cyclePrefix.length - 1)];
+
+    if (prefix) {
+        return `${prefix}·${FLOOR_NAMES.fire[fireIndex]}`;
+    }
+    return FLOOR_NAMES.fire[fireIndex];
+}
+
+// ========== 技能配置 ==========
+const SKILL_CONFIG = {
+    fireball: {
+        baseMana: 10,
+        manaPerLevel: 0,        // 固定消耗
+        range: 450,
+        cooldown: 0.5,
+        explosionLevel: 3       // 3级解锁爆炸（前置提升体验）
+    },
+    thunder: {
+        baseMana: 8,
+        manaPerLevel: 0.5,
+        range: 190,
+        cooldown: 0.8
+    },
+    multishot: {
+        baseMana: 10,
+        manaPerLevel: 0,
+        range: 500,
+        cooldown: 1.0
+    }
+};
+
+// 工具函数：计算技能法力消耗
+function getSkillManaCost(skillName, level) {
+    const config = SKILL_CONFIG[skillName];
+    if (!config) return 10;
+    return config.baseMana + (level - 1) * config.manaPerLevel;
+}
+
+// 技能树文案路由：SKILL_TREE 的 name/desc 是数据字段，但游戏里所有展示点
+// （renderSkillTree、confirmSkillChoice、selectSkillBranch）都直接读取它们，
+// 所以在数据层用 getter 接到 skillTree 表，id、层级和效果数值一律不动。
+// 面板重绘较频繁，这里按语言缓存解析结果，避免每次读取都拆分路径字符串；
+// 语言一变缓存整体作废，getter 下次读取即拿到新语言，无需重挂 onChange。
+const SKILL_TREE_TEXT = { lang: '', map: Object.create(null) };
+function skillTreeText(branch, path, zhText) {
+    if (typeof I18N === 'undefined' || typeof I18N.trPath !== 'function') return zhText;
+    if (SKILL_TREE_TEXT.lang !== I18N.currentLang) {
+        SKILL_TREE_TEXT.lang = I18N.currentLang;
+        SKILL_TREE_TEXT.map = Object.create(null);
+    }
+    const cacheKey = branch + '/' + path;
+    const cached = SKILL_TREE_TEXT.map[cacheKey];
+    if (cached !== undefined) return cached;
+    const text = I18N.trPath('skillTree', branch, path, zhText);
+    SKILL_TREE_TEXT.map[cacheKey] = text;
+    return text;
+}
+
+// ========== 技能树配置 ==========
+const SKILL_TREE = {
+    fireball: {
+        get name() { return skillTreeText('fireball', 'stage1.fireball.name', '火球术'); },
+        get desc() { return skillTreeText('fireball', 'stage1.fireball.desc', '发射火球攻击敌人'); },
+        stage2: {
+            explosion: {
+                get name() { return skillTreeText('fireball', 'stage2.explosion.name', '爆炸强化'); },
+                get desc() { return skillTreeText('fireball', 'stage2.explosion.desc', '爆炸范围+15%/级，爆炸伤害+8%/级'); },
+                effect: { explosionRadius: 0.15, explosionDamage: 0.08 }
+            },
+            burn: {
+                get name() { return skillTreeText('fireball', 'stage2.burn.name', '灼烧'); },
+                get desc() { return skillTreeText('fireball', 'stage2.burn.desc', '附加灼烧DOT，每秒6%伤害/级，持续2+0.4秒/级'); },
+                effect: { burnDPS: 0.06, burnDuration: 0.4, burnBase: 2 }
+            }
+        },
+        stage3: {
+            explosion: {
+                meteor: {
+                    get name() { return skillTreeText('fireball', 'stage3.meteor.name', '陨石术'); },
+                    get desc() { return skillTreeText('fireball', 'stage3.meteor.desc', '火球变陨石，爆炸伤害+100%，落点燃烧3秒'); },
+                    effect: { meteorMode: true, explosionBonus: 1.0, groundFire: 3 }
+                },
+                nova: {
+                    get name() { return skillTreeText('fireball', 'stage3.nova.name', '火焰新星'); },
+                    get desc() { return skillTreeText('fireball', 'stage3.nova.desc', '释放时同时以自身为中心爆发火焰波'); },
+                    effect: { novaMode: true, novaDamageRatio: 0.5, knockback: true }
+                }
+            },
+            burn: {
+                spread: {
+                    get name() { return skillTreeText('fireball', 'stage3.spread.name', '蔓延'); },
+                    get desc() { return skillTreeText('fireball', 'stage3.spread.desc', '灼烧传染给周围敌人，传染伤害60%'); },
+                    effect: { burnSpread: true, spreadRatio: 0.6 }
+                },
+                detonate: {
+                    get name() { return skillTreeText('fireball', 'stage3.detonate.name', '焚尽'); },
+                    get desc() { return skillTreeText('fireball', 'stage3.detonate.desc', '灼烧中敌人受火伤+30%，灼烧结束时引爆'); },
+                    effect: { burnAmplify: 0.3, burnDetonate: true }
+                }
+            }
+        }
+    },
+    thunder: {
+        get name() { return skillTreeText('thunder', 'stage1.thunder.name', '雷电术'); },
+        get desc() { return skillTreeText('thunder', 'stage1.thunder.desc', '召唤雷电打击敌人'); },
+        stage2: {
+            chain: {
+                get name() { return skillTreeText('thunder', 'stage2.chain.name', '连锁'); },
+                get desc() { return skillTreeText('thunder', 'stage2.chain.desc', '弹射目标+1/级，弹射衰减-5%/级'); },
+                effect: { chainTargets: 1, chainDecayReduce: 0.05 }
+            },
+            shock: {
+                get name() { return skillTreeText('thunder', 'stage2.shock.name', '感电'); },
+                get desc() { return skillTreeText('thunder', 'stage2.shock.desc', '麻痹0.3+0.1秒/级，受雷伤+10%/级'); },
+                effect: { stunBase: 0.3, stunPerLevel: 0.1, lightningAmp: 0.1 }
+            }
+        },
+        stage3: {
+            chain: {
+                storm: {
+                    get name() { return skillTreeText('thunder', 'stage3.storm.name', '雷暴'); },
+                    get desc() { return skillTreeText('thunder', 'stage3.storm.desc', '创造雷暴区域3秒，每0.5秒落雷，区域减速30%'); },
+                    effect: { stormMode: true, stormDuration: 3, stormInterval: 0.5, slowAmount: 0.3 }
+                },
+                overload: {
+                    get name() { return skillTreeText('thunder', 'stage3.overload.name', '超载'); },
+                    get desc() { return skillTreeText('thunder', 'stage3.overload.desc', '击杀时爆炸，爆炸=敌人10%最大生命'); },
+                    effect: { killExplode: true, explodeHpRatio: 0.1 }
+                }
+            },
+            shock: {
+                torture: {
+                    get name() { return skillTreeText('thunder', 'stage3.torture.name', '电刑'); },
+                    get desc() { return skillTreeText('thunder', 'stage3.torture.desc', '感电期间持续掉血，每秒=雷电伤害×20%'); },
+                    effect: { shockDOT: true, shockDPS: 0.2 }
+                },
+                shield: {
+                    get name() { return skillTreeText('thunder', 'stage3.shield.name', '电弧护盾'); },
+                    get desc() { return skillTreeText('thunder', 'stage3.shield.desc', '击中获得护盾=伤害×15%，护盾期间免控'); },
+                    effect: { arcShield: true, shieldRatio: 0.15, immuneCC: true }
+                }
+            }
+        }
+    },
+    multishot: {
+        get name() { return skillTreeText('multishot', 'stage1.multishot.name', '多重射击'); },
+        get desc() { return skillTreeText('multishot', 'stage1.multishot.desc', '扇形发射多支箭矢'); },
+        stage2: {
+            pierce: {
+                get name() { return skillTreeText('multishot', 'stage2.pierce.name', '穿透'); },
+                get desc() { return skillTreeText('multishot', 'stage2.pierce.desc', '穿透+1敌人/级，穿透衰减-4%/级'); },
+                effect: { pierceTargets: 1, pierceDecayReduce: 0.04 }
+            },
+            spread: {
+                get name() { return skillTreeText('multishot', 'stage2.spread.name', '扩散'); },
+                get desc() { return skillTreeText('multishot', 'stage2.spread.desc', '额外箭矢+1/级，扩散角+5°/级'); },
+                effect: { extraArrows: 1, spreadAngle: 5 }
+            }
+        },
+        stage3: {
+            pierce: {
+                rain: {
+                    get name() { return skillTreeText('multishot', 'stage3.rain.name', '箭雨'); },
+                    get desc() { return skillTreeText('multishot', 'stage3.rain.desc', '箭矢飞行后分裂下落，覆盖范围伤害=单箭×60%'); },
+                    effect: { rainMode: true, rainDamageRatio: 0.6 }
+                },
+                snipe: {
+                    get name() { return skillTreeText('multishot', 'stage3.snipe.name', '狙击'); },
+                    get desc() { return skillTreeText('multishot', 'stage3.snipe.desc', '长按蓄力2秒，伤害+50%/秒，穿透+3'); },
+                    effect: { snipeMode: true, chargeDamage: 0.5, chargeMaxTime: 2, chargePierce: 3 }
+                }
+            },
+            spread: {
+                barrage: {
+                    get name() { return skillTreeText('multishot', 'stage3.barrage.name', '弹幕'); },
+                    get desc() { return skillTreeText('multishot', 'stage3.barrage.desc', '连发3波，间隔0.2秒，总伤害+80%'); },
+                    effect: { barrageMode: true, barrageWaves: 3, barrageInterval: 0.2, barrageDamage: 0.8 }
+                },
+                split: {
+                    get name() { return skillTreeText('multishot', 'stage3.split.name', '分裂箭'); },
+                    get desc() { return skillTreeText('multishot', 'stage3.split.desc', '箭矢飞行中分裂成2支，小箭伤害50%'); },
+                    effect: { splitMode: true, splitCount: 2, splitDamage: 0.5 }
+                }
+            }
+        }
+    },
+    holy_shield: {
+        get name() { return skillTreeText('holy_shield', 'stage1.holy_shield.name', '神圣护盾'); },
+        get desc() { return skillTreeText('holy_shield', 'stage1.holy_shield.desc', '召唤神圣护盾吸收伤害'); },
+        stage1: {
+            manaCost: 15,
+            cooldown: 12,
+            shieldRatio: 0.20,
+            shieldPerLevel: 0.02,
+            duration: 5,
+            durationPerLevel: 0.5
+        },
+        stage2: {
+            reflect: {
+                get name() { return skillTreeText('holy_shield', 'stage2.reflect.name', '反射护盾'); },
+                get desc() { return skillTreeText('holy_shield', 'stage2.reflect.desc', '反弹部分伤害给攻击者'); },
+                effect: { reflectRatio: 0.10, reflectPerLevel: 0.03 }
+            },
+            guard: {
+                get name() { return skillTreeText('holy_shield', 'stage2.guard.name', '守护护盾'); },
+                get desc() { return skillTreeText('holy_shield', 'stage2.guard.desc', '护盾消失时治疗自身'); },
+                effect: { healRatio: 0.10, healPerLevel: 0.02, ccReduction: 0.30, ccPerLevel: 0.05 }
+            }
+        },
+        stage3: {
+            reflect: {  // 反射护盾分支 - 进攻反击风格
+                retribution: {
+                    get name() { return skillTreeText('holy_shield', 'stage3.retribution.name', '惩戒光环'); },
+                    get desc() { return skillTreeText('holy_shield', 'stage3.retribution.desc', '脉冲伤害并减速周围敌人'); },
+                    effect: { auraDamageRatio: 0.02, slowAmount: 0.15, pulseInterval: 2 }
+                },
+                fortress: {
+                    get name() { return skillTreeText('holy_shield', 'stage3.fortress.name', '绝对防御'); },
+                    get desc() { return skillTreeText('holy_shield', 'stage3.fortress.desc', '免疫暴击，击杀回血'); },
+                    effect: { critImmunity: true, lifestealRatio: 0.05 }
+                }
+            },
+            guard: {  // 守护护盾分支 - 生存续航风格
+                angel: {
+                    get name() { return skillTreeText('holy_shield', 'stage3.angel.name', '守护天使'); },
+                    get desc() { return skillTreeText('holy_shield', 'stage3.angel.desc', '护盾消失后短暂无敌'); },
+                    effect: { invincibleDuration: 1.0, movespeedBonus: 0.40, canAttack: false }
+                },
+                link: {
+                    get name() { return skillTreeText('holy_shield', 'stage3.link.name', '生命链接'); },
+                    get desc() { return skillTreeText('holy_shield', 'stage3.link.desc', '生成次级护盾'); },
+                    effect: { secondaryShieldRatio: 0.30, secondaryDuration: 3 }
+                }
+            }
+        }
+    }
+};
+
+// 技能树常量
+const SKILL_TREE_MAX_LEVEL = 5;  // 每阶段最大等级
+
+// 工具函数：获取技能总等级（用于兼容现有系统）
+function getSkillTotalLevel(skillName) {
+    if (!player.skillTree || !player.skillTree[skillName]) {
+        return player.skills ? player.skills[skillName] || 0 : 0;
+    }
+    const tree = player.skillTree[skillName];
+    return tree.stage1 + (tree.stage2.level || 0) + (tree.stage3.level || 0);
+}
+
+// 工具函数：检查阶段是否解锁
+function isStageUnlocked(skillName, stage) {
+    if (!player.skillTree || !player.skillTree[skillName]) return stage === 1;
+    const tree = player.skillTree[skillName];
+    if (stage === 1) return true;
+    if (stage === 2) return tree.stage1 >= SKILL_TREE_MAX_LEVEL;
+    if (stage === 3) return tree.stage2.level >= SKILL_TREE_MAX_LEVEL;
+    return false;
+}
+
+// 工具函数：获取技能树效果加成
+function getSkillTreeBonus(skillName) {
+    const bonus = {};
+    if (!player.skillTree || !player.skillTree[skillName]) return bonus;
+
+    const tree = player.skillTree[skillName];
+    const config = SKILL_TREE[skillName];
+    if (!config) return bonus;
+
+    // 阶段2加成
+    if (tree.stage2.chosen && tree.stage2.level > 0) {
+        const s2Config = config.stage2[tree.stage2.chosen];
+        if (s2Config && s2Config.effect) {
+            for (const key in s2Config.effect) {
+                bonus[key] = key.endsWith('Base') ? s2Config.effect[key] : s2Config.effect[key] * tree.stage2.level;
+            }
+        }
+    }
+
+    // 阶段3加成（固定效果，不按等级）
+    if (tree.stage3.chosen && tree.stage3.level > 0) {
+        const s2Choice = tree.stage2.chosen;
+        const s3Config = config.stage3[s2Choice]?.[tree.stage3.chosen];
+        if (s3Config && s3Config.effect) {
+            for (const key in s3Config.effect) {
+                // 阶段3是终极技能，等级只影响是否激活
+                if (typeof s3Config.effect[key] === 'boolean') {
+                    bonus[key] = s3Config.effect[key];
+                } else {
+                    bonus[key] = (bonus[key] || 0) + s3Config.effect[key];
+                }
+            }
+        }
+    }
+
+    return bonus;
+}
+
+// ========== 游戏配置常量 ==========
+const GAME_CONFIG = {
+    // 怪物生成
+    ELITE_SPAWN_RATE: 0.1,              // 精英怪生成概率 10%
+    DOUBLE_AFFIX_RATE: 0.3,             // 双词缀概率 30%
+    MAX_ENEMIES: 80,                    // 最大怪物数量（60x60地图）
+    INITIAL_ENEMIES: 36,                // 进入楼层时初始生成数量（60x60地图）
+    ENEMY_SPAWN_INTERVAL: 1000,         // 怪物生成间隔(ms)
+    ENEMY_SPAWN_MIN_DISTANCE: 260,      // 怪物生成最小距离
+    ENEMY_SPAWN_BATCH_SIZE: 3,          // 普通动态刷新每轮补怪数量
+    AUTO_BATTLE_SPAWN_BATCH_SIZE: 6,    // 自动战斗动态刷新每轮补怪数量
+    AUTO_BATTLE_ENEMY_TARGET: 70,       // 自动战斗维持的目标怪物数量
+
+    // 赌博概率
+    GAMBLE_RARE_RATE: 0.3,              // 赌博稀有概率 30%
+    GAMBLE_UNIQUE_RATE: 0.05,           // 赌博暗金概率 5%
+
+    // 自动战斗阈值
+    AUTO_POTION_HP_THRESHOLD: 0.3,      // 30%喝红药
+    AUTO_POTION_MP_THRESHOLD: 0.2,      // 20%喝蓝药
+    AUTO_EMERGENCY_HP: 0.15,            // 15%紧急回城
+    AUTO_KEEP_DISTANCE: 150,            // 保持距离150
+
+    // 怪物AI距离
+    MONSTER_MELEE_RANGE: 40,            // 近战攻击距离 (40²=1600)
+    MONSTER_MELEE_RANGE_SQ: 1600,       // 近战攻击距离平方（性能优化）
+    MONSTER_CHASE_RANGE: 400,           // 追击范围 (400²=160000)
+    MONSTER_CHASE_RANGE_SQ: 160000,     // 追击范围平方
+    MONSTER_DISENGAGE_RANGE: 35,        // 脱战距离 (35²=1225)
+    MONSTER_DISENGAGE_RANGE_SQ: 1225,   // 脱战距离平方
+    MONSTER_RANGED_RETREAT: 150,        // 远程后退距离
+    MONSTER_RANGED_MAX: 400,            // 远程最大攻击距离
+    PLAYER_MELEE_NO_LOS_RANGE: 50,      // 无视线时允许贴墙角普攻的距离
+
+    // 物理横扫：普攻成长后的围攻清怪能力
+    PHYSICAL_SWEEP_TIER1_LEVEL: 6,       // 顺劈解锁等级
+    PHYSICAL_SWEEP_TIER1_STR: 35,        // 顺劈力量门槛
+    PHYSICAL_SWEEP_TIER2_LEVEL: 12,      // 半月斩解锁等级
+    PHYSICAL_SWEEP_TIER2_STR: 60,        // 半月斩力量门槛
+    PHYSICAL_SWEEP_TIER3_LEVEL: 20,      // 横扫刀锋解锁等级
+    PHYSICAL_SWEEP_TIER3_STR: 90,        // 横扫刀锋力量门槛
+    PHYSICAL_SWEEP_PRESSURE_RADIUS: 170, // 判定被围攻的附近半径
+    PHYSICAL_SWEEP_TRIGGER_ENEMIES: 3,   // 附近至少3个敌人才触发横扫
+    PHYSICAL_SWEEP_TIER1_RANGE: 118,     // 顺劈范围
+    PHYSICAL_SWEEP_TIER2_RANGE: 142,     // 半月斩范围
+    PHYSICAL_SWEEP_TIER3_RANGE: 168,     // 横扫刀锋范围
+    PHYSICAL_SWEEP_TIER1_ARC: 2.35,      // 顺劈弧度
+    PHYSICAL_SWEEP_TIER2_ARC: 3.35,      // 半月斩弧度
+    PHYSICAL_SWEEP_TIER3_ARC: 4.7,       // 横扫刀锋弧度
+    PHYSICAL_SWEEP_TIER1_MAX_TARGETS: 2, // 顺劈额外目标上限
+    PHYSICAL_SWEEP_TIER2_MAX_TARGETS: 4, // 半月斩额外目标上限
+    PHYSICAL_SWEEP_TIER3_MAX_TARGETS: 6, // 横扫刀锋额外目标上限
+    PHYSICAL_SWEEP_TIER1_DAMAGE_RATIO: 0.45,
+    PHYSICAL_SWEEP_TIER2_DAMAGE_RATIO: 0.6,
+    PHYSICAL_SWEEP_TIER3_DAMAGE_RATIO: 0.75,
+
+    // 交互距离
+    INTERACTION_RANGE: 60,              // 通用交互距离
+    NPC_INTERACTION_RANGE: 80,          // NPC交互距离
+    PORTAL_INTERACTION_RANGE: 60,       // 传送门交互距离
+
+    // 拾取距离
+    PICKUP_RANGE: 400,                  // 自动拾取检测距离
+    PICKUP_MOVE_RANGE: 40,              // 拾取移动到物品距离
+
+    // 自动存档
+    AUTO_SAVE_INTERVAL: 30,             // 自动存档间隔(秒)
+
+    // 物品消失时间
+    ITEM_DESPAWN_SET: 10 * 60 * 1000,   // 套装物品10分钟
+    ITEM_DESPAWN_UNIQUE: 3 * 60 * 1000, // 暗金物品3分钟
+    ITEM_DESPAWN_RARE: 2 * 60 * 1000,   // 稀有物品2分钟
+    ITEM_DESPAWN_COMMON: 1 * 60 * 1000, // 普通物品1分钟
+
+    // 视觉效果
+    LOW_HP_THRESHOLD: 0.2,              // 低血量警告阈值 20%
+    CAMERA_SMOOTH: 0.1                  // 相机平滑系数
+};
+
+// ========== 天赋商店系统 ==========
+// 天赋数据库 - 每层可购买的随机天赋
+const TALENTS = {
+    // 攻击类天赋
+    flame_soul: {
+        id: 'flame_soul',
+        get name() { return typeof I18N !== 'undefined' ? I18N.getTalentName('flame_soul') : '烈焰之魂'; },
+        icon: '🔥',
+        get desc() { return typeof I18N !== 'undefined' ? I18N.getTalentDesc('flame_soul') : '攻击附带30%火焰伤害'; },
+        tier: 'rare',      // normal/rare/epic/legendary
+        price: 150,
+        effect: { fireDmgPct: 30 }
+    },
+    thunder_chain: {
+        id: 'thunder_chain',
+        get name() { return typeof I18N !== 'undefined' ? I18N.getTalentName('thunder_chain') : '连锁闪电'; },
+        icon: '⚡',
+        get desc() { return typeof I18N !== 'undefined' ? I18N.getTalentDesc('thunder_chain') : '击杀敌人时电击周围敌人'; },
+        tier: 'epic',
+        price: 200,
+        effect: { onKillChainLightning: true }
+    },
+    executioner: {
+        id: 'executioner',
+        get name() { return typeof I18N !== 'undefined' ? I18N.getTalentName('executioner') : '处刑者'; },
+        icon: '💀',
+        get desc() { return typeof I18N !== 'undefined' ? I18N.getTalentDesc('executioner') : '对低于30%血量敌人伤害+100%'; },
+        tier: 'rare',
+        price: 120,
+        effect: { executeDmgPct: 100, executeThreshold: 0.3 }
+    },
+    berserker: {
+        id: 'berserker',
+        get name() { return typeof I18N !== 'undefined' ? I18N.getTalentName('berserker') : '狂战士'; },
+        icon: '😡',
+        get desc() { return typeof I18N !== 'undefined' ? I18N.getTalentDesc('berserker') : '伤害+50%，受到伤害+20%'; },
+        tier: 'rare',
+        price: 100,
+        effect: { dmgPct: 50, damageTakenPct: 20 }
+    },
+    critical_master: {
+        id: 'critical_master',
+        get name() { return typeof I18N !== 'undefined' ? I18N.getTalentName('critical_master') : '暴击大师'; },
+        icon: '🎯',
+        get desc() { return typeof I18N !== 'undefined' ? I18N.getTalentDesc('critical_master') : '暴击率+15%，暴击伤害+30%'; },
+        tier: 'epic',
+        price: 180,
+        effect: { critChance: 15, critDamage: 30 }
+    },
+    poison_blade: {
+        id: 'poison_blade',
+        get name() { return typeof I18N !== 'undefined' ? I18N.getTalentName('poison_blade') : '淬毒之刃'; },
+        icon: '☠️',
+        get desc() { return typeof I18N !== 'undefined' ? I18N.getTalentDesc('poison_blade') : '攻击附带25%毒素伤害'; },
+        tier: 'rare',
+        price: 140,
+        effect: { poisonDmgPct: 25 }
+    },
+
+    // 防御类天赋
+    iron_wall: {
+        id: 'iron_wall',
+        get name() { return typeof I18N !== 'undefined' ? I18N.getTalentName('iron_wall') : '铁壁'; },
+        icon: '🛡️',
+        get desc() { return typeof I18N !== 'undefined' ? I18N.getTalentDesc('iron_wall') : '+80防御，移速-10%'; },
+        tier: 'normal',
+        price: 80,
+        effect: { def: 80, speedPct: -10 }
+    },
+    vampire: {
+        id: 'vampire',
+        get name() { return typeof I18N !== 'undefined' ? I18N.getTalentName('vampire') : '吸血鬼'; },
+        icon: '🧛',
+        get desc() { return typeof I18N !== 'undefined' ? I18N.getTalentDesc('vampire') : '生命偷取+8%'; },
+        tier: 'rare',
+        price: 130,
+        effect: { lifeSteal: 8 }
+    },
+    regeneration: {
+        id: 'regeneration',
+        get name() { return typeof I18N !== 'undefined' ? I18N.getTalentName('regeneration') : '再生'; },
+        icon: '💚',
+        get desc() { return typeof I18N !== 'undefined' ? I18N.getTalentDesc('regeneration') : '每秒恢复2%最大生命值'; },
+        tier: 'rare',
+        price: 150,
+        effect: { hpRegenPct: 2 }
+    },
+    elemental_shield: {
+        id: 'elemental_shield',
+        get name() { return typeof I18N !== 'undefined' ? I18N.getTalentName('elemental_shield') : '元素护盾'; },
+        icon: '🌈',
+        get desc() { return typeof I18N !== 'undefined' ? I18N.getTalentDesc('elemental_shield') : '所有抗性+25%'; },
+        tier: 'epic',
+        price: 200,
+        effect: { allRes: 25 }
+    },
+    thorns: {
+        id: 'thorns',
+        get name() { return typeof I18N !== 'undefined' ? I18N.getTalentName('thorns') : '荆棘'; },
+        icon: '🌵',
+        get desc() { return typeof I18N !== 'undefined' ? I18N.getTalentDesc('thorns') : '反弹20%受到的伤害'; },
+        tier: 'normal',
+        price: 90,
+        effect: { thornsPct: 20 }
+    },
+
+    // 功能类天赋
+    magnet: {
+        id: 'magnet',
+        get name() { return typeof I18N !== 'undefined' ? I18N.getTalentName('magnet') : '磁铁'; },
+        icon: '🧲',
+        get desc() { return typeof I18N !== 'undefined' ? I18N.getTalentDesc('magnet') : '自动拾取范围翻倍'; },
+        tier: 'normal',
+        price: 50,
+        effect: { pickupRange: 2 }
+    },
+    greed: {
+        id: 'greed',
+        get name() { return typeof I18N !== 'undefined' ? I18N.getTalentName('greed') : '贪婪'; },
+        icon: '💰',
+        get desc() { return typeof I18N !== 'undefined' ? I18N.getTalentDesc('greed') : '金币掉落+50%'; },
+        tier: 'normal',
+        price: 60,
+        effect: { goldPct: 50 }
+    },
+    treasure_hunter: {
+        id: 'treasure_hunter',
+        get name() { return typeof I18N !== 'undefined' ? I18N.getTalentName('treasure_hunter') : '寻宝者'; },
+        icon: '🗝️',
+        get desc() { return typeof I18N !== 'undefined' ? I18N.getTalentDesc('treasure_hunter') : '装备掉落率+30%'; },
+        tier: 'rare',
+        price: 160,
+        effect: { dropRatePct: 30 }
+    },
+    swift: {
+        id: 'swift',
+        get name() { return typeof I18N !== 'undefined' ? I18N.getTalentName('swift') : '迅捷'; },
+        icon: '💨',
+        get desc() { return typeof I18N !== 'undefined' ? I18N.getTalentDesc('swift') : '移动速度+25%'; },
+        tier: 'normal',
+        price: 70,
+        effect: { speedPct: 25 }
+    },
+    mana_flow: {
+        id: 'mana_flow',
+        get name() { return typeof I18N !== 'undefined' ? I18N.getTalentName('mana_flow') : '法力涌动'; },
+        icon: '🔮',
+        get desc() { return typeof I18N !== 'undefined' ? I18N.getTalentDesc('mana_flow') : '最大法力+50，法力恢复+3%'; },
+        tier: 'rare',
+        price: 120,
+        effect: { maxMp: 50, mpRegenPct: 3 }
+    },
+
+    // 特殊/传说天赋
+    gambler: {
+        id: 'gambler',
+        get name() { return typeof I18N !== 'undefined' ? I18N.getTalentName('gambler') : '赌徒'; },
+        icon: '🎰',
+        get desc() { return typeof I18N !== 'undefined' ? I18N.getTalentDesc('gambler') : '伤害随机×0.5~×2.0'; },
+        tier: 'epic',
+        price: 100,
+        effect: { gamblerDamage: true }
+    },
+    glass_cannon: {
+        id: 'glass_cannon',
+        get name() { return typeof I18N !== 'undefined' ? I18N.getTalentName('glass_cannon') : '玻璃大炮'; },
+        icon: '💣',
+        get desc() { return typeof I18N !== 'undefined' ? I18N.getTalentDesc('glass_cannon') : '伤害+100%，最大生命-30%'; },
+        tier: 'legendary',
+        price: 500,
+        effect: { dmgPct: 100, maxHpPct: -30 }
+    },
+    phoenix: {
+        id: 'phoenix',
+        get name() { return typeof I18N !== 'undefined' ? I18N.getTalentName('phoenix') : '凤凰'; },
+        icon: '🔥',
+        get desc() { return typeof I18N !== 'undefined' ? I18N.getTalentDesc('phoenix') : '死亡时复活一次（50%生命）'; },
+        tier: 'legendary',
+        price: 1000,
+        effect: { phoenixRevive: true }
+    },
+    bloodlust: {
+        id: 'bloodlust',
+        get name() { return typeof I18N !== 'undefined' ? I18N.getTalentName('bloodlust') : '嗜血'; },
+        icon: '🩸',
+        get desc() { return typeof I18N !== 'undefined' ? I18N.getTalentDesc('bloodlust') : '击杀敌人时恢复5%最大生命'; },
+        tier: 'rare',
+        price: 140,
+        effect: { onKillHealPct: 5 }
+    }
+};
+
+// 天赋稀有度价格倍率
+const TALENT_TIER_MULT = {
+    normal: 1,
+    rare: 1,
+    epic: 1,
+    legendary: 1
+};
+
+// 天赋稀有度颜色
+const TALENT_TIER_COLORS = {
+    normal: '#ffffff',
+    rare: '#4850b8',
+    epic: '#a335ee',
+    legendary: '#ff8000'
+};
+
+// ========== 称号系统 ==========
+const TITLES = [
+    { id: 'none', get name() { return typeof I18N !== 'undefined' ? I18N.getTitleName('none') : '无'; }, price: 0, color: '#888888', style: 'normal' },
+    { id: 'adventurer', get name() { return typeof I18N !== 'undefined' ? I18N.getTitleName('adventurer') : '冒险者'; }, price: 10000, color: '#ffffff', style: 'normal' },
+    { id: 'elite_hunter', get name() { return typeof I18N !== 'undefined' ? I18N.getTitleName('elite_hunter') : '精英猎人'; }, price: 100000, color: '#4488ff', style: 'normal' },
+    { id: 'hell_walker', get name() { return typeof I18N !== 'undefined' ? I18N.getTitleName('hell_walker') : '地狱行者'; }, price: 1000000, color: '#ff6600', style: 'normal' },
+    { id: 'golden_lord', get name() { return typeof I18N !== 'undefined' ? I18N.getTitleName('golden_lord') : '黄金领主'; }, price: 10000000, color: '#ffd700', style: 'glow' },
+    { id: 'billionaire', get name() { return typeof I18N !== 'undefined' ? I18N.getTitleName('billionaire') : '亿万富翁'; }, price: 100000000, color: 'rainbow', style: 'rainbow' },
+    { id: 'legend', get name() { return typeof I18N !== 'undefined' ? I18N.getTitleName('legend') : '不朽传奇'; }, price: 500000000, color: '#a335ee', style: 'glow' }
+];

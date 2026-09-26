@@ -1,0 +1,718 @@
+// ========== enemy-system.js - 敌人系统模块 ==========
+// 包含怪物帧配置、Boss配置、精英怪词缀、Boss技能及特性逻辑
+// 依赖全局变量：player, enemies, projectiles, EnemyPool, AudioSys, particles, damageNumbers, slowMotion, I18N
+// 依赖全局函数：createLevelUpBeam, triggerScreenShake, createDamageNumber, updateUI, checkPlayerDeath, createParticle, showNotification, isWall
+
+// ========== 帧配置 ==========
+
+// 第2排：普通怪物帧索引
+const MONSTER_FRAMES = {
+  'melee': 0,       // 沉沦魔
+  'ranged': 1,      // 骷髅弓箭手
+  'shaman': 2,      // 沉沦魔巫师
+  'zombie': 3,      // 僵尸
+  'skeleton': 4,    // 骷髅战士
+  'ghost': 5,       // 幽灵鬼魂
+  'specter': 6,     // 闪电幽魂
+  'mummy': 7,       // 木乃伊
+  'vampire': 8      // 吸血鬼
+};
+
+// 第3排：BOSS帧索引
+const BOSS_FRAMES = {
+  'bloodRaven': 0,  // 血鸟
+  'countess': 1,    // 女伯爵
+  'butcher': 2,     // 屠夫
+  'duriel': 3,      // 树头木拳
+  'diablo': 4,      // 暗黑破坏神
+  'baal': 5         // 巴尔
+};
+
+// ========== Boss 工具函数 ==========
+
+function syncBossSkillVisual(boss, action, duration) {
+  // 释放沿用蓄力朝向；技能命中时不再突然转头追随移动中的玩家。
+  const previous = boss.bossSkillVisual;
+  if (action === 'attack' && previous?.phase === 'cast') {
+    boss.actionDirection = previous.direction;
+    boss.actionDirectionTimer = duration;
+  } else if (typeof setMonsterFacingToward === 'function') {
+    setMonsterFacingToward(boss, player.x, player.y, duration);
+  }
+  boss.bossSkillVisual = {phase: action, timer: duration, duration,
+    direction: boss.actionDirection || boss.facingDirection};
+  if (typeof triggerMonsterAction === 'function') {
+    triggerMonsterAction(boss, action, duration);
+  }
+}
+
+function spawnBossTelegraph(effectId, x, y, scale = 1, rotation = 0) {
+  if (typeof spawnVfxEffect === 'function') {
+    spawnVfxEffect(effectId, x, y, scale, rotation);
+  }
+}
+
+function startBossSkillWindup(boss, skillId, cooldown, data = {}) {
+  if (boss.pendingSkill || boss.recoveryTimer > 0) return;
+  const windup = data.windup || (skillId === 'groundSlam' ? .95 : .8);
+  boss.pendingSkill = { id: skillId, timer: windup, duration: windup, data };
+  if (typeof CombatTactics !== 'undefined') CombatTactics.bossStarted(boss, boss.pendingSkill);
+  boss.skillCd = cooldown;
+  syncBossSkillVisual(boss, 'cast', windup);
+  spawnBossTelegraph('bossCastBurst', boss.x, boss.y, 1, 0);
+  AudioSys.play('boss_cast');
+
+  // 危险区域直接读取pendingSkill绘制，打断后当帧消失。
+}
+
+function updateBossPendingSkill(boss, dt) {
+  if (!boss.pendingSkill) return false;
+
+  boss.pendingSkill.timer -= dt;
+  if (boss.pendingSkill.timer > 0) return true;
+
+  const pending = boss.pendingSkill;
+  boss.pendingSkill = null;
+
+  if (boss.dead || player.isDead) return true;
+
+  if (pending.id === 'fireNova') {
+    bossFireNova(boss, pending.data.radius, pending.data.damage);
+  } else if (pending.id === 'groundSlam') {
+    bossGroundSlam(boss);
+  } else if (pending.id === 'summonMinions') {
+    bossSummonMinions(boss);
+  } else if (pending.id === 'breathAttack') {
+    bossBreathAttack(boss, pending.data.angle);
+  } else if (pending.id === 'tentacleAttack') {
+    bossTentacleAttack(boss, pending.data.angle);
+  }
+
+  if (typeof CombatTactics !== 'undefined') CombatTactics.recover(boss, CombatTactics.rules.bossRecovery);
+  return true;
+}
+
+// 剥离难度前缀（噩梦/地狱/炼狱等），供内部匹配与查表共用
+function stripBossDifficultyPrefix(bossName) {
+    return String(bossName).replace(/^(Pesadilla|Infierno|Tormento\d*|地狱|噩梦)\s*/, '');
+}
+
+// 首领显示名：难度前缀保留原样，基础名走 bestiary 查表
+function bossDisplayName(bossName) {
+    if (!bossName) return bossName;
+    const base = stripBossDifficultyPrefix(bossName);
+    return bossName.slice(0, bossName.length - base.length) + I18N.trPath('bestiary', base, 'name', base);
+}
+
+// Según nombre del Boss, obtener frameIndex
+function getBossFrameIndex(bossName) {
+  // Limpiar prefijos de dificultad
+  const cleanName = stripBossDifficultyPrefix(bossName);
+
+  const bossFrameMap = {
+    'Cuervo Sangriento': BOSS_FRAMES.bloodRaven,
+    'La Condesa': BOSS_FRAMES.countess,
+    'El Carnicero': BOSS_FRAMES.butcher,
+    'Puño de Madera': BOSS_FRAMES.duriel,
+    'Diablo': BOSS_FRAMES.diablo,
+    'Baal': BOSS_FRAMES.baal,
+    // Fallbacks para compatibilidad
+    '血鸟': BOSS_FRAMES.bloodRaven,
+    '女伯爵': BOSS_FRAMES.countess,
+    '屠夫': BOSS_FRAMES.butcher,
+    '树头木拳': BOSS_FRAMES.duriel,
+    '暗黑破坏神': BOSS_FRAMES.diablo,
+    '巴尔': BOSS_FRAMES.baal
+  };
+
+  return bossFrameMap[cleanName] || BOSS_FRAMES.bloodRaven;
+}
+
+// Configuración Base de Bosses
+const BASE_BOSS_MAP = {
+  2: { name: 'Cuervo Sangriento', hp: 400, dmg: 30, xp: 1000 },
+  4: { name: 'La Condesa', hp: 1000, dmg: 50, xp: 2000 },
+  5: { name: 'El Carnicero', hp: 1400, dmg: 65, xp: 2500 },
+  7: { name: 'Puño de Madera', hp: 2800, dmg: 75, xp: 3000 },
+  9: { name: 'Diablo', hp: 5000, dmg: 95, xp: 5000 },
+  10: { name: 'Baal', hp: 6000, dmg: 120, xp: 8000 }
+};
+
+// Obtener información de generación de Boss
+function getBossSpawnInfo(floor) {
+  const cycle = Math.floor((floor - 1) / 10);
+  const baseFloor = ((floor - 1) % 10) + 1;
+
+  const config = BASE_BOSS_MAP[baseFloor];
+  if (!config) return null;
+
+  const hpMult = 1 + cycle * 1.5;
+  const dmgMult = 1 + cycle * 0.6;
+  const xpMult = 1 + cycle * 1.0;
+
+  let prefix = "";
+  if (cycle === 1) prefix = "Pesadilla ";
+  else if (cycle === 2) prefix = "Infierno ";
+  else if (cycle >= 3) prefix = "Tormento " + (cycle - 2) + " ";
+
+  return {
+    name: prefix + config.name,
+    originalName: config.name,
+    hp: Math.floor(config.hp * hpMult),
+    dmg: Math.floor(config.dmg * dmgMult),
+    xp: Math.floor(config.xp * xpMult),
+    speed: 90 + Math.min(cycle * 10, 100),
+    cycle: cycle
+  };
+}
+
+// ========== Boss Configuración y Presets ==========
+
+const BOSS_AFFIX_PRESETS = {
+  'Cuervo Sangriento': {
+    ai: 'ranged',
+    affixes: ['multiple_shot'],
+    bossTraits: { multiShot: 5, poisonOnHit: true, poisonDamage: 0.3 }
+  },
+  'La Condesa': {
+    ai: 'specter',
+    affixes: ['fire_enchanted'],
+    bossTraits: { canTeleport: true, teleportCooldown: 5, fireNovaOnTeleport: true }
+  },
+  'El Carnicero': {
+    ai: 'vampire',
+    affixes: ['vampiric', 'extra_strong'],
+    bossTraits: { dashDistance: 250, enrageThreshold: 0.3, enrageSpeedMult: 1.5, enrageDmgMult: 1.3 }
+  },
+  'Puño de Madera': {
+    ai: 'chase',
+    affixes: ['stone_skin'],
+    bossTraits: { canSummon: true, summonCooldown: 12, summonCount: 2, groundSlam: true, slamCooldown: 6, slamRadius: 180 }
+  },
+  'Diablo': {
+    ai: 'chase',
+    affixes: ['lightning_enchanted', 'fire_enchanted'],
+    bossTraits: { breathAttack: true, breathCooldown: 4, breathAngle: 60, breathRange: 220 }
+  },
+  'Baal': {
+    ai: 'chase',
+    affixes: ['cold_enchanted'],
+    bossTraits: { freezeRadius: 150, freezeDuration: 1.0, tentacleAttack: true, tentacleCooldown: 6, tentacleCount: 4 }
+  },
+  // Fallbacks para compatibilidad
+  '血鸟': { ai: 'ranged', affixes: ['multiple_shot'], bossTraits: { multiShot: 5, poisonOnHit: true, poisonDamage: 0.3 } },
+  '女伯爵': { ai: 'specter', affixes: ['fire_enchanted'], bossTraits: { canTeleport: true, teleportCooldown: 5, fireNovaOnTeleport: true } },
+  '屠夫': { ai: 'vampire', affixes: ['vampiric', 'extra_strong'], bossTraits: { dashDistance: 250, enrageThreshold: 0.3, enrageSpeedMult: 1.5, enrageDmgMult: 1.3 } },
+  '树头木拳': { ai: 'chase', affixes: ['stone_skin'], bossTraits: { canSummon: true, summonCooldown: 12, summonCount: 2, groundSlam: true, slamCooldown: 6, slamRadius: 180 } },
+  '暗黑破坏神': { ai: 'chase', affixes: ['lightning_enchanted', 'fire_enchanted'], bossTraits: { breathAttack: true, breathCooldown: 4, breathAngle: 60, breathRange: 220 } },
+  '巴尔': { ai: 'chase', affixes: ['cold_enchanted'], bossTraits: { freezeRadius: 150, freezeDuration: 1.0, tentacleAttack: true, tentacleCooldown: 6, tentacleCount: 4 } }
+};
+
+// Boss 词缀强化系数（Boss 的词缀效果比精英怪强）
+const BOSS_AFFIX_MULTIPLIERS = {
+  fire_enchanted: { fireDmgMult: 1.5, explosionMult: 2.0 },  // 火焰伤害 1.5 倍，爆炸 2 倍
+  cold_enchanted: { coldDmgMult: 1.5, freezeTime: 0.8 },     // 冰冻伤害 1.5 倍，冰冻 0.8 秒
+  lightning_enchanted: { lightningDmgMult: 1.5 },
+  vampiric: { lifeStealMult: 1.0 },       // 吸血 50% -> 50%（保持）
+  stone_skin: { reductionMult: 1.2 },     // 减伤 50% -> 60%
+  multiple_shot: { arrowCount: 5 },       // 箭矢 3 -> 5
+  extra_strong: { dmgMult: 2.5 }          // 伤害 2x -> 2.5x
+};
+
+// 应用 Boss 特殊属性
+function applyBossTraits(boss, bossName, baseDmg) {
+  const traits = boss.bossTraits || {};
+
+  // 基础属性调整
+  if (traits.canTeleport) boss.canTeleport = true;
+  if (traits.multiShot) boss.multiShot = traits.multiShot;
+  if (traits.poisonOnHit) {
+    boss.poisonOnHit = true;
+    boss.poisonDamage = (traits.poisonDamage || 0.3) * baseDmg;
+  }
+
+  // 技能冷却初始化
+  if (traits.teleportCooldown) boss.teleportCdMax = traits.teleportCooldown;
+  if (traits.summonCooldown) boss.summonCdMax = traits.summonCooldown;
+  if (traits.slamCooldown) boss.slamCdMax = traits.slamCooldown;
+  if (traits.breathCooldown) boss.breathCdMax = traits.breathCooldown;
+  if (traits.tentacleCooldown) boss.tentacleCdMax = traits.tentacleCooldown;
+
+  // Custom Traits Matching
+  if (bossName.includes('Puño de Madera') || bossName.includes('树头木拳')) boss.slamRadius = traits.slamRadius;
+  if (bossName.includes('El Carnicero') || bossName.includes('屠夫')) boss.dashDistance = traits.dashDistance;
+  if (bossName.includes('Diablo') || bossName.includes('暗黑破坏神')) {
+    boss.breathAngle = traits.breathAngle;
+    boss.breathRange = traits.breathRange;
+  }
+  if (bossName.includes('Baal') || bossName.includes('巴尔')) boss.tentacleCount = traits.tentacleCount;
+
+  boss.skillCd = 2 + Math.random() * 2;
+}
+
+// Actualizar habilidades de Boss
+function updateBossSkills(boss, dt) {
+  if (player.isDead || boss.recoveryTimer > 0) return;
+  if (updateBossPendingSkill(boss, dt)) return;
+
+  // Lógica de Furia de El Carnicero / Butcher
+  if ((boss.name.includes('El Carnicero') || boss.name.includes('屠夫')) && !boss.enraged) {
+    if (boss.hp < boss.maxHp * 0.3) {
+      boss.enraged = true;
+      boss.speed *= 1.5;
+      boss.dmg *= 1.3;
+      showNotification(`${boss.name} 进入狂暴状态！`);
+      createParticle(boss.x, boss.y, '#ff0000', 20);
+      boss.color = '#ff0000'; // 变红
+    }
+  }
+
+  // 技能通用冷却
+  if (boss.skillCd > 0) {
+    boss.skillCd -= dt;
+    return;
+  }
+
+  const dist = Math.hypot(player.x - boss.x, player.y - boss.y);
+
+  // 女伯爵瞬移
+  if (boss.canTeleport && dist > 250) { // 玩家太远时瞬移
+    boss.x = player.x + (Math.random() - 0.5) * 100;
+    boss.y = player.y + (Math.random() - 0.5) * 100;
+    createParticle(boss.x, boss.y, '#ff4400', 10); // 出现特效
+    if (boss.bossTraits && boss.bossTraits.fireNovaOnTeleport) {
+      startBossSkillWindup(boss, 'fireNova', boss.teleportCdMax || 5, {
+        telegraph: 'circle',
+        radius: 150,
+        damage: boss.dmg * 0.8
+      });
+    } else {
+      boss.skillCd = boss.teleportCdMax || 5;
+    }
+    showNotification(`${boss.name} 使用了瞬移！`);
+    return;
+  }
+
+  // 树头木拳地震波
+  if (boss.bossTraits && boss.bossTraits.groundSlam && dist < 120) {
+    startBossSkillWindup(boss, 'groundSlam', boss.slamCdMax || 6, {
+      telegraph: 'circle',
+      radius: boss.slamRadius || 150
+    });
+    return;
+  }
+
+  // 树头木拳召唤
+  if (boss.bossTraits && boss.bossTraits.canSummon && Math.random() < 0.3) {
+    startBossSkillWindup(boss, 'summonMinions', boss.summonCdMax || 12);
+    return;
+  }
+
+  // 暗黑破坏神吐息
+  if (boss.bossTraits && boss.bossTraits.breathAttack && dist < 200 && dist > 50) {
+    const angleToPlayer = Math.atan2(player.y - boss.y, player.x - boss.x);
+    startBossSkillWindup(boss, 'breathAttack', boss.breathCdMax || 4, {
+      telegraph: 'cone',
+      angle: angleToPlayer,
+      range: boss.breathRange || 200
+    });
+    return;
+  }
+
+  // 巴尔触手
+  if (boss.bossTraits && boss.bossTraits.tentacleAttack) {
+    const angleToPlayer = Math.atan2(player.y - boss.y, player.x - boss.x);
+    startBossSkillWindup(boss, 'tentacleAttack', boss.tentacleCdMax || 6, {
+      telegraph: 'line',
+      angle: angleToPlayer,
+      range: 240
+    });
+    return;
+  }
+}
+
+// ========== Boss 技能具体实现 ==========
+
+// Boss 技能：火焰新星
+function bossFireNova(boss, radius, damage) {
+  syncBossSkillVisual(boss, 'attack', 0.45);
+
+  const dist = Math.hypot(player.x - boss.x, player.y - boss.y);
+  if (dist < radius && player.invincibleTimer <= 0) {
+    const fireDmg = damage * (1 - player.resistances.fire / 100);
+    player.hp -= fireDmg;
+    player.lastDamageSource = boss.name + '的火焰新星';
+    player.invincibleTimer = 0.3;
+    createDamageNumber(player.x, player.y - 30, Math.floor(fireDmg), '#ff4400');
+    updateUI(); checkPlayerDeath();
+  }
+  // 火焰粒子效果
+  for (let i = 0; i < 20; i++) {
+    const angle = (i / 20) * Math.PI * 2;
+    createParticle(boss.x + Math.cos(angle) * radius * 0.7, boss.y + Math.sin(angle) * radius * 0.7, '#ff4400', 8);
+  }
+  showNotification(`${boss.name} 释放了火焰新星！`);
+}
+
+// Boss 技能：地震波
+function bossGroundSlam(boss) {
+  syncBossSkillVisual(boss, 'attack', 0.55);
+
+  const radius = boss.slamRadius || 150;
+  const dist = Math.hypot(player.x - boss.x, player.y - boss.y);
+  if (dist < radius && player.invincibleTimer <= 0) {
+    const slamDmg = boss.dmg * 0.8;
+    player.hp -= slamDmg;
+    player.lastDamageSource = boss.name + '的地震波';
+    player.invincibleTimer = 0.5;
+    player.slowedTimer = 1.0; // 减速 1 秒
+    createDamageNumber(player.x, player.y - 30, Math.floor(slamDmg), '#8b4513');
+    updateUI(); checkPlayerDeath();
+  }
+  // 地震粒子
+  for (let i = 0; i < 25; i++) {
+    const angle = (i / 25) * Math.PI * 2;
+    const r = radius * (0.3 + Math.random() * 0.7);
+    createParticle(boss.x + Math.cos(angle) * r, boss.y + Math.sin(angle) * r, '#8b4513', 6);
+  }
+  showNotification(`${boss.name} 释放了地震波！`);
+  AudioSys.play('hit');
+}
+
+// Boss 技能：召唤小怪
+function bossSummonMinions(boss) {
+  syncBossSkillVisual(boss, 'attack', 0.65);
+
+  const count = boss.summonCount || 2;
+  for (let i = 0; i < count; i++) {
+    const angle = (i / count) * Math.PI * 2;
+    const spawnDist = 60 + Math.random() * 40;
+    let x = boss.x + Math.cos(angle) * spawnDist;
+    let y = boss.y + Math.sin(angle) * spawnDist;
+
+    // 避免在墙里生成
+    if (isWall(x, y)) continue;
+
+    const minion = EnemyPool.acquire({
+      x, y,
+      hp: Math.floor(boss.maxHp * 0.1),
+      maxHp: Math.floor(boss.maxHp * 0.1),
+      dmg: Math.floor(boss.dmg * 0.4),
+      speed: 100,
+      radius: 12,
+      dead: false,
+      cooldown: 0,
+      name: I18N.trPath('bestiary', '召唤物', 'name', '召唤物'),
+      ai: 'chase',
+      xpValue: 20,
+      frameIndex: 0, // 使用骷髅帧
+      isSummon: true // 标记为召唤物，不计入击杀数
+    });
+    enemies.push(minion);
+    // 召唤特效
+    for (let j = 0; j < 5; j++) createParticle(x, y, '#00ff00', 5);
+  }
+  showNotification(`${boss.name} 召唤了援军！`);
+}
+
+// Boss 技能：吐息攻击（扇形）
+function bossBreathAttack(boss, lockedAngle) {
+  syncBossSkillVisual(boss, 'attack', 0.6);
+
+  const range = boss.breathRange || 200;
+  const halfAngle = (boss.breathAngle || 60) * Math.PI / 360; // 转为弧度的一半
+  const angleToPlayer = typeof lockedAngle === 'number' ? lockedAngle : Math.atan2(player.y - boss.y, player.x - boss.x);
+
+  const dist = Math.hypot(player.x - boss.x, player.y - boss.y);
+  if (dist < range && player.invincibleTimer <= 0) {
+    // 检查玩家是否在扇形范围内
+    const playerAngle = Math.atan2(player.y - boss.y, player.x - boss.x);
+    let angleDiff = Math.abs(playerAngle - angleToPlayer);
+    if (angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
+
+    if (angleDiff <= halfAngle) {
+      const breathDmg = boss.dmg * 1.2 * (1 - player.resistances.lightning / 100);
+      player.hp -= breathDmg;
+      player.lastDamageSource = boss.name + '的吐息';
+      player.invincibleTimer = 0.4;
+      createDamageNumber(player.x, player.y - 30, Math.floor(breathDmg), '#ffff00');
+      updateUI(); checkPlayerDeath();
+    }
+  }
+
+  // 吐息粒子（扇形）
+  for (let i = 0; i < 15; i++) {
+    const a = angleToPlayer + (Math.random() - 0.5) * halfAngle * 2;
+    const r = range * (0.3 + Math.random() * 0.7);
+    createParticle(boss.x + Math.cos(a) * r, boss.y + Math.sin(a) * r, '#ffff00', 6);
+  }
+  showNotification(`${boss.name} 喷吐了闪电吐息！`);
+  AudioSys.play('thunder');
+}
+
+// Boss 技能：触手攻击
+function bossTentacleAttack(boss, lockedAngle) {
+  syncBossSkillVisual(boss, 'attack', 0.5);
+
+  const count = boss.tentacleCount || 4;
+  const baseAngle = typeof lockedAngle === 'number' ? lockedAngle : Math.atan2(player.y - boss.y, player.x - boss.x);
+
+  for (let i = 0; i < count; i++) {
+    const angle = baseAngle + (i - (count - 1) / 2) * 0.3; // 扇形分布
+    // 创建触手投射物
+    projectiles.push({
+      x: boss.x,
+      y: boss.y,
+      angle: angle,
+      speed: 180,
+      life: 1.5,
+      damage: boss.dmg * 0.6,
+      color: '#9966ff',
+      owner: boss,
+      sourceName: boss.name,
+      type: 'tentacle',
+      isTentacle: true // 标记为触手
+    });
+  }
+  // 触手粒子
+  for (let i = 0; i < 10; i++) createParticle(boss.x, boss.y, '#9966ff', 5);
+  showNotification(`${boss.name} 释放了触手！`);
+}
+
+// Boss死亡特效：慢动作 + 关键光柱 + 击杀数字
+function triggerBossDeathEffect(boss, damage) {
+  // 启动慢动作
+  slowMotion.active = true;
+  slowMotion.timer = 0.8;  // 0.8秒慢动作
+  slowMotion.scale = 0.15; // 15%速度（非常慢）
+
+  // 强力震屏
+  triggerScreenShake(20, 0.6);
+
+  AudioSys.play('boss_death');
+
+  // 巨型伤害数字（红色，更大）
+  damageNumbers.push({
+    x: boss.x,
+    y: boss.y - 50,
+    val: `💀 ${Math.floor(damage)} 💀`,
+    color: '#ff0000',
+    life: 2.5,
+    fontSize: 48, // 巨大字体
+    vx: (Math.random() - 0.5) * 30,
+    vy: -80,
+    gravity: 60
+  });
+
+  // Boss名字显示
+  damageNumbers.push({
+    x: boss.x,
+    y: boss.y - 100,
+    val: `⚔️ ${bossDisplayName(boss.name)} 已被击败 ⚔️`,
+    color: '#ffd700',
+    life: 3.0,
+    fontSize: 28, // 修正为匹配 game.js
+    vx: 0,
+    vy: -30,      // 修正为匹配 game.js
+    gravity: 0    // 修正为匹配 game.js
+  });
+
+  // 创建红色光柱
+  particles.push({
+    type: 'drop_beam',
+    x: boss.x,
+    y: boss.y,
+    color: '#ff4400',
+    glowColor: 'rgba(255, 68, 0, 0.6)',
+    life: 1.5,
+    maxLife: 1.5,
+    height: 400,
+    width: 80,
+    isUnique: true
+  });
+
+
+}
+
+// ========== 精英怪词缀系统 ==========
+
+const ELITE_AFFIXES = [
+  {
+    id: 'extra_fast',
+    name: '额外快速',
+    color: '#00ffff',
+    icon: 'speed',
+    threatTag: 'mobility',
+    description: '移动速度+50%',
+    applyStats: (enemy) => {
+      enemy.speed *= 1.5;
+    }
+  },
+  {
+    id: 'extra_strong',
+    name: '额外强壮',
+    color: '#ff4400',
+    icon: 'power',
+    threatTag: 'burst',
+    description: '伤害+100%',
+    applyStats: (enemy) => {
+      enemy.dmg *= 2.0;
+    }
+  },
+  {
+    id: 'fire_enchanted',
+    name: '火焰强化',
+    color: '#ff6600',
+    icon: 'fire',
+    threatTag: 'elemental',
+    description: '攻击附带火焰伤害，死亡时爆炸',
+    applyStats: (enemy) => {
+      enemy.elementalDmg = enemy.elementalDmg || {};
+      enemy.elementalDmg.fire = Math.floor(enemy.dmg * 0.5);
+    },
+    onDeath: (enemy) => {
+      // 火焰爆炸
+      const explosionRadius = 150;
+      // 伤害改为15%血量，且上限200
+      const explosionDamage = Math.min(enemy.maxHp * 0.15, 200);
+      const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+      if (dist < explosionRadius && player.invincibleTimer <= 0) {
+        const dmg = explosionDamage * (1 - dist / explosionRadius);
+        const finalDmg = dmg * (1 - player.resistances.fire / 100);
+        player.hp -= finalDmg;
+        player.lastDamageSource = enemy.name + '的火焰爆炸';
+        player.invincibleTimer = 0.3;  // 0.3秒无敌帧
+        createDamageNumber(player.x, player.y - 30, Math.floor(finalDmg), '#ff4400');
+        showNotification('火焰爆炸！');
+        updateUI(); checkPlayerDeath();
+      }
+      // 爆炸粒子效果
+      for (let i = 0; i < 20; i++) {
+        createParticle(enemy.x, enemy.y, '#ff4400', 10);
+      }
+    }
+  },
+  {
+    id: 'cold_enchanted',
+    name: '寒冰强化',
+    color: '#00aaff',
+    icon: 'cold',
+    threatTag: 'control',
+    description: '攻击附带冰冻效果',
+    applyStats: (enemy) => {
+      enemy.elementalDmg = enemy.elementalDmg || {};
+      enemy.elementalDmg.cold = Math.floor(enemy.dmg * 0.4);
+      enemy.freezeOnHit = true;
+    }
+  },
+  {
+    id: 'lightning_enchanted',
+    name: '闪电强化',
+    color: '#ffff00',
+    icon: 'lightning',
+    threatTag: 'elemental',
+    description: '攻击附带闪电伤害',
+    applyStats: (enemy) => {
+      enemy.elementalDmg = enemy.elementalDmg || {};
+      enemy.elementalDmg.lightning = Math.floor(enemy.dmg * 0.6);
+    }
+  },
+  {
+    id: 'stone_skin',
+    name: '石肤',
+    color: '#888888',
+    icon: 'armor',
+    threatTag: 'defense',
+    description: '受到伤害减少50%',
+    applyStats: (enemy) => {
+      enemy.damageReduction = 0.5;
+    }
+  },
+  {
+    id: 'magic_resistant',
+    name: '魔法抗性',
+    color: '#aa00ff',
+    icon: 'resist',
+    threatTag: 'defense',
+    description: '技能伤害减免70%',
+    applyStats: (enemy) => {
+      enemy.magicResist = 0.7;
+    }
+  },
+  {
+    id: 'vampiric',
+    name: '吸血',
+    color: '#cc0000',
+    icon: 'leech',
+    threatTag: 'sustain',
+    description: '攻击回复生命',
+    applyStats: (enemy) => {
+      enemy.lifeSteal = 0.5;  // 50%吸血
+    }
+  },
+  {
+    id: 'mana_burn',
+    name: '法力燃烧',
+    color: '#0066ff',
+    icon: 'mana',
+    threatTag: 'resource',
+    description: '攻击消耗玩家法力',
+    applyStats: (enemy) => {
+      enemy.manaBurn = true;
+    }
+  },
+  {
+    id: 'cursed',
+    name: '诅咒',
+    color: '#9900cc',
+    icon: 'curse',
+    threatTag: 'debuff',
+    description: '降低玩家防御',
+    applyStats: (enemy) => {
+      enemy.cursed = true;
+      enemy.curseArmorBreak = 0.25;
+      enemy.curseDamageTakenMult = 1.2;
+      enemy.curseDuration = 3.0;
+    }
+  },
+  {
+    id: 'multiple_shot',
+    name: '多重射击',
+    color: '#ffaa00',
+    icon: 'volley',
+    threatTag: 'projectile',
+    description: '远程怪物发射3支箭',
+    applyStats: (enemy) => {
+      enemy.multiShot = 3;
+      if (enemy.ai !== 'ranged') enemy.scatterVolley = true;
+    }
+  },
+  {
+    id: 'spectral_hit',
+    name: '幽灵打击',
+    color: '#00ffaa',
+    icon: 'spectral',
+    threatTag: 'pierce',
+    description: '无视护甲',
+    applyStats: (enemy) => {
+      enemy.ignoreArmor = true;
+    }
+  }
+];
+
+// 词缀的中文名即 eliteAffixes 查表键：先缓存原文，名称/描述只在模块加载与
+// 语言切换时解析一次，game.js 的每帧绘制直接读取已本地化的字段。
+const ELITE_AFFIX_ZH_LABELS = ELITE_AFFIXES.map(affix => ({ name: affix.name, description: affix.description }));
+
+function refreshEliteAffixLabels() {
+    const hasI18N = typeof I18N !== 'undefined';
+    ELITE_AFFIXES.forEach((affix, i) => {
+        const zh = ELITE_AFFIX_ZH_LABELS[i];
+        affix.name = hasI18N ? I18N.trPath('eliteAffixes', zh.name, 'name', zh.name) : zh.name;
+        affix.description = hasI18N ? I18N.trPath('eliteAffixes', zh.name, 'desc', zh.description) : zh.description;
+    });
+}
+refreshEliteAffixLabels();
+if (typeof I18N !== 'undefined' && typeof I18N.onChange === 'function') {
+    I18N.onChange(refreshEliteAffixLabels);
+}

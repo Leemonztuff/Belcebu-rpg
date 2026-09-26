@@ -1,0 +1,51 @@
+# Dependencies
+node_modules/
+package-lock.json.bak
+bun.lockb
+
+# Logs & Debug
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment & Local Secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Temporary and backup files
+*.bak
+*.tmp
+*.swp
+*.swo
+*~
+ScreenShot.jpg
+Screenshot_*.jpg
+Screenshot_*.png
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# IDE & Editor files
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# AI Studio & Agent Workspace Specific Files
+.agents/
+.claude/
+.opencode/
+public/players/.normalized/
+metadata.json
+.agent-flow.json
+*task.md
+abyss_rank_schema.json
+package-lock.json.bak
+
