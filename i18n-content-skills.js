@@ -2,7 +2,7 @@
     'use strict';
     if (typeof window.I18N === 'undefined' || typeof window.I18N.registerTable !== 'function') return;
 
-    // 技能树文案：与 constants.js 的 SKILL_TREE 逐层对应，zh 为原始中文
+    // Skill tree copy: maps layer by layer to constants.js SKILL_TREE; zh is the original Chinese
     window.I18N.registerTable('skillTree', {
         fireball: {
             stage1: {
@@ -150,7 +150,7 @@
         },
     });
 
-    // 赐福词条标签与说明：替代 game.js 中的纯中文 effectNames 映射
+    // Blessing entry labels and descriptions: replaces the zh-only effectNames map in game.js
     window.I18N.registerTable('blessingEffects', {
         dmgPct: {
             label: { es: 'Daño', en: 'Damage', zh: '伤害' },
@@ -218,7 +218,7 @@
         },
     });
 
-    // 普攻横扫档位文案：tier_0 为未解锁状态，tier_1~3 对应 getPhysicalSweepConfig
+    // Basic attack sweep tier copy: tier_0 is the locked state; tier_1~3 map to getPhysicalSweepConfig
     window.I18N.registerTable('sweepTiers', {
         tier_0: {
             name: { es: 'Sin Barrido', en: 'No Sweep', zh: '无横扫' },

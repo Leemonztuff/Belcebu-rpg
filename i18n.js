@@ -1,12 +1,14 @@
-// ========== i18n.js - Sistema Multilingüe (Español / English / 中文) ==========
-// Proporciona soporte multilingüe completo con persistencia y actualización reactiva de la interfaz.
+// ========== i18n.js - Multilanguage System (English / Español / zh) ==========
+// English is the base language: it backs every fallback chain and all internal
+// keys (items, monsters, affixes, quests...). Spanish and Chinese remain fully
+// available as display languages.
 
 // Marcadores {nombre} compartidos por t()/tr()/trPath(). Se reutiliza la misma
 // expresión para no crear un RegExp por parámetro en rutas recientes.
 const I18N_PLACEHOLDER_RE = /\{([a-zA-Z0-9_]+)\}/g;
 
 const I18N = {
-    currentLang: 'es', // Idioma predeterminado
+    currentLang: 'en', // Base language (English)
     listeners: [],
 
     // Tablas de contenido registradas por los archivos i18n-content-*.js.
@@ -16,8 +18,8 @@ const I18N = {
 
     locales: {
         es: {
-            // General & Marca
-            game_title: "菠萝战纪 Brawlore",
+            // General & Brand
+            game_title: "Brawlore",
             game_sub: "BRAWLORE",
             enter_sanctuary: "Entrar a Santuario",
             loading: "Cargando...",
@@ -886,7 +888,7 @@ const I18N = {
         },
 
         zh: {
-            // 基础 & 品牌
+            // base & gradebadge
             game_title: "菠萝战纪",
             game_sub: "BRAWLORE",
             enter_sanctuary: "踏入庇护所",
@@ -914,7 +916,7 @@ const I18N = {
             save_status_empty: "暂无存档",
             cloud_sync: "云同步",
 
-            // 槽位选择
+            // slotselection
             select_slot: "选择存档",
             new_character: "新建角色",
             slot_level: "Lv.{lvl}",
@@ -931,7 +933,7 @@ const I18N = {
             hours_ago: "{h}小时前",
             days_ago: "{d}天前",
 
-            // 菜单
+            // menu
             menu_stats: "角色",
             menu_inventory: "物品",
             menu_skills: "技能",
@@ -965,7 +967,7 @@ const I18N = {
             auto_battle_earned: "获得:",
             auto_battle_fee: "雇佣费:",
 
-            // 聊天
+            // chatsky
             world_chat: "💬 世界频道",
             chat_placeholder: "输入消息...",
             chat_send: "发送",
@@ -975,7 +977,7 @@ const I18N = {
             chat_quick_party: "求组队",
             chat_quick_thanks: "谢谢",
 
-            // 角色属性
+// Skill tree
             stats_title: "角色属性",
             stat_level: "等级",
             stat_xp: "经验",
@@ -996,7 +998,7 @@ const I18N = {
             stat_res_lightning: "⚡ 闪电抗性",
             stat_res_poison: "☠️ 毒素抗性",
 
-            // 物品与仓库
+            // itemandstash
             inv_title: "物品栏",
             inv_gold: "金币:",
             inv_sellable: "(商店可售)",
@@ -1011,7 +1013,7 @@ const I18N = {
             bag_click_deposit: "(点击存入)",
             bag_click_add: "(点击添加)",
 
-            // 技能树
+            // skill tree
             skills_title: "技能树",
             skills_points: "技能点:",
             tab_fire: "🔥 火焰",
@@ -1019,7 +1021,7 @@ const I18N = {
             tab_multishot: "🏹 射击",
             tab_holy_shield: "🛡️ 护盾",
 
-            // 任务
+            // quest
             quest_title: "任务日志",
             quest_completed_count: "已完成任务: {count}",
             quest_status_new: "新任务",
@@ -1033,7 +1035,7 @@ const I18N = {
             stat_floor: "层",
             delete_prompt: '请输入"{kw}"以确认：',
 
-            // 商店
+            // shop
             shop_title: "基格商店",
             shop_supplies: "物资补给（长按可以快速购买）",
             shop_gamble: "未辨识装备 (赌博)",
@@ -1050,7 +1052,7 @@ const I18N = {
             item_ring: "戒指",
             item_amulet: "项链",
 
-            // 铁匠
+            // Blacksmith
             forge_title: "⚒️ 恰西的铁匠铺",
             forge_target_slot: "强化目标",
             forge_target_placeholder: "装备",
@@ -1061,7 +1063,7 @@ const I18N = {
             forge_cost: "消耗:",
             forge_btn: "开始强化",
 
-            // 设置
+            // Set
             settings_title: "系统设置",
             settings_tab_combat: "挂机策略",
             settings_tab_general: "通用设置",
@@ -1089,7 +1091,7 @@ const I18N = {
             settings_pickup_scroll: "自动拾取卷轴",
             settings_language: "语言",
 
-            // 阵亡
+            // Slain in action
             death_title: "你已阵亡",
             death_floor: "到达层数",
             death_kills: "击杀怪物",
@@ -1101,20 +1103,20 @@ const I18N = {
             death_free: "(免费)",
             death_current_gold: "当前金币:",
 
-            // 称号
+            // title
             title_shop_name: "称号商店",
             title_current: "当前称号：",
             title_none: "无",
 
-            // 赐福
+            // blessing
             divine_title: "🌟 天神赐福",
             divine_subtitle: "选择一项永久强化",
 
-            // 每日
+            // eachday
             daily_title: "📅 每日登录奖励",
             daily_claim: "领取奖励",
 
-            // 离线
+            // offline
             offline_title: "离线收益",
             offline_duration: "离线时长",
             offline_floor: "挂机层数",
@@ -1142,30 +1144,30 @@ const I18N = {
             socket_success: "符文镶嵌成功！",
             socket_invalid: "该装备没有空孔，无法镶嵌！",
 
-            // 稀有度
+            // rarity
             rarity_common: "普通",
             rarity_magic: "魔法",
             rarity_rare: "稀有",
             rarity_unique: "暗金",
             rarity_set: "套装",
 
-            // 称号与商店
+            // titleandshop
             title_equipped: "已装备",
             title_equip: "装备",
             title_buy: "购买",
             title_free: "免费",
 
-            // 天神赐福
+            // Divine Blessing
             divine_acquired_title: "🌟 已获得赐福",
             divine_no_blessings: "暂无赐福",
             divine_every_5_lvls: "每5级获得一次赐福机会",
             divine_total_bonus: "累计加成",
 
-            // 每日登录
+            // eachday login
             daily_already_claimed: "今日已领取",
             daily_consecutive_days: "连续登录 <span style=\"font-size:20px;\">{days}</span> 天",
 
-            // 离线收益
+            // offline rewards
             offline_mins: "{m} 分钟",
             offline_hour: "{h} 小时",
             offline_hours_mins: "{h} 小时 {m} 分钟",
@@ -1194,20 +1196,20 @@ const I18N = {
             tooltip_skill_learn: "在技能菜单中学习此技能",
             skill_node_select: "点击选择",
 
-            // 死亡与复活
+// Talent shop
             revive_no_gold: "金币不足，无法复活！",
             revive_success: "复活成功！消耗 {cost} 金币",
             return_camp_from_hell: "已从地狱返回营地",
             return_camp: "已返回营地",
 
-            // 自动战斗雇佣费
+            // auto battlehire cost
             ab_fee_title: "自动战斗服务",
             ab_fee_p1: "启用自动战斗后，系统将收取",
             ab_fee_p2: "金币收益的 <span class=\"fee-highlight\">15%</span> 作为雇佣费",
             ab_fee_p3: "（每满100金币收取15金币）",
             ab_fee_btn: "我知道了",
 
-            // 天赋商店
+            // talentshop
             talent_shop_title: "⚔️ 天赋商店",
             talent_refresh: "🔄 刷新",
             talent_refresh_btn: "刷新",
@@ -1222,7 +1224,7 @@ const I18N = {
             talent_refresh_cost: "{cost}金",
             talent_cost_short: "{cost}金",
 
-            // 铁匠铺
+            // ironsmithy
             forge_slots_full: "槽位已满",
             forge_no_main: "请先放入主装备",
             forge_no_matches: "没有找到匹配的祭品",
@@ -1241,7 +1243,7 @@ const I18N = {
             forge_success_float: "强化成功!",
             forge_fail_float: "强化失败",
 
-            // NPC 对话与任务
+            // NPC dialogandquest
             npc_akara_all_done: "你已经完成了所有任务，真正的英雄！",
             npc_akara_need_help: "勇士，我们需要你的帮助。",
             npc_akara_in_progress: "任务还没完成。快去！",
@@ -1254,7 +1256,7 @@ const I18N = {
             quest_accept: "接受任务",
             btn_claim: "领取",
 
-            // 神秘贤者
+// Abyss
             npc_sage_name: "神秘贤者",
             npc_sage_dialog: "年轻的英雄，命运之路充满选择。我可以帮你重塑能力分配，或为你提供彰显身份的称号。\n\n当前金币：{gold}\n\n选择你需要的服务：",
             respec_stats_btn: "仅重置属性点（{cost} 金币）",
@@ -1264,21 +1266,21 @@ const I18N = {
             respec_stats_success: "✨ 属性点已重置！✨\n\n力量、敏捷、体力、精力已恢复到初始状态。\n所有属性点已返还。\n\n消耗：{cost} 金币\n剩余金币：{gold}",
             respec_skills_success: "✨ 技能点已重置！✨\n\n所有技能已重置（火球术保持1级）。\n技能点已全部返还。\n\n消耗：{cost} 金币\n剩余金币：{gold}",
 
-            // 传送门
+            // portal
             portal_name: "传送门",
             portal_select_floor: "选择要前往的层数：",
             portal_last_floor: "{floor}层 {name} (上次)",
             portal_max_floor: "{floor}层 {name} (最高)",
             portal_floor_option: "{floor}层 {name}",
 
-            // 深渊
+            // abyss
             npc_abyss_guard: "深渊守卫",
             abyss_in_floor: "已在深渊第{floor}层。",
             btn_return_camp: "返回营地",
             btn_continue_explore: "继续探索",
             abyss_need_kill_boss: "你需要先去击杀第10层「{name}」的Boss才能开启深渊挑战。",
 
-            // 每日任务
+            // daily quest
             dq_title: "每日任务",
             dq_reset_in: "{time} 后重置",
             dq_locked: "🔒 完成上一个任务后解锁",
@@ -1290,7 +1292,7 @@ const I18N = {
             dq_boss: "击杀{target}个BOSS",
             dq_floor: "通关{target}层地牢",
 
-            // 提示
+            // toast
             notif_welcome_town: "欢迎回到罗格营地",
             notif_inv_full: "背包已满！",
             notif_no_gold: "金币不足",
@@ -1299,7 +1301,7 @@ const I18N = {
             notif_upgraded: "强化成功！",
             notif_failed: "强化失败",
 
-            // Lote 3: 战报分享、赛季征程与回归大礼
+            // Batch 3: battle report share, season journey and return bundle
             share_card_title: "英雄战报 & 构筑分享",
             share_copy_text: "复制文本战报",
             share_download_img: "保存战报图片",
@@ -1373,8 +1375,28 @@ const I18N = {
         }
     },
 
-    // Nombres base de objetos
+    // Base item names (canonical English keys; legacy zh aliases kept for old saves)
     items: {
+        'Short Sword': { es: 'Espada Corta', en: 'Short Sword', zh: '短剑' },
+        'Great Axe': { es: 'Gran Hacha', en: 'Great Axe', zh: '巨斧' },
+        'Cloth Armor': { es: 'Armadura de Tela', en: 'Cloth Armor', zh: '布甲' },
+        'Leather Armor': { es: 'Armadura de Cuero', en: 'Leather Armor', zh: '皮甲' },
+        'Plate Armor': { es: 'Armadura de Placas', en: 'Plate Armor', zh: '板甲' },
+        'Leather Cap': { es: 'Gorra de Cuero', en: 'Leather Cap', zh: '皮帽' },
+        'Full Helm': { es: 'Yelmo Completo', en: 'Full Helm', zh: '全盔' },
+        'Leather Gloves': { es: 'Guantes de Cuero', en: 'Leather Gloves', zh: '皮手套' },
+        'Heavy Gloves': { es: 'Guantes Pesados', en: 'Heavy Gloves', zh: '重手套' },
+        'Leather Boots': { es: 'Botas de Cuero', en: 'Leather Boots', zh: '皮靴' },
+        'Chain Boots': { es: 'Botas de Malla', en: 'Chain Boots', zh: '锁链靴' },
+        'Light Belt': { es: 'Cinto Ligero', en: 'Light Belt', zh: '轻扣带' },
+        'Heavy Belt': { es: 'Cinturón Pesado', en: 'Heavy Belt', zh: '重腰带' },
+        'Copper Ring': { es: 'Anillo de Cobre', en: 'Copper Ring', zh: '铜戒指' },
+        'Amulet': { es: 'Amuleto', en: 'Amulet', zh: '护身符' },
+        'Health Potion': { es: 'Poción de Vida', en: 'Health Potion', zh: '治疗药剂' },
+        'Mana Potion': { es: 'Poción de Maná', en: 'Mana Potion', zh: '法力药剂' },
+        'Town Portal Scroll': { es: 'Pergamino Portal', en: 'Town Portal Scroll', zh: '回城卷轴' },
+        'Double XP': { es: 'Doble EXP', en: 'Double XP', zh: '双倍经验' },
+        // Legacy zh aliases (old saves)
         '短剑': { es: 'Espada Corta', en: 'Short Sword', zh: '短剑' },
         '巨斧': { es: 'Gran Hacha', en: 'Great Axe', zh: '巨斧' },
         '布甲': { es: 'Armadura de Tela', en: 'Cloth Armor', zh: '布甲' },
@@ -1396,8 +1418,51 @@ const I18N = {
         '双倍经验': { es: 'Doble EXP', en: 'Double XP', zh: '双倍经验' }
     },
 
-    // Prefijos y sufijos de afijos mágicos
+    // Magic affix prefixes and suffixes (canonical English keys; legacy zh aliases kept for old saves)
     affixes: {
+        'Cruel': { es: 'Cruel', en: 'Cruel', zh: '残忍的' },
+        'Savage': { es: 'Salvaje', en: 'Savage', zh: '野蛮的' },
+        'Sturdy': { es: 'Robusto', en: 'Sturdy', zh: '坚固的' },
+        'Vampiric': { es: 'Vampírico', en: 'Vampiric', zh: '吸血的' },
+        'Swift': { es: 'Veloz', en: 'Swift', zh: '急速的' },
+        'of Flame': { es: 'de Fuego', en: 'of Flame', zh: '烈焰之' },
+        'of Frost': { es: 'de Hielo', en: 'of Frost', zh: '冰霜之' },
+        'of Lightning': { es: 'del Rayo', en: 'of Lightning', zh: '闪电之' },
+        'of Poison': { es: 'del Veneno', en: 'of Poison', zh: '剧毒之' },
+        'of Balance': { es: 'Omnipotente', en: 'of Balance', zh: '全能之' },
+        'Burning': { es: 'Ardiente', en: 'Burning', zh: '燃烧的' },
+        'Shocking': { es: 'Electrizante', en: 'Shocking', zh: '雷电的' },
+        'Venomous': { es: 'Venenoso', en: 'Venomous', zh: '剧毒的' },
+        'Piercing': { es: 'Perforante', en: 'Piercing', zh: '穿刺的' },
+        'Repelling': { es: 'Repulsor', en: 'Repelling', zh: '击退的' },
+        'Slowing': { es: 'Ralentizador', en: 'Slowing', zh: '减速的' },
+        'Deadly': { es: 'Mortal', en: 'Deadly', zh: '致命的' },
+        'of Flurry': { es: 'del Combo', en: 'of Flurry', zh: '连击的' },
+        'of the Bear': { es: 'del Oso', en: 'of the Bear', zh: '之巨熊' },
+        'of the Cheetah': { es: 'del Guepardo', en: 'of the Cheetah', zh: '之猎豹' },
+        'of the Viper': { es: 'de la Serpiente', en: 'of the Viper', zh: '之灵蛇' },
+        'of the Eagle': { es: 'del Águila', en: 'of the Eagle', zh: '之雏鹰' },
+        'of the Leech': { es: 'de la Sanguijuela', en: 'of the Leech', zh: '之吸血' },
+        'of Haste': { es: 'de la Rapidez', en: 'of Haste', zh: '之急速' },
+        'of Wisdom': { es: 'de la Sabiduría', en: 'of Wisdom', zh: '之智慧' },
+        'of Warding': { es: 'del Guardián', en: 'of Warding', zh: '之守卫' },
+        'of Strength': { es: 'de la Fuerza', en: 'of Strength', zh: '之力量' },
+        'of Fire Res': { es: 'de Resistencia al Fuego', en: 'of Fire Res', zh: '之抗火' },
+        'of Cold Res': { es: 'de Resistencia al Frío', en: 'of Cold Res', zh: '之抗冰' },
+        'of Lightning Res': { es: 'de Resistencia al Rayo', en: 'of Lightning Res', zh: '之抗电' },
+        'of Poison Res': { es: 'de Resistencia al Veneno', en: 'of Poison Res', zh: '之抗毒' },
+        'of Fortitude': { es: 'de la Tenacidad', en: 'of Fortitude', zh: '之坚韧' },
+        'of Protection': { es: 'de la Protección', en: 'of Protection', zh: '之守护' },
+        'of Ruin': { es: 'de la Ruina', en: 'of Ruin', zh: '之毁灭' },
+        'of Regeneration': { es: 'de la Regeneración', en: 'of Regeneration', zh: '之再生' },
+        'of Meditation': { es: 'de la Meditación', en: 'of Meditation', zh: '之冥想' },
+        'of Block': { es: 'de Bloqueo', en: 'of Block', zh: '之格挡' },
+        'of Reflection': { es: 'de Reflexión', en: 'of Reflection', zh: '之反射' },
+        'Divine Speed': { es: 'Divina Velocidad', en: 'Divine Speed', zh: '之神速' },
+        'of Iron Wall': { es: 'de Muro de Hierro', en: 'of Iron Wall', zh: '之铁壁' },
+        'of Precision': { es: 'de Precisión', en: 'of Precision', zh: '之精准' },
+        'of Fortune': { es: 'de la Fortuna', en: 'of Fortune', zh: '之幸运' },
+        // Legacy zh aliases (old saves)
         '残忍的': { es: 'Cruel', en: 'Cruel', zh: '残忍的' },
         '野蛮的': { es: 'Salvaje', en: 'Savage', zh: '野蛮的' },
         '坚固的': { es: 'Robusto', en: 'Sturdy', zh: '坚固的' },
@@ -1410,6 +1475,7 @@ const I18N = {
         '全能之': { es: 'Omnipotente', en: 'of Balance', zh: '全能之' },
         '燃烧的': { es: 'Ardiente', en: 'Burning', zh: '燃烧的' },
         '雷电的': { es: 'Electrizante', en: 'Shocking', zh: '雷电的' },
+        '剧毒的': { es: 'Venenoso', en: 'Venomous', zh: '剧毒的' },
         '穿刺的': { es: 'Perforante', en: 'Piercing', zh: '穿刺的' },
         '击退的': { es: 'Repulsor', en: 'Repelling', zh: '击退的' },
         '减速的': { es: 'Ralentizador', en: 'Slowing', zh: '减速的' },
@@ -1419,10 +1485,26 @@ const I18N = {
         '之猎豹': { es: 'del Guepardo', en: 'of the Cheetah', zh: '之猎豹' },
         '之灵蛇': { es: 'de la Serpiente', en: 'of the Viper', zh: '之灵蛇' },
         '之雏鹰': { es: 'del Águila', en: 'of the Eagle', zh: '之雏鹰' },
+        '之吸血': { es: 'de la Sanguijuela', en: 'of the Leech', zh: '之吸血' },
+        '之急速': { es: 'de la Rapidez', en: 'of Haste', zh: '之急速' },
         '之智慧': { es: 'de la Sabiduría', en: 'of Wisdom', zh: '之智慧' },
         '之守卫': { es: 'del Guardián', en: 'of Warding', zh: '之守卫' },
+        '之力量': { es: 'de la Fuerza', en: 'of Strength', zh: '之力量' },
+        '之抗火': { es: 'de Resistencia al Fuego', en: 'of Fire Res', zh: '之抗火' },
+        '之抗冰': { es: 'de Resistencia al Frío', en: 'of Cold Res', zh: '之抗冰' },
+        '之抗电': { es: 'de Resistencia al Rayo', en: 'of Lightning Res', zh: '之抗电' },
+        '之抗毒': { es: 'de Resistencia al Veneno', en: 'of Poison Res', zh: '之抗毒' },
         '之坚韧': { es: 'de la Tenacidad', en: 'of Fortitude', zh: '之坚韧' },
-        '之毁灭': { es: 'de la Ruina', en: 'of Ruin', zh: '之毁灭' }
+        '之守护': { es: 'de la Protección', en: 'of Protection', zh: '之守护' },
+        '之毁灭': { es: 'de la Ruina', en: 'of Ruin', zh: '之毁灭' },
+        '之再生': { es: 'de la Regeneración', en: 'of Regeneration', zh: '之再生' },
+        '之冥想': { es: 'de la Meditación', en: 'of Meditation', zh: '之冥想' },
+        '之格挡': { es: 'de Bloqueo', en: 'of Block', zh: '之格挡' },
+        '之反射': { es: 'de Reflexión', en: 'of Reflection', zh: '之反射' },
+        '之神速': { es: 'Divina Velocidad', en: 'Divine Speed', zh: '之神速' },
+        '之铁壁': { es: 'de Muro de Hierro', en: 'of Iron Wall', zh: '之铁壁' },
+        '之精准': { es: 'de Precisión', en: 'of Precision', zh: '之精准' },
+        '之幸运': { es: 'de la Fortuna', en: 'of Fortune', zh: '之幸运' }
     },
 
     // Nombres de estadísticas
@@ -1503,8 +1585,30 @@ const I18N = {
         legend: { es: 'Leyenda Inmortal', en: 'Immortal Legend', zh: '不朽传奇' }
     },
 
-    // Jefes y Monstruos
+    // Jefes y Monstruos (claves canónicas EN + alias ES/zh legados)
     monsters: {
+        'Blood Raven': { es: 'Cuervo Sangriento', en: 'Blood Raven', zh: '血鸟' },
+        'The Countess': { es: 'La Condesa', en: 'The Countess', zh: '女伯爵' },
+        'The Butcher': { es: 'El Carnicero', en: 'The Butcher', zh: '屠夫' },
+        'Treehead WoodFist': { es: 'Puño de Madera', en: 'Treehead WoodFist', zh: '树头木拳' },
+        'Diablo': { es: 'Diablo', en: 'Diablo', zh: '暗黑破坏神' },
+        'Baal': { es: 'Baal', en: 'Baal', zh: '巴尔' },
+        'Duriel': { es: 'Duriel', en: 'Duriel', zh: '都瑞尔' },
+        'Zombie': { es: 'Zombi', en: 'Zombie', zh: '僵尸' },
+        'Skeleton': { es: 'Esqueleto', en: 'Skeleton', zh: '骷髅' },
+        'Ghost': { es: 'Fantasma', en: 'Ghost', zh: '幽灵' },
+        'Shaman': { es: 'Chamán', en: 'Shaman', zh: '萨满' },
+        'Imp': { es: 'Diablillo', en: 'Imp', zh: '小恶魔' },
+        'Mummy': { es: 'Momia', en: 'Mummy', zh: '木乃伊' },
+        'Vampire': { es: 'Vampiro', en: 'Vampire', zh: '吸血鬼' },
+        'Specter': { es: 'Espectro', en: 'Specter', zh: '幽灵恶鬼' },
+        'Elite Guard': { es: 'Guardián Élite', en: 'Elite Guard', zh: '精英守卫' },
+        'Fallen': { es: 'Corruptor', en: 'Fallen', zh: '沉沦魔' },
+        'Fallen Shaman': { es: 'Hechicero Corruptor', en: 'Fallen Shaman', zh: '沉沦魔巫师' },
+        'Skeleton Archer': { es: 'Esqueleto Arquero', en: 'Skeleton Archer', zh: '骷髅弓箭手' },
+        'Skeleton Warrior': { es: 'Esqueleto Guerrero', en: 'Skeleton Warrior', zh: '骷髅战士' },
+        'Shock Spirit': { es: 'Alma Eléctrica', en: 'Shock Spirit', zh: '闪电幽魂' },
+        // Alias zh legados (saves y datos viejos)
         '血鸟': { es: 'Cuervo Sangriento', en: 'Blood Raven', zh: '血鸟' },
         '女伯爵': { es: 'La Condesa', en: 'The Countess', zh: '女伯爵' },
         '屠夫': { es: 'El Carnicero', en: 'The Butcher', zh: '屠夫' },
@@ -1956,39 +2060,66 @@ const I18N = {
         if (!item) return "";
         const lang = this.currentLang;
 
-        // Si es poción o consumible
+        const translateBase = (name) => {
+            if (!name) return name;
+            const entry = this.items[name];
+            return entry ? (entry[lang] || entry.en) : name;
+        };
+
+        // Potions and consumables
         if (this.items[item.name]) {
             return this.items[item.name][lang] || this.items[item.name].en;
         }
 
-        // Si es único
+        // Unique items
         if (item.rarity === 4) {
-            const baseTranslated = this.items[item.name] ? (this.items[item.name][lang] || this.items[item.name].en) : item.name;
+            const baseTranslated = translateBase(item.name);
             const uniquePrefix = this.t('rarity_unique');
             return `${uniquePrefix} · ${baseTranslated}`;
         }
 
-        // Si es de conjunto (Set)
+        // Set items keep their canonical set-piece name
         if (item.rarity === 5 && item.displayName) {
             return item.displayName;
         }
 
-        // Si tiene nombre base traducible
-        let result = this.items[item.name] ? (this.items[item.name][lang] || this.items[item.name].en) : item.name;
+        let result = translateBase(item.name);
 
-        // Si tiene afijos mágicos
+        // Magic affixes: match legacy zh and canonical EN fragments alike
         if (item.displayName && item.displayName !== item.name) {
-            for (const [zhAffix, trans] of Object.entries(this.affixes)) {
-                if (item.displayName.includes(zhAffix)) {
-                    const affixName = trans[lang] || trans.en;
+            const affixEntries = Object.entries(this.affixes);
+            const suffixEntries = affixEntries.filter(([key]) => key.startsWith('of ') || key.startsWith('之'));
+            const prefixEntries = affixEntries.filter(([key]) => !key.startsWith('of ') && !key.startsWith('之'));
+            const isEnKey = (key) => /^[A-Za-z]/.test(key);
+            const affixName = (entry) => entry[1][lang] || entry[1].en;
+
+            // Suffixes: try to locate the affix at the end of the displayName
+            for (const [key, entry] of suffixEntries) {
+                const separator = isEnKey(key) ? ' ' + key : key;
+                if (item.displayName.endsWith(separator)) {
                     if (lang === 'es') {
-                        result = `${result} ${affixName}`;
+                        result = `${result} ${affixName([key, entry])}`;
                     } else if (lang === 'en') {
-                        result = `${affixName} ${result}`;
+                        result = `${affixName([key, entry])} ${result}`;
                     } else {
-                        result = `${zhAffix} ${result}`;
+                        result = `${entry.zh} ${result}`;
                     }
-                    break;
+                    return result;
+                }
+            }
+
+            // Prefixes: try to locate the affix at the start of the displayName
+            for (const [key, entry] of prefixEntries) {
+                const separator = isEnKey(key) ? key + ' ' : key;
+                if (item.displayName.startsWith(separator)) {
+                    if (lang === 'es') {
+                        result = `${result} ${affixName([key, entry])}`;
+                    } else if (lang === 'en') {
+                        result = `${affixName([key, entry])} ${result}`;
+                    } else {
+                        result = `${entry.zh} ${result}`;
+                    }
+                    return result;
                 }
             }
         }
@@ -2101,11 +2232,11 @@ const I18N = {
         if (!reward || !reward.name) return "";
         const lang = this.currentLang;
         const name = reward.name;
-        if (name.includes('200 金币')) return lang === 'es' ? '200 Oro' : (lang === 'en' ? '200 Gold' : name);
-        if (name.includes('12小时双倍金币')) return lang === 'es' ? '12h Doble Oro' : (lang === 'en' ? '12h Double Gold' : name);
-        if (name.includes('24小时双倍经验')) return lang === 'es' ? '24h Doble EXP' : (lang === 'en' ? '24h Double XP' : name);
-        if (name.includes('24小时双倍掉落')) return lang === 'es' ? '24h Doble Botín' : (lang === 'en' ? '24h Double Drops' : name);
-        if (name.includes('24小时三倍经验 + 套装装备')) return lang === 'es' ? '24h Triple EXP + Conjunto' : (lang === 'en' ? '24h Triple XP + Set Gear' : name);
+        if (name.includes('200 Gold') || name.includes('200 金币')) return lang === 'es' ? '200 Oro' : '200 Gold';
+        if (name.includes('12h Double Gold') || name.includes('12小时双倍金币')) return lang === 'es' ? '12h Doble Oro' : '12h Double Gold';
+        if (name.includes('24h Double XP') || name.includes('24小时双倍经验')) return lang === 'es' ? '24h Doble EXP' : '24h Double XP';
+        if (name.includes('24h Double Drops') || name.includes('24小时双倍掉落')) return lang === 'es' ? '24h Doble Botín' : '24h Double Drops';
+        if (name.includes('24h Triple XP + Set Gear') || name.includes('24小时三倍经验 + 套装装备')) return lang === 'es' ? '24h Triple EXP + Conjunto' : '24h Triple XP + Set Gear';
         return name;
     },
 
@@ -2136,35 +2267,52 @@ const I18N = {
 
         // Mapeo exacto
         const exactMap = {
+            'Welcome back to Rogue Encampment': 'notif_welcome_town',
             '欢迎回到罗格营地': 'notif_welcome_town',
+            'Inventory is full!': 'notif_inv_full',
             '背包已满！': 'notif_inv_full',
             '背包已满': 'notif_inv_full',
+            'Not enough gold': 'notif_no_gold',
             '金币不足': 'notif_no_gold',
+            'Not enough gold!': 'notif_no_gold',
             '金币不足！': 'notif_no_gold',
+            'Not enough mana': 'notif_no_mana',
             '法力不足': 'notif_no_mana',
+            'Not enough mana!': 'notif_no_mana',
             '法力不足！': 'notif_no_mana',
+            'Game saved': 'notif_game_saved',
             '游戏已保存': 'notif_game_saved',
+            'Enhancement succeeded!': 'notif_upgraded',
             '强化成功！': 'notif_upgraded',
             '强化成功!': 'notif_upgraded',
+            'Enhancement failed': 'notif_failed',
             '强化失败': 'notif_failed',
+            'Can only enhance equipment': 'forge_only_equipment',
             '只能强化装备': 'forge_only_equipment',
             '在罗格营地不能丢弃物品': lang === 'es' ? 'No puedes tirar objetos en el Campamento' : 'Cannot drop items in the encampment',
             '地狱之门已开启！': lang === 'es' ? '¡Las Puertas del Infierno se han abierto!' : 'The Gates of Hell have opened!',
+            'Returned from Hell to Camp': 'return_camp_from_hell',
             '已从地狱返回营地': 'return_camp_from_hell',
+            'Returned to Rogue Encampment': 'notif_welcome_town',
             '已返回罗格营地': 'notif_welcome_town',
+            'Returned to Camp': 'return_camp',
             '已返回营地': 'return_camp',
             '技能未学习：神圣护盾': lang === 'es' ? 'Habilidad no aprendida: Escudo Sagrado' : 'Skill not learned: Holy Shield',
             '技能还未学习！打开技能面板升级': lang === 'es' ? '¡Habilidad no aprendida! Abre el panel de habilidades' : 'Skill not learned! Open skill panel',
             '🎉 教程完成！祝你冒险愉快！': lang === 'es' ? '🎉 ¡Tutorial completado! ¡Buena suerte!' : '🎉 Tutorial completed! Have a great adventure!',
             '📋 新的每日任务已解锁！': lang === 'es' ? '📋 ¡Nueva misión diaria desbloqueada!' : '📋 New daily quest unlocked!',
+            'Slots are full': 'forge_slots_full',
             '槽位已满': 'forge_slots_full',
             '📋 每日任务完成！': lang === 'es' ? '📋 ¡Misión diaria completada!' : '📋 Daily quest completed!',
             '任务完成！': lang === 'es' ? '¡Misión completada!' : 'Quest completed!',
+            'Quest completed!': lang === 'es' ? '¡Misión completada!' : 'Quest completed!',
+            'No matching sacrifice items found': 'forge_no_matches',
             '没有找到匹配的祭品': 'forge_no_matches',
             '没有选中物品': lang === 'es' ? 'No hay objeto seleccionado' : 'No item selected',
             '深渊挑战中禁止使用自动战斗': lang === 'es' ? 'El combate automático está prohibido en el Abismo' : 'Auto battle is disabled in the Abyss',
             '🔥以此身躯，挑战深渊！禁自动战斗！': lang === 'es' ? '🔥 ¡Desafía el abismo con tus propias manos!' : '🔥 Face the abyss with your own hands!',
             '物品已添加到聊天框': lang === 'es' ? 'Objeto compartido en el chat' : 'Item linked to chat',
+            'Sacrifice must have the same rarity': 'forge_same_rarity',
             '祭品必须是相同稀有度': 'forge_same_rarity',
             '聊天系统未加载': lang === 'es' ? 'El chat aún no está cargado' : 'Chat system not loaded',
             '背包已整理': lang === 'es' ? 'Mochila organizada' : 'Inventory sorted',
@@ -2178,8 +2326,11 @@ const I18N = {
             '🎉 获得技能点！': lang === 'es' ? '🎉 ¡Punto de habilidad obtenido!' : '🎉 Skill point obtained!',
             '请先放入主装备': 'forge_no_main',
             '请先登录才能分享': lang === 'es' ? 'Inicia sesión para compartir' : 'Please log in to share',
+            'Akara healed you': 'npc_akara_healed',
             '阿卡拉治愈了你': 'npc_akara_healed',
+            'Not enough gold to revive!': 'revive_no_gold',
             '金币不足，无法复活！': 'revive_no_gold',
+            'You already have this talent!': 'talent_already_owned',
             '你已经拥有这个天赋了！': 'talent_already_owned',
             '⚡ 双倍经验延长1小时！': lang === 'es' ? '⚡ ¡Doble EXP extendido por 1 hora!' : '⚡ Double XP extended by 1 hour!',
             '⚡ 双倍经验已激活！持续1小时': lang === 'es' ? '⚡ ¡Doble EXP activado por 1 hora!' : '⚡ Double XP activated for 1 hour!'
@@ -2271,13 +2422,108 @@ const I18N = {
         if ((m = msg.match(/^金币不足！需要 ([\d,]+) (金|G)$/))) {
             return lang === 'es' ? `¡Oro insuficiente! Requiere ${m[1]} Oro` : `Not enough gold! Requires ${m[1]} G`;
         }
-        if ((m = msg.match(/^(.+)：(.+) \(永久\)$/))) {
+        // Patrones EN (mensajes runtime migrados a inglés)
+        if ((m = msg.match(/^🎁 Day (\d+) reward claimed: (.+)!$/))) {
+            const rName = this.getDailyRewardName({ name: m[2] });
+            return lang === 'es' ? `🎁 ¡Recompensa del Día ${m[1]} reclamada: ${rName}!` : `🎁 Day ${m[1]} reward claimed: ${rName}!`;
+        }
+        if ((m = msg.match(/^(?:⚡ )?Double XP activated for (\d+)h(?:our)?s?$/))) {
+            return lang === 'es' ? `⚡ ¡Doble EXP activado por ${m[1]} horas!` : `⚡ Double XP activated for ${m[1]}h!`;
+        }
+        if ((m = msg.match(/^💰 Double Gold activated for (\d+)h$/))) {
+            return lang === 'es' ? `💰 ¡Doble Oro activado por ${m[1]} horas!` : `💰 Double Gold activated for ${m[1]}h!`;
+        }
+        if ((m = msg.match(/^🎁 Double Drops activated for (\d+)h$/))) {
+            return lang === 'es' ? `🎁 ¡Doble Botín activado por ${m[1]} horas!` : `🎁 Double Drops activated for ${m[1]}h!`;
+        }
+        if ((m = msg.match(/^🔥 Triple XP activated for (\d+)h$/))) {
+            return lang === 'es' ? `🔥 ¡Triple EXP activado por ${m[1]} horas!` : `🔥 Triple XP activated for ${m[1]}h!`;
+        }
+        if ((m = msg.match(/^Dropped (.+) to make room$/))) {
+            return lang === 'es' ? `Descartaste ${this.getItemDisplayName({ name: m[1] })} para hacer espacio` : `Dropped ${this.getItemDisplayName({ name: m[1] })} to make room`;
+        }
+        if ((m = msg.match(/^Dropped (.+)$/))) {
+            return lang === 'es' ? `Descartaste ${this.getItemDisplayName({ name: m[1] })}` : `Dropped ${this.getItemDisplayName({ name: m[1] })}`;
+        }
+        if ((m = msg.match(/^Stash expanded! Current capacity: (\d+) slots$/))) {
+            return lang === 'es' ? `¡Alijo ampliado! Capacidad actual: ${m[1]} casillas` : `Stash expanded! Current capacity: ${m[1]} slots`;
+        }
+        if ((m = msg.match(/^Abyss Floor (\d+)$/))) {
+            return lang === 'es' ? `Abismo Piso ${m[1]}` : `Abyss Floor ${m[1]}`;
+        }
+        if ((m = msg.match(/^Defeated (.+)!$/))) {
+            return lang === 'es' ? `¡Derrotaste a ${this.getMonsterName(m[1])}!` : `Defeated ${this.getMonsterName(m[1])}!`;
+        }
+        if ((m = msg.match(/^📖 (Boss|Monster) discovered: (.+)$/))) {
+            const kind = m[1] === 'Boss' ? (lang === 'es' ? 'Jefe' : 'Boss') : (lang === 'es' ? 'Monstruo' : 'Monster');
+            return `📖 ${kind}: ${this.getMonsterName(m[2])}`;
+        }
+        if ((m = msg.match(/^📚 Set piece discovered: (.+) \((\d+)\/(\d+)\)$/))) {
+            return `📚 ${lang === 'es' ? 'Pieza de conjunto descubierta:' : 'Set piece discovered:'} ${this.getItemDisplayName({ name: m[1] })} (${m[2]}/${m[3]})`;
+        }
+        if ((m = msg.match(/^Revived! Spent ([\d,]+)/))) {
+            return this.t('revive_success', { cost: m[1] });
+        }
+        if ((m = msg.match(/^Looted: (.+)$/))) {
+            return lang === 'es' ? `Recogido: ${this.getItemDisplayName({ name: m[1] })}` : `Looted: ${this.getItemDisplayName({ name: m[1] })}`;
+        }
+        if ((m = msg.match(/^Auto-filled (\d+) sacrifice item\(s\)$/))) {
+            return this.t('forge_autofill_done', { count: m[1] });
+        }
+        if ((m = msg.match(/^Spent ([\d,]+) G - Bought (.+)$/))) {
+            return lang === 'es' ? `Gastaste ${m[1]} Oro - Compraste ${this.getItemDisplayName({ name: m[2] })}` : `Spent ${m[1]} G - Bought ${this.getItemDisplayName({ name: m[2] })}`;
+        }
+        if ((m = msg.match(/^Spent ([\d,]+) G$/))) {
+            return lang === 'es' ? `Gastaste ${m[1]} Oro` : `Spent ${m[1]} G`;
+        }
+        if ((m = msg.match(/^🏆 Acquired set piece: (.+)$/))) {
+            return lang === 'es' ? `🏆 ¡Obtuviste pieza de conjunto: ${this.getItemDisplayName({ name: m[1] })}!` : `🏆 Acquired set piece: ${this.getItemDisplayName({ name: m[1] })}!`;
+        }
+        if ((m = msg.match(/^Entering Floor (\d+)$/))) {
+            return lang === 'es' ? `Entrando al Piso ${m[1]}` : `Entering Floor ${m[1]}`;
+        }
+        if ((m = msg.match(/^Not enough gold! Requires ([\d,]+) (?:G|gold)$/))) {
+            return lang === 'es' ? `¡Oro insuficiente! Requiere ${m[1]} Oro` : `Not enough gold! Requires ${m[1]} G`;
+        }
+        if ((m = msg.match(/^(.+): (.+) \(Permanent\)$/))) {
             const bName = this.getBlessingName(m[1]);
             return lang === 'es' ? `${bName}: ${m[2]} (Permanente)` : `${bName}: ${m[2]} (Permanent)`;
+        }
+        // Boss spawn / quest-target warnings
+        if ((m = msg.match(/^Warning: (.+) detected!$/))) {
+            const bName = this.getMonsterName(m[1]);
+            return lang === 'es' ? `Advertencia: ¡${bName} detectado!` : `Warning: ${bName} detected!`;
+        }
+        if ((m = msg.match(/^A mighty foe approaches: (.+)!$/))) {
+            const bName = this.getMonsterName(m[1]);
+            return lang === 'es' ? `¡Un enemigo poderoso se acerca: ${bName}!` : `A mighty foe approaches: ${bName}!`;
+        }
+        // Boss difficulty prefixes (EN runtime names, legacy ES/zh saves)
+        if ((m = msg.match(/^(?:(Nightmare|Hell|Torment \d+|Pesadilla|Infierno|Tormento \d+)\s+)?(.+)$/)) && /^(Nightmare|Hell|Torment|Pesadilla|Infierno|Tormento)/.test(msg)) {
+            const prefixMap = {
+                'Nightmare': lang === 'es' ? 'Pesadilla' : (lang === 'en' ? 'Nightmare' : '噩梦'),
+                'Hell': lang === 'es' ? 'Infierno' : (lang === 'en' ? 'Hell' : '地狱'),
+                'Pesadilla': lang === 'es' ? 'Pesadilla' : (lang === 'en' ? 'Nightmare' : '噩梦'),
+                'Infierno': lang === 'es' ? 'Infierno' : (lang === 'en' ? 'Hell' : '地狱')
+            };
+            const tormented = m[1] && /^(Torment|Tormento)/.test(m[1]);
+            const baseName = this.getMonsterName(m[2]);
+            if (tormented) {
+                const n = m[1].replace(/^Torment(o)?\s*/, '').trim() || '1';
+                return lang === 'es' ? `Tormento ${n} ${baseName}` : (lang === 'en' ? `Torment ${n} ${baseName}` : `折磨${n} ${baseName}`);
+            }
+            if (m[1] && prefixMap[m[1]]) return `${prefixMap[m[1]]} ${baseName}`;
+            return baseName;
+        }
+
+        // Aviso de logro (banner elegante)
+        if ((m = msg.match(/^Achievement completed: (.+)!$/)) || (m = msg.match(/^成就完成：(.+)！$/))) {
+            return lang === 'es' ? `¡Logro completado: ${m[1]}!` : `Achievement completed: ${m[1]}!`;
         }
 
         return msg;
     },
+
 
     // Traducir descripción de misión
     getQuestDesc(q) {
@@ -2354,6 +2600,17 @@ const I18N = {
         if (!reward) return "";
         const lang = this.currentLang;
         const rewardMap = {
+            '1 Skill Point': { es: '1 Punto de Habilidad', en: '1 Skill Point', zh: '1 技能点' },
+            '2 Skill Points': { es: '2 Puntos de Habilidad', en: '2 Skill Points', zh: '2 技能点' },
+            'Rare Ring': { es: 'Anillo Raro', en: 'Rare Ring', zh: '稀有戒指' },
+            '500 Gold': { es: '500 Oro', en: '500 Gold', zh: '500 金币' },
+            '1000 Gold': { es: '1000 Oro', en: '1000 Gold', zh: '1000 金币' },
+            'Random Rune': { es: 'Runa Aleatoria', en: 'Random Rune', zh: '随机符文' },
+            'Unique Equipment': { es: 'Equipo Único', en: 'Unique Equipment', zh: '暗金装备' },
+            'Unique Accessory': { es: 'Accesorio Único', en: 'Unique Accessory', zh: '暗金饰品' },
+            'Legendary Equipment': { es: 'Equipo Legendario', en: 'Legendary Equipment', zh: '传奇装备' },
+            'Ultimate Divine Relic': { es: 'Reliquia Divina Final', en: 'Ultimate Divine Relic', zh: '终极神装' },
+            // Alias legados zh (saves antiguos)
             '1 技能点': { es: '1 Punto de Habilidad', en: '1 Skill Point', zh: '1 技能点' },
             '2 技能点': { es: '2 Puntos de Habilidad', en: '2 Skill Points', zh: '2 技能点' },
             '稀有戒指': { es: 'Anillo Raro', en: 'Rare Ring', zh: '稀有戒指' },
@@ -2372,9 +2629,11 @@ const I18N = {
 
         let res = reward;
         if (lang === 'es') {
-            res = res.replace('金币', ' Oro').replace('& 1 技能点', '& 1 Punto de Habilidad').replace('& 随机装备', '& Equipo Aleatorio');
-        } else if (lang === 'en') {
-            res = res.replace('金币', ' Gold').replace('& 1 技能点', '& 1 Skill Point').replace('& 随机装备', '& Random Equipment');
+            res = res.replace(/(\d+) Gold/, '$1 Oro').replace('& 1 Skill Point', '& 1 Punto de Habilidad')
+                     .replace(/& Random Equipment/, '& Equipo Aleatorio')
+                     .replace('金币', ' Oro').replace('& 1 技能点', '& 1 Punto de Habilidad').replace('& 随机装备', '& Equipo Aleatorio');
+        } else if (lang === 'zh') {
+            res = res.replace(/(\d+) Gold/, '$1金币').replace('& 1 Skill Point', '& 1技能点').replace('& Random Equipment', '&随机装备');
         }
         return res;
     }

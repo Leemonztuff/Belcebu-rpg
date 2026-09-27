@@ -1,8 +1,8 @@
-// ========== ui-panels.js - UI 面板管理系统 ==========
-// 负责面板的打开/关闭、层级管理、位置计算
-// 依赖全局函数: GSAPAnims.panelIn, hideTooltip, renderInventory, updateSkillsUI 等
+// ========== ui-panels.js - UI panel management system ==========
+// Owns panel open/close, z-order management and position calc
+// Depends on globals: GSAPAnims.panelIn, hideTooltip, renderInventory, updateSkillsUI, etc.
 
-// ========== 面板管理器 ==========
+// ========== Panel manager ==========
 const panelManager = {
   panels: {
     'stats': { id: 'stats-panel', group: 'left', top: 10, baseTop: 10, opened: false, zIndex: 0 },
@@ -19,52 +19,52 @@ const panelManager = {
   },
   maxZIndex: 100,
 
-  // 动态计算面板位置
+  // Compute panel position dynamically
   calculatePosition(panelId) {
     const panel = this.panels[panelId];
     const element = document.getElementById(panel.id);
 
-    // 计算同组中已打开面板的数量
+    // Count open panels in the same group
     const openedInGroup = Object.values(this.panels).filter(
       p => p.group === panel.group && p.opened && p.id !== panel.id
     ).length;
 
-    // 根据同组打开面板数量动态调整位置
-    const offset = openedInGroup * 8; // 每个面板错开8%
+    // Adjust position dynamically by the group's open panel count
+    const offset = openedInGroup * 8; // Stagger panels by 8%
     const newTop = panel.baseTop + offset;
 
-    // 对于center组但没有left属性的面板（如成就面板），保留CSS居中设置
+    // For center-group panels without a left property (e.g. achievements), keep CSS centering
     if (panel.group === 'center' && !panel.left) {
-      // 不修改位置，让CSS的transform居中生效
+      // Do not touch position; let the CSS transform centering work
       return newTop;
     }
 
     element.style.top = newTop + '%';
 
-    // 对于中间组的面板,水平错开
+    // For middle-group panels, stagger horizontally
     if (panel.group === 'center' && panel.left) {
-      const centerOffset = (openedInGroup % 2) * 50 - 25; // 左右错开
+      const centerOffset = (openedInGroup % 2) * 50 - 25; // Stagger left/right
       element.style.left = (panel.left + centerOffset) + 'px';
     }
 
-    // 小屏适配：小屏幕让CSS居中生效，不做位置调整
+    // Small-screen fit: on small screens keep CSS centering, no position adjustment
     if (window.innerWidth < 768) return newTop;
 
-    // 大屏确保面板在可视区域内
+    // On large screens ensure panels stay inside the viewport
     requestAnimationFrame(() => {
       const rect = element.getBoundingClientRect();
       const padding = 10;
-      // 右边超出
+      // Overflows right
       if (rect.right > window.innerWidth - padding) {
         element.style.left = Math.max(padding, window.innerWidth - rect.width - padding) + 'px';
         element.style.right = 'auto';
       }
-      // 入场动画会临时缩放、下移；使用最终布局高度，避免动画结束后底部越界。
+      // The entrance animation temporarily scales and shifts down; use final layout height to avoid bottom overflow after the animation.
       element.style.top = Math.max(padding, Math.min(
         window.innerHeight * newTop / 100,
         window.innerHeight - element.offsetHeight - padding
       )) + 'px';
-      // 左边超出
+      // Overflows left
       if (rect.left < padding) {
         element.style.left = padding + 'px';
         element.style.right = 'auto';
@@ -74,7 +74,7 @@ const panelManager = {
     return newTop;
   },
 
-  // 设置面板在最上层
+  // Settings panel on top
   bringToFront(panelId) {
     const panel = this.panels[panelId];
     const element = document.getElementById(panel.id);
@@ -84,7 +84,7 @@ const panelManager = {
     element.style.zIndex = this.maxZIndex;
   },
 
-  // 打开面板
+  // Open panel
   open(panelId) {
     const panel = this.panels[panelId];
     panel.opened = true;
@@ -92,7 +92,7 @@ const panelManager = {
     this.bringToFront(panelId);
   },
 
-  // 关闭面板
+  // Close panel
   close(panelId) {
     const panel = this.panels[panelId];
     panel.opened = false;
@@ -100,23 +100,23 @@ const panelManager = {
   }
 };
 
-// 改变窗口大小后，已打开面板也必须重新约束到新的可视区域。
+// After window resize, open panels must be re-constrained to the new viewport.
 window.addEventListener('resize', () => {
   for (const [id, panel] of Object.entries(panelManager.panels)) {
     if (panel.opened) panelManager.calculatePosition(id);
   }
 });
 
-// ========== 辅助函数 ==========
+// ========== Helper functions ==========
 
-// 检查是否有任何重要面板打开（排除自动战斗设置面板）
+// Check whether any important panel is open (excluding auto battle settings)
 function isAnyPanelOpen() {
   return Object.entries(panelManager.panels).some(
     ([key, p]) => p.opened && key !== 'auto-battle'
   );
 }
 
-// 检测鼠标是否悬停在UI元素上
+// Detect whether the mouse hovers a UI element
 function isHoveringUI() {
   if (typeof mouse === 'undefined') return false;
   if (mouse.y > window.innerHeight - 140) return true;
@@ -135,26 +135,26 @@ function isHoveringUI() {
   return false;
 }
 
-// ========== 面板切换 ==========
+// ========== Panel switching ==========
 
 function togglePanel(id) {
   const panelElement = document.getElementById(id + '-panel');
   const isOpening = panelElement.style.display !== 'block';
 
   if (isOpening) {
-    // 打开面板
+    // Open panel
     panelElement.style.display = 'block';
-    // 使用 GSAP 播放弹入动画
+    // Play the pop-in animation with GSAP
     if (typeof GSAPAnims !== 'undefined') {
       GSAPAnims.panelIn(panelElement, 'bottom');
     }
 
-    // 使用面板管理器动态调整位置和层级
+    // Use the panel manager for dynamic position and z-order
     if (panelManager && panelManager.panels[id]) {
       panelManager.open(id);
     }
 
-    // 根据面板类型调用相应的UI更新函数
+    // Call the matching UI update function by panel type
     const updateFunctions = {
       'inventory': typeof renderInventory !== 'undefined' ? renderInventory : null,
       'skills': typeof updateSkillsUI !== 'undefined' ? updateSkillsUI : null,
@@ -167,7 +167,7 @@ function togglePanel(id) {
       'waypoint': typeof renderWaypointPanel !== 'undefined' ? renderWaypointPanel : null,
       'set-collection': typeof renderSetCollection !== 'undefined' ? () => {
         renderSetCollection();
-        // 如果怪物tab是激活状态，也渲染怪物图鉴
+        // If the monster tab is active, render the monster codex too
         const monsterTab = document.querySelector('.codex-tab[data-tab="monsters"]');
         if (monsterTab && monsterTab.classList.contains('active') && typeof renderMonsterCodex !== 'undefined') {
           renderMonsterCodex();
@@ -179,20 +179,20 @@ function togglePanel(id) {
       updateFunctions[id]();
     }
   } else {
-    // 关闭面板
+    // Close panel
     panelElement.style.display = 'none';
 
-    // 隐藏tooltip，避免残留
+    // Hide the tooltip to avoid leftovers
     if (typeof hideTooltip !== 'undefined') {
       hideTooltip();
     }
 
-    // 清除卖出确认状态
+    // Clear sell-confirm state
     if (typeof pendingSellConfirmIdx !== 'undefined') {
       pendingSellConfirmIdx = -1;
     }
 
-    // 更新面板管理器状态
+    // Update panel manager state
     if (panelManager && panelManager.panels[id]) {
       panelManager.close(id);
     }

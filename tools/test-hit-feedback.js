@@ -8,8 +8,8 @@ assert.equal(scope.damageNumbers.length,1);assert.equal(scope.damageNumbers[0].v
 scope.createDamageNumber(10,10,25,'orange',0,target);assert.equal(scope.damageNumbers.length,2,'暴击单独突出');
 scope.createDamageNumber(10,10,9,'white',0,{});assert.equal(scope.damageNumbers.length,3,'不能混合不同怪物');
 now+=150;scope.createDamageNumber(10,10,7,'white',0,target);assert.equal(scope.damageNumbers.length,4,'下一时间窗重新显示');
-scope.createDamageNumber(0,0,'幸运!','white');assert.equal(scope.damageNumbers.length,4);
-scope.createDamageNumber(0,0,'冻结!','blue');assert.equal(scope.damageNumbers.length,5,'保留控制提示');
+scope.createDamageNumber(0,0,'Lucky!','white');assert.equal(scope.damageNumbers.length,4);
+scope.createDamageNumber(0,0,'Chilled!','blue');assert.equal(scope.damageNumbers.length,5,'keep control hints');
 scope.createImpactParticles(10,10,'#c9bb9f',50,0);assert.equal(scope.particles.length,5);assert(scope.particles.every(p=>p.type==='impact_facet'&&p.life<.43));
 let triangles=0;const ctx=new Proxy({}, {get:(_,key)=>key==='fill'?()=>triangles++:(...args)=>{assert(args.every(v=>typeof v!=='number'||Number.isFinite(v)),'投影坐标必须有限');}});
 for(const p of scope.particles)scope.drawImpactFacet(ctx,p);assert(triangles>=40,'碎片必须由有明暗层次的三角面构成');

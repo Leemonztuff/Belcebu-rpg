@@ -33,9 +33,9 @@ assert.equal(bounds(0).maxY, 123, '脚底落在124px边界');
 const pixel = atlas.getContext('2d').getImageData(192, 80, 1, 1).data;
 assert.deepEqual(Array.from(pixel), [255,0,255,255], '紫色细节不可抠除');
 ctx.fillStyle = '#fff';ctx.fillRect(0,0,80,40);
-assert.throws(()=>scope.art.normalizeAtlas(source,2,1), /透明/, '假透明图片必须拒绝');
+assert.throws(()=>scope.art.normalizeAtlas(source,2,1), /alpha channel/, 'fake-transparent image must be rejected');
 const empty = createCanvas(80,40);
-assert.throws(()=>scope.art.normalizeAtlas(empty,2,1), /空帧/, '缺帧必须拒绝');
+assert.throws(()=>scope.art.normalizeAtlas(empty,2,1), /empty frame/, 'missing frames must be rejected');
 console.log('PASS: 美术图集透明度、锚点、共享缩放与缺帧校验');
 const irregular=createCanvas(80,80), irregularContext=irregular.getContext('2d');
 const staggered=createCanvas(80,80), staggeredContext=staggered.getContext('2d');
@@ -46,7 +46,7 @@ irregularContext.fillStyle='#fff';
 for(const x of [10,50]) {irregularContext.fillRect(x,5,10,20);irregularContext.fillRect(x,34,10,20);}
 assert.doesNotThrow(()=>scope.art.normalizeAtlas(irregular,2,2),'等分线穿过人物时应使用附近透明留白');
 irregularContext.fillRect(10,0,10,80);
-assert.throws(()=>scope.art.normalizeAtlas(irregular,2,2),/交叠/,'连通跨行内容不可截断后接入');
+assert.throws(()=>scope.art.normalizeAtlas(irregular,2,2),/overlap/, 'connected cross-row content must not be cut and grafted');
 (async()=>{
     for(const [key,definition] of Object.entries(scope.art.definitions)) {
         const image=await loadImage(path.join(__dirname,'..',definition.file));

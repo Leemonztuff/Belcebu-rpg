@@ -1,4 +1,4 @@
-// 仅创建交易收据集合，不改现有摊位与销售记录。
+// Only creates the trade receipt collection; does not alter existing stall slots or sales logs.
 migrate(function (app) {
   app.save(new Collection({
     name: 'market_receipts', type: 'base',
@@ -12,6 +12,6 @@ migrate(function (app) {
     indexes: ['CREATE UNIQUE INDEX idx_market_receipt_request ON market_receipts (request_id)']
   }));
 }, function () {
-  // 收据删除会破坏未交付交易的恢复，不允许自动回滚销毁。
-  throw new Error('交易收据必须保留；请通过前滚修复市场版本');
+  // Deleting receipts would break refunds for undelivered trades; automatic rollback destruction is not allowed.
+  throw new Error('Trade receipts must be kept; fix the market schema via forward migration');
 });

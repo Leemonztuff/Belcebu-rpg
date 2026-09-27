@@ -1,4 +1,4 @@
-// 技能树分支的战斗状态只在当前楼层有效，不写入存档或敌人对象池。
+// Skill tree branch combat state is floor-scoped only; never written to saves or the enemy pool.
 const SkillBranchSystem = {
     states: new Map(), areas: [], volleys: [], charge: null, arcShield: 0, arcShieldImmuneCC: false,
     reset() {
@@ -25,7 +25,7 @@ const SkillBranchSystem = {
     deal(e, amount, element, bonus = {}) {
         if (e.dead) return 0;
         const before = e.hp;
-        // 箭矢延续基础多重射击的数值伤害语义，不因学习分支额外扣护甲。
+// Arrows keep base multishot's numeric damage semantics; learning the branch doesn't subtract extra armor.
         takeDamage(e, element === 'physical' ? amount : {[element]: amount}, true);
         const dealt = Math.max(0, before - Math.max(0,e.hp));
         if (element === 'lightning' && bonus.arcShield && dealt > 0) {
@@ -53,7 +53,7 @@ const SkillBranchSystem = {
     absorb(damage) {
         const absorbed = Math.min(damage, this.arcShield);
         this.arcShield -= absorbed;
-        if (absorbed > 0) createDamageNumber(player.x,player.y-45,`${skillTreeText('thunder','stage3.shield.name','电弧护盾')}-${Math.ceil(absorbed)}`,'#66ccff');
+        if (absorbed > 0) createDamageNumber(player.x,player.y-45,`${skillTreeText('thunder','stage3.shield.name','Arcane Shield')}-${Math.ceil(absorbed)}`,'#66ccff');
         return damage - absorbed;
     },
     controlMultiplier() {
@@ -212,7 +212,7 @@ const SkillBranchSystem = {
         } else if (skill==='thunder') {
             const damage=Math.floor((30+(level-1)*15)*(1+player.ene*0.02));
             this.lightningHit(target,damage,bonus);createLightningEffect(target.x,target.y);
-            // 保留原有阶段额外落雷与等级连锁，再加入分支目标数和衰减强化。
+            // Keep the original per-stage extra lightning strikes and level chaining, then add branch target count and falloff boosts.
             const visualTargets=[target,...this.nearby(target.x,target.y,120,target).slice(0,tree.stage3.level>0?3:1)];
             for (const e of visualTargets.slice(1)) {this.lightningHit(e,damage*0.7,bonus,damage);createLightningEffect(e.x,e.y);}
             const ratios=level>=10?[0.6,0.3,0.15]:level>=5?[0.5,0.25]:level>=3?[0.5]:level>=2?[0.4]:[];
@@ -225,13 +225,13 @@ const SkillBranchSystem = {
             }
             if (bonus.stormMode) this.areas.push({x:target.x,y:target.y,radius:120,time:bonus.stormDuration,tick:0,interval:bonus.stormInterval,damage,element:'lightning',bonus});
             emitThunderVisualGrowth(target,visualTargets,getSkillVisualGrowthTier('thunder'));
-            // 与基础雷电共用落雷声，每次施法播放一次，连锁目标不重复叠音。
+// Shares the base lightning strike sound, played once per cast; chain targets never stack audio.
             AudioSys.play('thunder_impact');
         } else {
             const cast={x:player.x,y:player.y,angle,damage:player.damage[0]*0.8,level,bonus};
             if (bonus.snipeMode) {
                 this.charge={...cast,time:0,manual:mouse.rightDown || (typeof touchState!=='undefined' && touchState.isLongPress)};
-                createFloatingText(player.x,player.y-45,'狙击蓄力…','#ccff88');
+                createFloatingText(player.x,player.y-45,'Sniping charge…','#ccff88');
             } else if (bonus.barrageMode) {
                 const ratio=(1+bonus.barrageDamage)/bonus.barrageWaves;
                 this.volley(cast,ratio);

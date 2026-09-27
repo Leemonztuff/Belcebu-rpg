@@ -1,12 +1,12 @@
-// ========== 每日任务系统 ==========
-// 链式解锁：完成一个才显示下一个
-// 目标数值根据玩家等级动态计算
+// ========== Daily quest system ==========
+// Chained unlock: finish one before the next shows
+// Target values scale dynamically with player level
 
 const DailyQuestSystem = {
-    // 倒计时定时器
+// Countdown timer
     _countdownTimer: null,
 
-    // 启动倒计时定时器
+// Start the countdown timer
     startCountdown() {
         this.stopCountdown();
         this._countdownTimer = setInterval(() => {
@@ -25,7 +25,7 @@ const DailyQuestSystem = {
         }, 1000);
     },
 
-    // 停止倒计时定时器
+// Stop the countdown timer
     stopCountdown() {
         if (this._countdownTimer) {
             clearInterval(this._countdownTimer);
@@ -33,33 +33,33 @@ const DailyQuestSystem = {
         }
     },
 
-    // 任务模板（目标值用函数计算）
-    // desc 保留中文原文，写入存档并作为 dailyQuests 表缺失时的兜底；展示时统一走 I18N.trPath('dailyQuests', type, 'desc', ...)
-    // 简单任务
+// Quest templates (targets computed by functions)
+    // desc keeps the original text for saves and as dailyQuests fallback; display always goes through I18N.trPath('dailyQuests', type, 'desc', ...)
+// Simple quest
     EASY_TEMPLATES: [
-        { type: 'kill', calcTarget: lvl => 50 + lvl * 10, desc: lvl => `击杀${50 + lvl * 10}只怪物`, rewardMult: 1 },
-        { type: 'collect_gold', calcTarget: lvl => 200 + lvl * 50, desc: lvl => `收集${200 + lvl * 50}金币`, rewardMult: 0.8 },
-        { type: 'collect_item', calcTarget: lvl => 5 + Math.floor(lvl / 3), desc: lvl => `拾取${5 + Math.floor(lvl / 3)}件装备`, rewardMult: 1 },
-        { type: 'use_potion', calcTarget: lvl => 2 + Math.floor(lvl / 5), desc: lvl => `使用${2 + Math.floor(lvl / 5)}瓶药水`, rewardMult: 0.8 },
+        { type: 'kill', calcTarget: lvl => 50 + lvl * 10, desc: lvl => `Slay ${50 + lvl * 10} monsters`, rewardMult: 1 },
+        { type: 'collect_gold', calcTarget: lvl => 200 + lvl * 50, desc: lvl => `Collect ${200 + lvl * 50} gold`, rewardMult: 0.8 },
+        { type: 'collect_item', calcTarget: lvl => 5 + Math.floor(lvl / 3), desc: lvl => `Pick up ${5 + Math.floor(lvl / 3)} items`, rewardMult: 1 },
+        { type: 'use_potion', calcTarget: lvl => 2 + Math.floor(lvl / 5), desc: lvl => `Use ${2 + Math.floor(lvl / 5)} potions`, rewardMult: 0.8 },
     ],
 
-    // 中等任务
+    // inetc.quest
     MEDIUM_TEMPLATES: [
-        { type: 'kill', calcTarget: lvl => 150 + lvl * 20, desc: lvl => `击杀${150 + lvl * 20}只怪物`, rewardMult: 1.5 },
-        { type: 'kill_elite', calcTarget: lvl => 3 + Math.floor(lvl / 5), desc: lvl => `击杀${3 + Math.floor(lvl / 5)}只精英怪`, rewardMult: 1.8 },
-        { type: 'kill_boss', calcTarget: lvl => 1 + Math.floor(lvl / 10), desc: lvl => `击杀${1 + Math.floor(lvl / 10)}个BOSS`, rewardMult: 2 },
-        { type: 'collect_gold', calcTarget: lvl => 800 + lvl * 100, desc: lvl => `收集${800 + lvl * 100}金币`, rewardMult: 1.2 },
+        { type: 'kill', calcTarget: lvl => 150 + lvl * 20, desc: lvl => `Slay ${150 + lvl * 20} monsters`, rewardMult: 1.5 },
+        { type: 'kill_elite', calcTarget: lvl => 3 + Math.floor(lvl / 5), desc: lvl => `Slay ${3 + Math.floor(lvl / 5)} elite monsters`, rewardMult: 1.8 },
+        { type: 'kill_boss', calcTarget: lvl => 1 + Math.floor(lvl / 10), desc: lvl => `Slay ${1 + Math.floor(lvl / 10)} bosses`, rewardMult: 2 },
+        { type: 'collect_gold', calcTarget: lvl => 800 + lvl * 100, desc: lvl => `Collect ${800 + lvl * 100} gold`, rewardMult: 1.2 },
     ],
 
-    // 困难任务（奖励技能点）
+// Hard quest (skill point reward)
     HARD_TEMPLATES: [
-        { type: 'kill', calcTarget: lvl => 300 + lvl * 30, desc: lvl => `击杀${300 + lvl * 30}只怪物`, rewardMult: 2 },
-        { type: 'kill_elite', calcTarget: lvl => 8 + Math.floor(lvl / 3), desc: lvl => `击杀${8 + Math.floor(lvl / 3)}只精英怪`, rewardMult: 2.2 },
-        { type: 'kill_boss', calcTarget: lvl => 3 + Math.floor(lvl / 5), desc: lvl => `击杀${3 + Math.floor(lvl / 5)}个BOSS`, rewardMult: 2.5 },
-        { type: 'clear_floor', calcTarget: lvl => 3 + Math.floor(lvl / 5), desc: lvl => `通关${3 + Math.floor(lvl / 5)}层地牢`, rewardMult: 2 },
+        { type: 'kill', calcTarget: lvl => 300 + lvl * 30, desc: lvl => `Slay ${300 + lvl * 30} monsters`, rewardMult: 2 },
+        { type: 'kill_elite', calcTarget: lvl => 8 + Math.floor(lvl / 3), desc: lvl => `Slay ${8 + Math.floor(lvl / 3)} elite monsters`, rewardMult: 2.2 },
+        { type: 'kill_boss', calcTarget: lvl => 3 + Math.floor(lvl / 5), desc: lvl => `Slay ${3 + Math.floor(lvl / 5)} bosses`, rewardMult: 2.5 },
+        { type: 'clear_floor', calcTarget: lvl => 3 + Math.floor(lvl / 5), desc: lvl => `Clear ${3 + Math.floor(lvl / 5)} dungeon floors`, rewardMult: 2 },
     ],
 
-    // 根据等级计算奖励
+// Compute rewards by level
     calcReward(lvl, mult, isHard = false) {
         const baseGold = 50 + lvl * 20;
         const baseXp = 30 + lvl * 15;
@@ -70,30 +70,30 @@ const DailyQuestSystem = {
         };
     },
 
-    // 获取今日日期字符串
+// Get today's date string
     getTodayStr() {
         return getTodayDateString();
     },
 
-    // 初始化/检查重置
+// Init / reset check
     checkAndReset() {
         const today = this.getTodayStr();
         const lvl = player.lvl || 1;
 
-        // 初始化或重置
+// Init or reset
         if (!player.dailyQuests || player.dailyQuests.date !== today) {
             player.dailyQuests = {
                 date: today,
                 generatedAtLevel: lvl,
                 quests: this.generateQuests(lvl)
             };
-            console.log('[每日任务] 已重置:', player.dailyQuests);
+            console.log('[Daily Quest] reset:', player.dailyQuests);
             return true;
         }
         return false;
     },
 
-    // 生成每日任务
+    // generatedaily quest
     generateQuests(lvl) {
         const pick = arr => arr[Math.floor(Math.random() * arr.length)];
 
@@ -126,21 +126,21 @@ const DailyQuestSystem = {
         ];
     },
 
-    // 获取当前活跃的任务
+// Get the currently active quest
     getCurrentQuest() {
         this.checkAndReset();
         if (!player.dailyQuests || !player.dailyQuests.quests) return null;
         return player.dailyQuests.quests.find(q => q.unlocked && !q.claimed);
     },
 
-    // 检查是否有可领取的奖励
+// Check whether a reward is claimable
     hasClaimableReward() {
         this.checkAndReset();
         if (!player.dailyQuests || !player.dailyQuests.quests) return false;
         return player.dailyQuests.quests.some(q => q.completed && !q.claimed);
     },
 
-    // 更新任务进度
+// Update quest progress
     updateProgress(type, amount = 1) {
         this.checkAndReset();
         if (!player.dailyQuests || !player.dailyQuests.quests) return;
@@ -152,7 +152,7 @@ const DailyQuestSystem = {
 
         if (currentQuest.progress >= currentQuest.target) {
             currentQuest.completed = true;
-            showNotification('📋 每日任务完成！');
+            showNotification('📋 Daily quest completed!');
             AudioSys.play('quest');
             if (typeof updateMenuIndicators === 'function') updateMenuIndicators();
         }
@@ -161,7 +161,7 @@ const DailyQuestSystem = {
         this.updateTracker();
     },
 
-    // 领取任务奖励并解锁下一个
+// Claim the quest reward and unlock the next
     claimReward(questId) {
         if (this.checkAndReset()) {
             this.updateUI();
@@ -188,17 +188,17 @@ const DailyQuestSystem = {
         }
         if (quest.reward.skillPoint) {
             player.skillPoints += quest.reward.skillPoint;
-            createDamageNumber(player.x, player.y - 40 + offsetY, `+${quest.reward.skillPoint}技能点`, '#ff88ff');
-            showNotification('🎉 获得技能点！');
+            createDamageNumber(player.x, player.y - 40 + offsetY, `+${quest.reward.skillPoint} Skill Points`, '#ff88ff');
+            showNotification('🎉 Skill point obtained!');
         }
 
         quest.claimed = true;
 
-        // 解锁下一个任务
+// Unlock the next quest
         const nextQuest = player.dailyQuests.quests.find(q => !q.unlocked);
         if (nextQuest) {
             nextQuest.unlocked = true;
-            showNotification('📋 新的每日任务已解锁！');
+            showNotification('📋 New daily quest unlocked!');
         }
 
         AudioSys.play('sell');
@@ -208,11 +208,11 @@ const DailyQuestSystem = {
         if (typeof updateMenuIndicators === 'function') updateMenuIndicators();
     },
 
-    // 重置时间倒计时
+// Reset the time countdown
     getResetTime() {
         const now = new Date();
         const midnight = new Date(now);
-        midnight.setHours(24, 0, 0, 0); // 下一个午夜
+        midnight.setHours(24, 0, 0, 0); // next midnight
         const diff = midnight - now;
 
         const hours = Math.floor(diff / (1000 * 60 * 60));
@@ -226,7 +226,7 @@ const DailyQuestSystem = {
         return I18N.t('dq_reset_in', { time: `${hh}:${mm}:${ss}` });
     },
 
-    // 更新任务面板UI
+// Update the quest panel UI
     updateUI() {
         this.checkAndReset();
         if (!player.dailyQuests || !player.dailyQuests.quests) return;
@@ -259,7 +259,7 @@ const DailyQuestSystem = {
             let rewardText = [];
             if (q.reward.gold) rewardText.push(`${q.reward.gold}G`);
             if (q.reward.xp) rewardText.push(`${q.reward.xp}XP`);
-            if (q.reward.skillPoint) rewardText.push(`${q.reward.skillPoint}技能点`);
+            if (q.reward.skillPoint) rewardText.push(`${q.reward.skillPoint} Skill Points`);
 
             if (isLocked) {
                 html += `
@@ -286,29 +286,29 @@ const DailyQuestSystem = {
             }
         });
 
-        // 渲染每日全勤宝箱 (留存优化 3.3)
+// Render the daily full-attendance chest (retention polish 3.3)
         if (completedCount === 3) {
             const chestClaimed = player.dailyQuests.chestClaimed;
             html += `
                 <div class="daily-master-chest-card" style="margin-top:12px; background:linear-gradient(135deg, rgba(212,175,55,0.2), rgba(0,0,0,0.6)); border:1px solid #d4af37; border-radius:6px; padding:10px; text-align:center;">
-                    <div style="color:#ffd700; font-size:14px; font-weight:bold; margin-bottom:4px;">🎁 今日全勤宝箱 (Daily Master Chest)</div>
-                    <div style="color:#bbb; font-size:11px; margin-bottom:8px;">完成全部3项每日任务的终极嘉奖：必出稀有/暗金装备 + 金币 + 概率符文</div>
+                    <div style="color:#ffd700; font-size:14px; font-weight:bold; margin-bottom:4px;">🎁 Daily Master Chest</div>
+                    <div style="color:#bbb; font-size:11px; margin-bottom:8px;">Ultimate reward for completing all 3 daily quests: guaranteed Rare/Unique gear + gold + chance of runes</div>
                     ${chestClaimed
-                        ? `<div style="color:#888; font-size:12px;">✓ 今日宝箱已领取 (明日刷新)</div>`
-                        : `<button onclick="DailyQuestSystem.claimDailyChest()" style="background:linear-gradient(to bottom, #d4af37, #aa8020); color:#000; font-weight:bold; border:1px solid #ffd700; padding:6px 16px; border-radius:4px; cursor:pointer; font-size:13px; box-shadow:0 0 8px rgba(255,215,0,0.5);">开启今日全勤宝箱</button>`
+                        ? `<div style="color:#888; font-size:12px;">✓ Daily chest claimed (refreshes tomorrow)</div>`
+                        : `<button onclick="DailyQuestSystem.claimDailyChest()" style="background:linear-gradient(to bottom, #d4af37, #aa8020); color:#000; font-weight:bold; border:1px solid #ffd700; padding:6px 16px; border-radius:4px; cursor:pointer; font-size:13px; box-shadow:0 0 8px rgba(255,215,0,0.5);">Open Daily Master Chest</button>`
                     }
                 </div>
             `;
         }
 
-        // 渲染周常目标模块 (留存优化 3.6)
+// Render the weekly goals module (retention polish 3.6)
         if (typeof WeeklyGoalSystem !== 'undefined') {
             WeeklyGoalSystem.checkAndReset();
             const wGoals = player.weeklyGoals ? player.weeklyGoals.goals : [];
             if (wGoals.length > 0) {
                 html += `
                     <div style="margin-top:16px; border-top:1px solid #4a3b2a; padding-top:12px;">
-                        <div style="color:#c7b377; font-size:14px; margin-bottom:8px;">🏆 周常目标 (每周一刷新)</div>
+                        <div style="color:#c7b377; font-size:14px; margin-bottom:8px;">🏆 Weekly Goals (refresh Mondays)</div>
                 `;
                 wGoals.forEach(g => {
                     const statusColor = g.claimed ? '#666' : (g.completed ? '#88ff88' : '#fff');
@@ -316,9 +316,9 @@ const DailyQuestSystem = {
                     let rText = [];
                     if (g.reward.gold) rText.push(`${g.reward.gold}G`);
                     if (g.reward.xp) rText.push(`${g.reward.xp}XP`);
-                    if (g.reward.skillPoints) rText.push(`${g.reward.skillPoints}技能点`);
-                    if (g.reward.item === 'unique') rText.push(`随机暗金`);
-                    // 周常键为 weekly_<goalId>，存活的 desc 作兜底
+                    if (g.reward.skillPoints) rText.push(`${g.reward.skillPoints} Skill Points`);
+                    if (g.reward.item === 'unique') rText.push(`Random Unique`);
+// Weekly keys are weekly_<goalId>; a surviving desc serves as fallback
                     const wKey = 'weekly_' + g.id;
 
                     html += `
@@ -342,7 +342,7 @@ const DailyQuestSystem = {
         this.startCountdown();
     },
 
-    // 领取每日全勤宝箱 (留存优化 3.3)
+// Claim the daily full-attendance chest (retention polish 3.3)
     claimDailyChest() {
         if (!player.dailyQuests || player.dailyQuests.chestClaimed) return;
         const allClaimed = player.dailyQuests.quests.every(q => q.claimed);
@@ -351,19 +351,19 @@ const DailyQuestSystem = {
         player.dailyQuests.chestClaimed = true;
         const lvl = player.lvl || 1;
 
-        // 1. 金币奖励 (等级 * 50)
+        // 1. goldrewards (level * 50)
         const goldReward = lvl * 50;
         addGold(goldReward);
         createDamageNumber(player.x, player.y - 40, `+${goldReward} G`, 'gold');
 
-        // 2. 必出一件稀有/暗金装备
+// 2. Always grants one rare/unique item
         const isUnique = Math.random() < 0.30;
         let chestItem = null;
         if (typeof createItem === 'function') {
             chestItem = createItem(null, Math.max(1, player.floor || 1));
             chestItem.rarity = isUnique ? RARITY.UNIQUE : RARITY.RARE;
             if (chestItem.rarity === RARITY.UNIQUE) {
-                chestItem.displayName = "暗金·" + chestItem.name;
+                chestItem.displayName = "Unique · " + chestItem.name;
                 chestItem.stats.allSkills = (chestItem.stats.allSkills || 0) + 1;
                 chestItem.stats.dmgPct = (chestItem.stats.dmgPct || 0) + 50;
                 chestItem.stats.lifeSteal = (chestItem.stats.lifeSteal || 0) + 5;
@@ -371,7 +371,7 @@ const DailyQuestSystem = {
             addItemToInventory(chestItem);
         }
 
-        // 3. 概率获得符文
+// 3. Chance of a rune
         if (Math.random() < 0.40 && typeof createRuneItem === 'function') {
             const runeKeys = ['tal', 'ral', 'ort', 'thul', 'amn'];
             const rune = createRuneItem(runeKeys[Math.floor(Math.random() * runeKeys.length)]);
@@ -379,7 +379,7 @@ const DailyQuestSystem = {
         }
 
         const lang = (typeof I18N !== 'undefined' && I18N.currentLang) ? I18N.currentLang : 'zh';
-        let msg = `🎁 开启每日全勤宝箱！获得 ${goldReward} 金币与 ${chestItem ? chestItem.displayName : '稀有装备'}`;
+        let msg = `🎁 Opened the perfect-attendance chest! Got ${goldReward} gold and ${chestItem ? chestItem.displayName : 'a rare item'}`;
         if (lang === 'es') msg = `🎁 ¡Cofre Diario abierto! ${goldReward} Oro y ${chestItem ? chestItem.displayName : 'Equipo Raro'}`;
         else if (lang === 'en') msg = `🎁 Opened Daily Master Chest! ${goldReward} Gold & ${chestItem ? chestItem.displayName : 'Rare Gear'}`;
 
@@ -394,7 +394,7 @@ const DailyQuestSystem = {
         if (typeof SaveSystem !== 'undefined' && SaveSystem.save) SaveSystem.save(true);
     },
 
-    // 更新左上角追踪器
+// Update the top-left tracker
     updateTracker() {
         this.checkAndReset();
         if (!player.dailyQuests || !player.dailyQuests.quests) return;
@@ -414,8 +414,8 @@ const DailyQuestSystem = {
         if (!currentQuest) {
             const allClaimed = player.dailyQuests.quests.every(q => q.claimed);
             dailyTracker.innerHTML = allClaimed
-                ? `<div style="margin-bottom:8px;"><span style="color:#88ff88; font-size:12px;">✓ 今日任务已完成</span></div>`
-                : `<div style="margin-bottom:8px;"><span style="color:#ffcc00; font-size:12px;">🎁 有奖励可领取！</span></div>`;
+                ? `<div style="margin-bottom:8px;"><span style="color:#88ff88; font-size:12px;">✓ Daily quest completed</span></div>`
+                : `<div style="margin-bottom:8px;"><span style="color:#ffcc00; font-size:12px;">🎁 Reward available!</span></div>`;
             return;
         }
 
@@ -431,7 +431,7 @@ const DailyQuestSystem = {
 
 window.DailyQuestSystem = DailyQuestSystem;
 
-// ========== 周常目标系统 (Weekly Goals System - 留存优化 3.6) ==========
+// ========== Weekly Goals System (retention polish 3.6) ==========
 const WeeklyGoalSystem = {
     getWeekKey() {
         const d = new Date();
@@ -452,9 +452,9 @@ const WeeklyGoalSystem = {
             player.weeklyGoals = {
                 weekKey: weekKey,
                 goals: [
-                    { id: 'kill_500', type: 'kill', target: 500, progress: 0, completed: false, claimed: false, desc: '击杀 500 只怪物', reward: { gold: 500, xp: 1000 } },
-                    { id: 'collect_rares', type: 'collect_rares', target: 5, progress: 0, completed: false, claimed: false, desc: '收集 5 件稀有/暗金装备', reward: { item: 'unique' } },
-                    { id: 'reach_floor_15', type: 'reach_floor', target: 15, progress: maxF, completed: maxF >= 15, claimed: false, desc: '在地牢中到达第 15 层', reward: { skillPoints: 2 } }
+                    { id: 'kill_500', type: 'kill', target: 500, progress: 0, completed: false, claimed: false, desc: 'Slay 500 monsters', reward: { gold: 500, xp: 1000 } },
+                    { id: 'collect_rares', type: 'collect_rares', target: 5, progress: 0, completed: false, claimed: false, desc: 'Collect 5 Rare/Unique pieces of gear', reward: { item: 'unique' } },
+                    { id: 'reach_floor_15', type: 'reach_floor', target: 15, progress: maxF, completed: maxF >= 15, claimed: false, desc: 'Reach Floor 15 of the dungeon', reward: { skillPoints: 2 } }
                 ]
             };
             return true;
@@ -471,7 +471,7 @@ const WeeklyGoalSystem = {
             if (g.progress >= g.target) {
                 g.progress = g.target;
                 g.completed = true;
-                if (typeof showNotification === 'function') showNotification('🏆 周常目标【怪物清剿】已达成！', 'gold');
+                if (typeof showNotification === 'function') showNotification('🏆 Weekly goal [Monster Cull] reached!', 'gold');
             }
         }
     },
@@ -485,7 +485,7 @@ const WeeklyGoalSystem = {
             if (g.progress >= g.target) {
                 g.progress = g.target;
                 g.completed = true;
-                if (typeof showNotification === 'function') showNotification('🏆 周常目标【珍品收集】已达成！', 'gold');
+                if (typeof showNotification === 'function') showNotification('🏆 Weekly goal [Treasure Hunt] reached!', 'gold');
             }
         }
     },
@@ -499,7 +499,7 @@ const WeeklyGoalSystem = {
             if (g.progress >= g.target) {
                 g.progress = g.target;
                 g.completed = true;
-                if (typeof showNotification === 'function') showNotification('🏆 周常目标【勇闯深渊】已达成！', 'gold');
+                if (typeof showNotification === 'function') showNotification('🏆 Weekly goal [Abyss Diver] reached!', 'gold');
             }
         }
     },
@@ -522,16 +522,16 @@ const WeeklyGoalSystem = {
         }
         if (g.reward.skillPoints) {
             player.skillPoints += g.reward.skillPoints;
-            if (typeof showNotification === 'function') showNotification(`🎉 获得 ${g.reward.skillPoints} 技能点！`, 'gold');
+            if (typeof showNotification === 'function') showNotification(`🎉 Obtained ${g.reward.skillPoints} Skill Point(s)!`, 'gold');
         }
         if (g.reward.item === 'unique' && typeof createItem === 'function') {
             const u = createItem(null, Math.max(1, player.floor || 1));
             u.rarity = RARITY.UNIQUE;
-            u.displayName = "暗金·" + u.name;
+            u.displayName = "Unique · " + u.name;
             u.stats.allSkills = (u.stats.allSkills || 0) + 1;
             u.stats.dmgPct = (u.stats.dmgPct || 0) + 50;
             if (typeof addItemToInventory === 'function') addItemToInventory(u);
-            if (typeof showNotification === 'function') showNotification(`🎁 周常奖励：获得暗金装备【${u.displayName}】！`, 'gold');
+            if (typeof showNotification === 'function') showNotification(`🎁 Weekly reward: acquired Unique item "${u.displayName}"!`, 'gold');
         }
 
         if (typeof AudioSys !== 'undefined' && AudioSys.play) AudioSys.play('quest');

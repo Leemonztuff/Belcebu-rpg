@@ -1,9 +1,9 @@
-// ========== i18n-content-gear.js - 装备本地化内容表（套装/符文/符文之语/物品类型/词缀） ==========
+// ========== i18n-content-gear.js - gear localization (sets/runes/runewords/item types/affixes) ==========
 (function () {
     'use strict';
     if (typeof window.I18N === 'undefined' || typeof window.I18N.registerTable !== 'function') return;
 
-    // 套装表：键为 SET_ITEMS 的对象键
+    // settable:keyis SET_ITEMS objectkey
     window.I18N.registerTable('sets', {
         tals_set: {
             name: { es: 'Túnica de Tal Rasha', en: "Tal Rasha's Regalia", zh: '塔拉夏的外袍' },
@@ -186,7 +186,7 @@
         }
     });
 
-    // 符文表：键为 RUNES 的 runeKey
+// Rune table: keyed by RUNES runeKey
     window.I18N.registerTable('runes', {
         el: {
             name: { es: 'El', en: 'El', zh: '艾尔' },
@@ -242,7 +242,7 @@
         }
     });
 
-    // 符文之语表：键为 RUNEWORDS 的 id
+// Runeword table: keyed by RUNEWORDS id
     window.I18N.registerTable('runewords', {
         steel: {
             name: { es: 'Acero', en: 'Steel', zh: '钢铁' },
@@ -274,8 +274,20 @@
         }
     });
 
-    // 物品类型表：键为 item-system.js 中的中文字符串
+    // item typetable:keyis item-system.js inzhstring
     window.I18N.registerTable('itemTypes', {
+        'Basic Armor': { name: { es: 'Armadura Pesada', en: 'Body Armor', zh: '防具' } },
+        'Chest Armor': { name: { es: 'Peto / Armadura', en: 'Chest Armor', zh: '胸甲' } },
+        'Helmet': { name: { es: 'Casco de Batalla', en: 'Helmet', zh: '头盔' } },
+        'Shield': { name: { es: 'Escudo de Protección', en: 'Shield', zh: '盾牌' } },
+        'Magic Ring': { name: { es: 'Anillo Mágico', en: 'Magic Ring', zh: '戒指' } },
+        'Mystic Amulet': { name: { es: 'Amuleto Místico', en: 'Mystic Amulet', zh: '项链' } },
+        'Gloves': { name: { es: 'Guantes de Cuero', en: 'Gloves', zh: '手套' } },
+        'Boots': { name: { es: 'Botas Mágicas', en: 'Boots', zh: '鞋子' } },
+        'Belt': { name: { es: 'Cinturón de Táctica', en: 'Belt', zh: '腰带' } },
+        'Legendary Equipment': { name: { es: 'Equipo de Leyenda', en: 'Legendary Equipment', zh: '稀有装备' } },
+        'Unique · ': { name: { es: 'Único · ', en: 'Unique · ', zh: '暗金·' } },
+        // Legacy zh aliases (old saves / old loot-popup tables)
         '武器': { name: { es: 'Arma de Combate', en: 'Combat Weapon', zh: '武器' } },
         '防具': { name: { es: 'Armadura Pesada', en: 'Body Armor', zh: '防具' } },
         '胸甲': { name: { es: 'Peto / Armadura', en: 'Chest Armor', zh: '胸甲' } },
@@ -290,26 +302,26 @@
         '暗金·': { name: { es: 'Único · ', en: 'Unique · ', zh: '暗金·' } }
     });
 
-    // 词缀补充表：键为 items-data.js 中 i18n.js 未收录的中文字符串
+    // Affix supplement table: keyed by zh strings from items-data.js not covered by i18n.js
     window.I18N.registerTable('affixesExtra', {
-        '剧毒的': { name: { es: 'Venenoso', en: 'Venomous', zh: '剧毒的' } },
-        '之熊': { name: { es: 'del Oso', en: 'of the Bear', zh: '之熊' } },
-        '之鹰': { name: { es: 'del Águila', en: 'of the Eagle', zh: '之鹰' } },
-        '之吸血': { name: { es: 'de la Sanguijuela', en: 'of the Leech', zh: '之吸血' } },
-        '之急速': { name: { es: 'de la Rapidez', en: 'of Haste', zh: '之急速' } },
-        '之力量': { name: { es: 'de la Fuerza', en: 'of Strength', zh: '之力量' } },
-        '之抗火': { name: { es: 'de Resistencia al Fuego', en: 'of Fire Res', zh: '之抗火' } },
-        '之抗冰': { name: { es: 'de Resistencia al Frío', en: 'of Cold Res', zh: '之抗冰' } },
-        '之抗电': { name: { es: 'de Resistencia al Rayo', en: 'of Lightning Res', zh: '之抗电' } },
-        '之抗毒': { name: { es: 'de Resistencia al Veneno', en: 'of Poison Res', zh: '之抗毒' } },
-        '之守护': { name: { es: 'de la Protección', en: 'of Protection', zh: '之守护' } },
-        '之再生': { name: { es: 'de la Regeneración', en: 'of Regeneration', zh: '之再生' } },
-        '之冥想': { name: { es: 'de la Meditación', en: 'of Meditation', zh: '之冥想' } },
-        '之格挡': { name: { es: 'de Bloqueo', en: 'of Block', zh: '之格挡' } },
-        '之反射': { name: { es: 'de Reflexión', en: 'of Reflection', zh: '之反射' } },
-        '之神速': { name: { es: 'Divina Velocidad', en: 'Divine Speed', zh: '之神速' } },
-        '之铁壁': { name: { es: 'de Muro de Hierro', en: 'of Iron Wall', zh: '之铁壁' } },
-        '之精准': { name: { es: 'de Precisión', en: 'of Precision', zh: '之精准' } },
-        '之幸运': { name: { es: 'de la Fortuna', en: 'of Fortune', zh: '之幸运' } }
+        'Venomous': { name: { es: 'Venenoso', en: 'Venomous', zh: '剧毒的' } },
+        'of the Bear': { name: { es: 'del Oso', en: 'of the Bear', zh: '之熊' } },
+        'of the Eagle': { name: { es: 'del Águila', en: 'of the Eagle', zh: '之鹰' } },
+        'of the Leech': { name: { es: 'de la Sanguijuela', en: 'of the Leech', zh: '之吸血' } },
+        'of Haste': { name: { es: 'de la Rapidez', en: 'of Haste', zh: '之急速' } },
+        'of Strength': { name: { es: 'de la Fuerza', en: 'of Strength', zh: '之力量' } },
+        'of Fire Res': { name: { es: 'de Resistencia al Fuego', en: 'of Fire Res', zh: '之抗火' } },
+        'of Cold Res': { name: { es: 'de Resistencia al Frío', en: 'of Cold Res', zh: '之抗冰' } },
+        'of Lightning Res': { name: { es: 'de Resistencia al Rayo', en: 'of Lightning Res', zh: '之抗电' } },
+        'of Poison Res': { name: { es: 'de Resistencia al Veneno', en: 'of Poison Res', zh: '之抗毒' } },
+        'of Protection': { name: { es: 'de la Protección', en: 'of Protection', zh: '之守护' } },
+        'of Regeneration': { name: { es: 'de la Regeneración', en: 'of Regeneration', zh: '之再生' } },
+        'of Meditation': { name: { es: 'de la Meditación', en: 'of Meditation', zh: '之冥想' } },
+        'of Block': { name: { es: 'de Bloqueo', en: 'of Block', zh: '之格挡' } },
+        'of Reflection': { name: { es: 'de Reflexión', en: 'of Reflection', zh: '之反射' } },
+        'Divine Speed': { name: { es: 'Divina Velocidad', en: 'Divine Speed', zh: '之神速' } },
+        'of Iron Wall': { name: { es: 'de Muro de Hierro', en: 'of Iron Wall', zh: '之铁壁' } },
+        'of Precision': { name: { es: 'de Precisión', en: 'of Precision', zh: '之精准' } },
+        'of Fortune': { name: { es: 'de la Fortuna', en: 'of Fortune', zh: '之幸运' } }
     });
 })();

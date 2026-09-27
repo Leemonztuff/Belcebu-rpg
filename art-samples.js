@@ -1,4 +1,4 @@
-// 游戏原生透明图集：只切帧和对齐，不按颜色抠除任何像素。
+// Native game transparent atlases: only slice frames and align; no color-keying of any pixel.
 const ArtSamples = (() => {
     const atlases = new Map();
     const loading = new Map();
@@ -11,7 +11,7 @@ const ArtSamples = (() => {
         ranged: { file: 'monster-archer-painted.png', cols: 8, rows: 4 },
         ruins: { file: 'ruins-props-painted.png', cols: 2, rows: 3 }
     };
-    // 施法与倒地的 4 帧单向运行时条带：不走烘焙图集清单，加载时按 alpha 直接归一化。
+// 4-frame one-way runtime strips for casting and death: skip the baked atlas manifest; normalize by alpha at load time.
     definitions.heroCastSheet = { file: 'public/spritesheets/Npc-06_cast_animation.webp', cols: 4, rows: 1, raw: true };
     definitions.heroDeathSheet = { file: 'public/spritesheets/Npc-06-death.webp', cols: 4, rows: 1, raw: true };
     for (const action of ['idle', 'walk', 'attack', 'cast', 'sit', 'walkDiagonal']) {
@@ -30,8 +30,8 @@ const ArtSamples = (() => {
         definitions[key] = {file:`death-${'abcd'[group]}-painted.png`,cols:4,rows:4};
         types.forEach((type,row) => { deaths[type] = {key,row}; });
     });
-    // 人工按头顶到脚底测量身体标尺；武器、光效不参与身体缩放。
-    // 横向锚点按各帧双脚支撑中心标注（占该帧可见边界宽度的比例）。
+    // Measure the body scale manually from head to toe; weapons and VFX do not take part in body scaling.
+// Horizontal anchors are marked at each frame's two-foot support center (as a share of the frame's visible width).
     const heroCalibration = {
         heroidle: [0.18, [0.53,0.53,0.53,0.53, 0.44,0.44,0.44,0.44, 0.59,0.59,0.59,0.59, 0.4,0.4,0.4,0.4]],
         herowalk: [0.187, [0.53,0.53,0.53,0.53, 0.44,0.44,0.44,0.44, 0.56,0.56,0.56,0.56, 0.43,0.43,0.43,0.43]],
@@ -55,8 +55,8 @@ const ArtSamples = (() => {
         return frame(action === 'hurt' ? 'heroHurt' : `hero${action}`, row, frameIndex);
     }
 
-    // 单向 4 帧条带取帧。条带自带 source，可绕过旧图集直接绘制。
-    // 倒地沿用与 deathFrame 相同的失衡首帧身体标尺，跪倒/横卧不逐帧放大。
+// Frame selection for one-way 4-frame strips. Strips carry their own source and can draw directly, bypassing the old atlas.
+// Death uses the same off-balance first-frame body scale as deathFrame; kneel/prone are not enlarged per frame.
     function heroSheetFrame(key, frameIndex, flipX = false) {
         if (!atlases.has(key)) return null;
         const sample = frame(key, 0, frameIndex, flipX);
@@ -77,7 +77,7 @@ const ArtSamples = (() => {
         const first = frame(mapping.key, mapping.row, 0);
         const living = frame(type === 'hero' ? 'heroidle' : type, 0, 0);
         if (!sample || !living) return null;
-        // 每类只用失衡首帧与站姿校准一次，后续跪倒/横卧保持同一身体标尺。
+        // Calibrate each category only once with the off-balance first frame and standing pose; later kneel/prone poses keep the same body scale.
         return {...sample, death:true, renderScale:living.contentBounds.sh * 0.92 / first.contentBounds.sh};
     }
 
@@ -89,8 +89,8 @@ const ArtSamples = (() => {
         const data = scanContext.getImageData(0, 0, scan.width, scan.height).data;
         let transparent = 0;
         for (let i = 3; i < data.length; i += 4) if (data[i] === 0) transparent++;
-        if (transparent < source.width * source.height * 0.15) throw new Error('美术样板缺少真实透明通道');
-        // 生图的留白未必等距：寻找邻近的透明分隔线，不能截断人物再硬塞进格子。
+        if (transparent < source.width * source.height * 0.15) throw new Error('Art template lacks a real alpha channel');
+        // Generated art gutters are not necessarily even: look for nearby transparent divider lines; never cut characters to cram them into cells.
         function gutters(count, size, projection, optional = false) {
             const cuts=[0];
             for(let i=1;i<count;i++) {
@@ -101,7 +101,7 @@ const ArtSamples = (() => {
                 }
                 if(best<0) {
                     if (optional) return null;
-                    throw new Error(`美术样板帧交叠：第${i}条分隔线无透明留白`);
+                    throw new Error(`Art template frames overlap: separator ${i} has no transparent padding`);
                 }
                 cuts.push(best);
             }
@@ -121,7 +121,7 @@ const ArtSamples = (() => {
             regions[row*cols+col]={x0,x1,y0,y1};
             }
         } else {
-            // 没有贯穿全图的横向留白时，逐列验证纵向分隔；仍不允许截断不透明像素。
+            // When no horizontal gutters run across the sheet, verify vertical dividers column by column; cutting opaque pixels is still not allowed.
             const colProjection=new Uint32Array(source.width);
             for(let y=0;y<source.height;y++) for(let x=0;x<source.width;x++) if(data[(y*source.width+x)*4+3]>12) colProjection[x]++;
             const colCuts=gutters(cols,source.width,colProjection);
@@ -137,12 +137,12 @@ const ArtSamples = (() => {
             for (let y=y0;y<y1;y++) for(let x=x0;x<x1;x++) if(data[(y*source.width+x)*4+3]>12) {
                 left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);
             }
-            if (right < left) throw new Error(`美术样板存在空帧 ${Math.floor(index/cols)}:${index%cols}`);
+            if (right < left) throw new Error(`Art template has an empty frame ${Math.floor(index/cols)}:${index%cols}`);
             return { x:left, y:top, width:right-left+1, height:bottom-top+1 };
         });
-        // 全图共享缩放，避免较小姿态被单独放大产生呼吸式抖动。
+        // The whole sheet shares one scale so smaller poses are not enlarged individually, which causes breathing-like jitter.
         if (calibration && (!(calibration.bodyHeight > 0) || !(calibration.targetHeight > 0) || calibration.footX.length !== bounds.length
-            || calibration.footX.some(x => !Number.isFinite(x) || x < 0 || x > 1))) throw new Error('人物身体标尺或脚底锚点无效');
+            || calibration.footX.some(x => !Number.isFinite(x) || x < 0 || x > 1))) throw new Error('Character body gauge or foot anchor invalid');
         const scale = calibration ? calibration.targetHeight / (source.height * calibration.bodyHeight)
             : Math.min(88 / Math.max(...bounds.map(b=>b.height)), 112 / Math.max(...bounds.map(b=>b.width)));
         const atlas = document.createElement('canvas');
@@ -153,7 +153,7 @@ const ArtSamples = (() => {
             const w=b.width*scale, h=b.height*scale;
             const cellX=(i%cols)*128, cellY=Math.floor(i/cols)*128;
             const x=cellX+64-w*(calibration ? calibration.footX[i] : 0.5), y=cellY+124-h;
-            if (x < cellX || x+w > cellX+128 || y < cellY) throw new Error(`人物标尺导致越界：第${i}帧；请校正身体测量或锚点`);
+            if (x < cellX || x+w > cellX+128 || y < cellY) throw new Error(`Character gauge out of bounds: frame ${i}; fix body measurements or anchor`);
             ctx.drawImage(source,b.x,b.y,b.width,b.height,x,y,w,h);
             atlas.contentBounds.push({sx:x,sy:y,sw:w,sh:h});
         });
@@ -165,14 +165,14 @@ const ArtSamples = (() => {
         return new Promise((resolve, reject) => {
         const image = new Image();
         image.onload = () => {
-            // 素材输入边界：不合格图片拒绝接入，原有图集仍可绘制。
+// Asset input boundary: reject non-conforming images; existing atlases can still draw.
             try {
                 atlases.set(key, prepareSource(image, definition)); resolve(key);
                 if (typeof window !== 'undefined') window.dispatchEvent(new Event('art-atlas-loaded'));
             }
             catch (error) { reject(error); }
         };
-        image.onerror = () => reject(new Error(`${definition.file} 加载失败`));
+        image.onerror = () => reject(new Error(`${definition.file} load failed`));
         image.src = `${assetPath(definition.file)}?v=2026090702`;
         });
     }
@@ -183,11 +183,11 @@ const ArtSamples = (() => {
         return entry ? (entry.runtimeFile || entry.file) : file;
     }
     function prepareSource(image, definition) {
-        // 清单里有条目就直接复用烘焙结果；raw 条带没有条目，按 alpha 在运行时归一化。
+// If the manifest has an entry, reuse the baked result; raw strips have none and normalize by alpha at runtime.
         const entry = typeof ArtAtlasManifest === 'undefined' ? null : ArtAtlasManifest[definition.file];
         if (!entry) return normalizeAtlas(image, definition.cols, definition.rows, definition.calibration);
         if (image.width !== entry.width || image.height !== entry.height || entry.contentBounds.length !== definition.cols * definition.rows) {
-            throw new Error(`预处理图集与清单不匹配：${definition.file}`);
+            throw new Error(`Prebuilt atlas does not match the manifest: ${definition.file}`);
         }
         image.contentBounds = entry.contentBounds;
         return image;
@@ -196,7 +196,7 @@ const ArtSamples = (() => {
     function frame(key, row, col, flipX = false) {
         const source=atlases.get(key);
         if (!source) {
-            if (!loading.has(key)) ensure([key]).catch(error=>console.error('[美术图集] 按需加载失败',error));
+            if (!loading.has(key)) ensure([key]).catch(error=>console.error('[Art Atlas] on-demand load failed',error));
             return null;
         }
         return { source, x:col*128, y:row*128, width:128, height:128, flipX, animated:true,
@@ -204,11 +204,11 @@ const ArtSamples = (() => {
     }
     function ensure(keys) {
         return Promise.all([...new Set(keys)].map(key=>{
-            if (!definitions[key]) throw new Error(`未知美术图集：${key}`);
+            if (!definitions[key]) throw new Error(`Unknown art atlas: ${key}`);
             if (!loading.has(key)) {
                 pending++;
                 const request=load(key,definitions[key]).finally(()=>{pending--;});
-                request.catch(error=>{loadError=error;console.error('[美术图集] 加载失败',error);});
+                request.catch(error=>{loadError=error;console.error('[Art Atlas] load failed',error);});
                 loading.set(key,request);
             }
             return loading.get(key);
@@ -218,6 +218,6 @@ const ArtSamples = (() => {
         return ensure(types.flatMap(type=>[type,deaths[type].key]));
     }
     const ready = ensure([...Object.keys(heroCalibration),'death0','ruins','heroCastSheet','heroDeathSheet']);
-    ready.catch(error => console.error('[美术图集] 验收失败', error));
+    ready.catch(error => console.error('[Art Atlas] validation failed', error));
     return { frame, heroFrame, heroSheetFrame, deathFrame, normalizeAtlas, prepareSource, assetPath, definitions, ready, ensure, ensureMonsters, isLoaded:key=>atlases.has(key), get pending(){return pending;}, get loadError(){return loadError;} };
 })();

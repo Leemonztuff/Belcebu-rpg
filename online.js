@@ -1,45 +1,45 @@
-// PocketBase 在线系统（使用官方 SDK）
+// PocketBase online system (official SDK)
 const PB_URL = 'https://maikami.com/pb';
 const pb = new PocketBase(PB_URL);
 pb.autoCancellation(false);
 
-// ========== 云同步系统 ==========
+// ========== cloud syncsystem ==========
 const CloudSync = {
     syncCode: null,
     isBound: false,
     recordId: null,
-    isReady: false,  // 云同步是否初始化完成
+    isReady: false,  // cloud syncinitialized flag
     uploadDebounceTimer: null,
     uploadTimers: {},
     uploadQueue: Promise.resolve(),
     conflictWarnings: new Set(),
-    DEBOUNCE_DELAY: 2000,  // 2秒防抖
+    DEBOUNCE_DELAY: 2000,  // 2s debounce
     knownCloudTimes: {},
     rememberCloud(record) {
         for (let slot = 1; slot <= 3; slot++) this.knownCloudTimes[slot] = this.saveTime(this.parseCloudSlot(record[`slot_${slot}`])?.fullData);
     },
 
-    // 初始化：检查本地是否已绑定
+// Init: check whether locally bound
     async init() {
         this.syncCode = localStorage.getItem('cloud_sync_code');
         this.recordId = localStorage.getItem('cloud_record_id');
         this.isBound = !!this.syncCode;
 
-        // 如果已绑定，自动从云端同步最新数据
+// If bound, auto-sync the latest data from the cloud
         if (this.isBound && this.recordId) {
             await this.syncFromCloud();
         }
 
         this.isReady = true;
         this.updateUI();
-        // 通知 SaveSystem 尝试激活按钮
+// Notify SaveSystem to try activating the button
         if (typeof SaveSystem !== 'undefined' && SaveSystem.tryActivateStartButton) {
             SaveSystem.tryActivateStartButton();
         }
-        console.log('[云同步] 初始化完成, 已绑定:', this.isBound);
+        console.log('[CloudSync] initialized, bound to:', this.isBound);
     },
 
-    // 以保存时间判断新旧；覆盖前保留本地备份，不以等级推断进度。
+// Freshness is judged by save time; keep a local backup before overwriting and never infer progress from level.
     saveTime(data) {
         return Number(data?.lastPlayed || data?.lastOnlineTime || 0);
     },
@@ -73,27 +73,27 @@ const CloudSync = {
                 if (!local || this.saveTime(cloud) > this.saveTime(local)) {
                     await this.saveToLocalSlot(i + 1, cloud);
                     updated = true;
-                    console.log(`[云同步] 槽位${i + 1}: 已恢复较新的云端进度`);
+                    console.log(`[CloudSync] slot ${i + 1}: restored newer cloud progress`);
                 }
             }
 
             if (updated) {
-                // 刷新存档列表显示
+// Refresh the save list display
                 if (typeof SaveSystem !== 'undefined' && SaveSystem.loadAllSlotsMeta) {
                     SaveSystem.loadAllSlotsMeta();
                 }
             }
             this.rememberCloud(cloudRecord);
         } catch (e) {
-            console.error('[云同步] 同步失败:', e);
+            console.error('[CloudSync] sync failed:', e);
         }
     },
 
-    // 保存数据到本地指定槽位
+// Save data to a local slot
     async saveToLocalSlot(slotId, data) {
         if (typeof db === 'undefined' || !db) throw new Error(I18N.tr('online', 'sync_store_unavailable_short'));
 
-        // 确保数据有正确的 id 和 slotId
+        // ensuredatathere isjustconfirm id draw slotId
         const saveData = {
             ...data,
             id: `slot_${slotId}`,
@@ -113,9 +113,9 @@ const CloudSync = {
         });
     },
 
-    // 生成6位同步码（大写字母+数字）
+// Generate a 6-char sync code (capitals + digits)
     generateSyncCode() {
-        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';  // 排除易混淆的 I/O/0/1
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';  // exclude confusable I/O/0/1
         let code = '';
         for (let i = 0; i < 6; i++) {
             code += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -123,7 +123,7 @@ const CloudSync = {
         return code;
     },
 
-    // 获取本地所有槽位的存档数据
+// Get all local slot save data
     async getLocalSlots() {
         const slots = [null, null, null];
         if (typeof db === 'undefined' || !db) throw new Error(I18N.tr('online', 'sync_store_unavailable_read'));
@@ -152,24 +152,24 @@ const CloudSync = {
         return slots;
     },
 
-    // 绑定账号（新建）
+    // bindaccount（new）
     async bindNew() {
         const code = this.generateSyncCode();
         const slots = await this.getLocalSlots();
         const nickname = OnlineSystem.nickname || I18N.tr('online', 'sync_default_warrior');
 
         try {
-            // 检查同步码是否已存在（极小概率冲突）
+// Check whether the sync code already exists (very unlikely collision)
             const existing = await pb.collection('cloud_saves').getList(1, 1, {
                 filter: `sync_code = "${code}"`
             });
 
             if (existing.items.length > 0) {
-                // 冲突，重新生成
+                // conflict，re-newbornbecome
                 return this.bindNew();
             }
 
-            // 创建云端存档
+// Create the cloud save
             const record = await pb.collection('cloud_saves').create({
                 sync_code: code,
                 nickname: nickname,
@@ -179,7 +179,7 @@ const CloudSync = {
                 version: 1
             });
 
-            // 保存到本地
+            // Savetolocal
             this.rememberCloud(record);
             this.syncCode = code;
             this.recordId = record.id;
@@ -192,13 +192,13 @@ const CloudSync = {
             this.showSuccessMessage(I18N.tr('online', 'sync_bind_success', '', { code }));
             return true;
         } catch (e) {
-            console.error('[云同步] 绑定失败:', e);
+            console.error('[CloudSync] binding failed:', e);
             this.showErrorMessage(I18N.tr('online', 'sync_bind_failed_retry'));
             return false;
         }
     },
 
-    // 绑定账号（已有同步码）
+    // bindaccount（alreadythere issynccode）
     async bindExisting(code) {
         code = code.toUpperCase().trim();
         if (!/^[A-Z0-9]{6}$/.test(code)) {
@@ -224,33 +224,33 @@ const CloudSync = {
                 this.parseCloudSlot(cloudRecord.slot_3)
             ];
 
-            // 检查是否有冲突
+// Check for conflicts
             const hasLocalData = localSlots.some(s => s !== null);
             const hasCloudData = cloudSlots.some(s => s !== null);
 
             if (hasLocalData && hasCloudData) {
-                // 显示冲突对比面板，让用户选择覆盖方向
+// Show the conflict comparison panel and let the user pick the overwrite direction
                 this.showBindConflictPanel(code, cloudRecord, localSlots, cloudSlots);
                 return 'conflict';
             } else if (hasCloudData) {
-                // 本地为空，直接用云端
+// Local empty: use cloud directly
                 await this.applyCloudSave(cloudRecord);
                 this.completeBinding(code, cloudRecord.id, cloudRecord.nickname);
                 return true;
             } else {
-                // 云端为空，上传本地
+// Cloud empty: upload local
                 await this.uploadAllSlots(cloudRecord.id);
                 this.completeBinding(code, cloudRecord.id, cloudRecord.nickname);
                 return true;
             }
         } catch (e) {
-            console.error('[云同步] 绑定失败:', e);
+            console.error('[CloudSync] binding failed:', e);
             this.showErrorMessage(I18N.tr('online', 'sync_bind_failed_network'));
             return false;
         }
     },
 
-    // 解析云端槽位数据
+// Parse the cloud slot data
     parseCloudSlot(data) {
         if (!data) return null;
         if (typeof data === 'string') data = JSON.parse(data);
@@ -266,7 +266,7 @@ const CloudSync = {
         };
     },
 
-    // 完成绑定
+    // completebind
     completeBinding(code, recordId, nickname = null) {
         this.syncCode = code;
         this.recordId = recordId;
@@ -274,7 +274,7 @@ const CloudSync = {
         localStorage.setItem('cloud_sync_code', code);
         localStorage.setItem('cloud_record_id', recordId);
 
-        // 如果有云端昵称，保存到本地并显示欢迎信息
+        // If a cloud nickname exists, save it locally and show a welcome message
         if (nickname) {
             localStorage.setItem('pb_nickname', nickname);
             OnlineSystem.nickname = nickname;
@@ -287,7 +287,7 @@ const CloudSync = {
         this.showSuccessMessage(I18N.tr('online', 'sync_bind_success', '', { code }));
     },
 
-    // 恢复存档（输入同步码下载）
+// Restore a save (download via sync code)
     async restore(code) {
         code = code.toUpperCase().trim();
         if (!/^[A-Z0-9]{6}$/.test(code)) {
@@ -321,28 +321,28 @@ const CloudSync = {
 
             const hasLocalData = localSlots.some(s => s !== null);
             if (hasLocalData) {
-                // 显示冲突对比面板
+// Show the conflict comparison panel
                 this.showRestoreConflictPanel(code, cloudRecord, localSlots, cloudSlots);
                 return 'conflict';
             } else {
-                // 本地为空，直接恢复
+// Local empty: restore directly
                 await this.applyCloudSave(cloudRecord);
                 this.completeBinding(code, cloudRecord.id);
                 this.showSuccessMessage(I18N.tr('online', 'sync_restore_success'));
-                // 刷新存档列表
+// Refresh the save list
                 if (typeof SaveSystem !== 'undefined') {
                     SaveSystem.loadAllSlotsMeta();
                 }
                 return true;
             }
         } catch (e) {
-            console.error('[云同步] 恢复失败:', e);
+            console.error('[CloudSync] restore failed:', e);
             this.showErrorMessage(I18N.tr('online', 'sync_restore_failed_network'));
             return false;
         }
     },
 
-    // 应用云端存档到本地
+// Apply the cloud save locally
     async applyCloudSave(cloudRecord) {
         if (!db) throw new Error(I18N.tr('online', 'sync_store_unavailable_short'));
 
@@ -366,7 +366,7 @@ const CloudSync = {
         });
     },
 
-    // 上传所有槽位到云端
+// Upload all slots to the cloud
     async uploadAllSlots(recordId = null) {
         const slots = await this.getLocalSlots();
         const updateData = {
@@ -384,12 +384,12 @@ const CloudSync = {
             this.rememberCloud(updateData);
             return true;
         } catch (e) {
-            console.error('[云同步] 上传失败:', e);
+            console.error('[CloudSync] upload failed:', e);
             throw e;
         }
     },
 
-    // 上传单个槽位（自动同步用，带防抖）
+// Upload one slot (for auto sync, debounced)
     uploadSlotDebounced(slotId) {
         if (!this.isBound || !this.recordId) return;
 
@@ -400,7 +400,7 @@ const CloudSync = {
         }, this.DEBOUNCE_DELAY);
     },
 
-    // 上传单个槽位
+// Upload one slot
     uploadSlot(slotId) {
         this.uploadQueue = this.uploadQueue.catch(() => {}).then(() => this.uploadSlotNow(slotId));
         return this.uploadQueue;
@@ -416,7 +416,7 @@ const CloudSync = {
             const cloudRecord = await pb.collection('cloud_saves').getOne(this.recordId);
             const cloudSlot = this.parseCloudSlot(cloudRecord[`slot_${slotId}`])?.fullData;
             if (this.knownCloudTimes[slotId] === undefined || this.knownCloudTimes[slotId] !== this.saveTime(cloudSlot)) {
-                console.warn('[云同步] 云端已有其他设备更新，暂停上传以保留双方进度');
+                console.warn('[CloudSync] cloud has updates from another device, upload paused to preserve both sides');
                 if (!this.conflictWarnings.has(slotId) && typeof showNotification === 'function') {
                     this.conflictWarnings.add(slotId);
                     showNotification(I18N.tr('online', 'sync_conflict_paused'));
@@ -426,7 +426,7 @@ const CloudSync = {
 
             if (cloudSlot) {
                 if (this.saveTime(localSlot.fullData) <= this.saveTime(cloudSlot)) {
-                    console.warn('[云同步] 云端存档更新或无法确定新旧，保留云端进度');
+                    console.warn('[CloudSync] cloud save is newer or order unclear, keeping cloud progress');
                     return;
                 }
             }
@@ -437,13 +437,13 @@ const CloudSync = {
             };
             await pb.collection('cloud_saves').update(this.recordId, updateData);
             this.knownCloudTimes[slotId] = this.saveTime(localSlot.fullData);
-            console.log(`[云同步] 槽位${slotId} 已上传 (Lv${localLevel})`);
+            console.log(`[CloudSync] slot ${slotId} uploaded (Lv${localLevel})`);
         } catch (e) {
-            console.error('[云同步] 上传槽位失败:', e);
+            console.error('[CloudSync] slot upload failed:', e);
         }
     },
 
-    // 显示云同步弹窗（老用户）
+    // Showcloud syncpopup（olduser）
     showSyncDialog() {
         const overlay = document.getElementById('cloud-sync-overlay');
         const panel = document.getElementById('cloud-sync-panel');
@@ -470,7 +470,7 @@ const CloudSync = {
                 </div>
             </div>
         `;
-        // 老用户弹窗：显示关闭按钮
+// Returning user dialog: show the close button
         const closeBtn = panel.querySelector('.panel-close');
         if (closeBtn) closeBtn.style.display = 'block';
 
@@ -478,15 +478,15 @@ const CloudSync = {
         overlay.classList.add('active');
     },
 
-    // 显示新用户弹窗（创建/恢复/跳过）
+// Show the new-user dialog (create/restore/skip)
     showNewUserDialog() {
-        console.log('[CloudSync] showNewUserDialog 被调用');
+        console.log('[CloudSync] showNewUserDialog called');
         const overlay = document.getElementById('cloud-sync-overlay');
         const panel = document.getElementById('cloud-sync-panel');
         const content = document.getElementById('cloud-sync-content');
-        console.log('[CloudSync] 元素检查:', { overlay: !!overlay, panel: !!panel, content: !!content });
+        console.log('[CloudSync] element check:', { overlay: !!overlay, panel: !!panel, content: !!content });
         if (!overlay || !content || !panel) {
-            console.error('[CloudSync] 元素缺失，无法显示弹窗');
+            console.error('[CloudSync] missing elements, cannot show dialog');
             return;
         }
 
@@ -509,7 +509,7 @@ const CloudSync = {
                 </div>
             </div>
         `;
-        // 新用户弹窗：隐藏关闭按钮，必须选择
+// New-user dialog: hide close; a choice is required
         const closeBtn = panel.querySelector('.panel-close');
         if (closeBtn) closeBtn.style.display = 'none';
 
@@ -517,13 +517,13 @@ const CloudSync = {
         overlay.classList.add('active');
     },
 
-    // 新用户选择"创建新角色" → 弹昵称输入
+// New user picks 'Create character' -> nickname input
     handleNewUserCreate() {
         this.hideDialog();
         OnlineSystem.showNicknameDialog();
     },
 
-    // 新用户选择"恢复存档"
+// New user picks 'Restore save'
     async handleNewUserRestore() {
         const input = document.getElementById('sync-code-input');
         if (!input || !input.value) {
@@ -532,15 +532,15 @@ const CloudSync = {
         }
         const result = await this.bindExisting(input.value);
         if (result === true) {
-            // 恢复成功，昵称已在 completeBinding 中保存
-            // 刷新存档列表（进入游戏时才 startOnline）
+// Restore succeeded; the nickname was already saved in completeBinding
+// Refresh the save list (startOnline only when entering the game)
             if (typeof SaveSystem !== 'undefined') {
                 SaveSystem.loadAllSlotsMeta();
             }
         }
     },
 
-    // 隐藏弹窗
+    // hidepopup
     hideDialog() {
         const overlay = document.getElementById('cloud-sync-overlay');
         const panel = document.getElementById('cloud-sync-panel');
@@ -548,23 +548,23 @@ const CloudSync = {
         if (panel) panel.style.display = 'none';
     },
 
-    // 处理创建新账号（老用户）
+// Handle account creation (returning users)
     async handleBindNew() {
         await this.bindNew();
     },
 
-    // 处理输入同步码（自动判断绑定/恢复）
+// Handle sync code input (auto-detect bind vs restore)
     async handleSyncCode() {
         const input = document.getElementById('sync-code-input');
         if (!input || !input.value) {
             this.showErrorInPanel(I18N.tr('online', 'sync_enter_code_prompt'));
             return;
         }
-        // 统一使用 bindExisting，它会自动处理所有情况
+// Always use bindExisting; it handles every case
         await this.bindExisting(input.value);
     },
 
-    // 在面板内显示错误
+// Show the error inside the panel
     showErrorInPanel(msg) {
         const errorEl = document.getElementById('cloud-error');
         if (errorEl) {
@@ -574,7 +574,7 @@ const CloudSync = {
         }
     },
 
-    // 显示绑定冲突面板（用户选择覆盖方向）
+// Show the binding conflict panel (user picks the overwrite direction)
     showBindConflictPanel(code, cloudRecord, localSlots, cloudSlots) {
         const overlay = document.getElementById('cloud-sync-overlay');
         const panel = document.getElementById('cloud-sync-panel');
@@ -603,18 +603,18 @@ const CloudSync = {
                     ${I18N.tr('online', 'sync_overwrite_local')}
                 </button>
             </div>
-            <button class="conflict-cancel" onclick="CloudSync.hideDialog()">${I18N.tOr('cancel', '取消')}</button>
+            <button class="conflict-cancel" onclick="CloudSync.hideDialog()">${I18N.tOr('cancel', 'Cancel')}</button>
         `;
 
-        // 临时存储 cloudRecord 用于后续操作
+// Temporarily store cloudRecord for later steps
         this._pendingCloudRecord = cloudRecord;
 
-        // 显示 panel 和 overlay
+        // Show panel and overlay
         panel.style.display = 'block';
         overlay.classList.add('active');
     },
 
-    // 显示恢复冲突面板
+// Show the restore conflict panel
     showRestoreConflictPanel(code, cloudRecord, localSlots, cloudSlots) {
         this.hideDialog();
         const overlay = document.getElementById('cloud-sync-overlay');
@@ -643,20 +643,20 @@ const CloudSync = {
                     ${I18N.tr('online', 'sync_confirm_overwrite_local')}
                 </button>
             </div>
-            <button class="conflict-cancel" onclick="CloudSync.hideDialog()">${I18N.tOr('cancel', '取消')}</button>
+            <button class="conflict-cancel" onclick="CloudSync.hideDialog()">${I18N.tOr('cancel', 'Cancel')}</button>
         `;
 
         this._pendingCloudRecord = cloudRecord;
         overlay.classList.add('active');
     },
 
-    // 渲染槽位列表
+// Render the slot list
     renderSlotList(slots) {
         return slots.map((slot, i) => {
             if (!slot) {
                 return `<div class="conflict-slot empty">${I18N.tr('online', 'sync_slot_empty', '', { slot: i + 1 })}</div>`;
             }
-            // 地狱层数为 0 时后缀留空
+            // Hell floorfor 0 hoursuffixkeepair
             const hellText = slot.maxHellFloor > 0 ? I18N.tr('online', 'sync_slot_hell_floor', '', { floor: slot.maxHellFloor }) : '';
             return `<div class="conflict-slot">
                 ${I18N.tr('online', 'sync_slot_summary', '', { slot: i + 1, lvl: slot.lvl, floor: slot.maxFloor, hell: hellText })}
@@ -664,16 +664,16 @@ const CloudSync = {
         }).join('');
     },
 
-    // 解决绑定冲突
+// Resolve the binding conflict
     async resolveBindConflict(choice, code, recordId) {
         try {
             const cloudNickname = this._pendingCloudRecord?.nickname || null;
 
             if (choice === 'local') {
-                // 用本地覆盖云端
+// Overwrite cloud with local
                 await this.uploadAllSlots(recordId);
             } else {
-                // 用云端覆盖本地
+// Overwrite local with cloud
                 if (this._pendingCloudRecord) {
                     await this.applyCloudSave(this._pendingCloudRecord);
                     if (typeof SaveSystem !== 'undefined') {
@@ -686,7 +686,7 @@ const CloudSync = {
         } catch (error) { this.showErrorMessage(error.message || I18N.tr('online', 'sync_operation_failed_retry')); }
     },
 
-    // 解决恢复冲突
+// Resolve the restore conflict
     async resolveRestoreConflict(code, recordId) {
         try {
             if (this._pendingCloudRecord) {
@@ -701,7 +701,7 @@ const CloudSync = {
         } catch (error) { this.showErrorMessage(error.message || I18N.tr('online', 'sync_operation_failed_retry')); }
     },
 
-    // 复制同步码到剪贴板
+// Copy the sync code to the clipboard
     async copySyncCode() {
         if (!this.syncCode) return;
 
@@ -709,7 +709,7 @@ const CloudSync = {
             await navigator.clipboard.writeText(this.syncCode);
             this.showSuccessMessage(I18N.tr('online', 'sync_code_copied'));
         } catch (e) {
-            // 降级方案
+// Fallback plan
             const input = document.createElement('input');
             input.value = this.syncCode;
             document.body.appendChild(input);
@@ -720,19 +720,19 @@ const CloudSync = {
         }
     },
 
-    // 更新首页UI状态
+// Update the homepage UI state
     updateUI() {
         const bar = document.getElementById('cloud-sync-bar');
         if (!bar) return;
 
-        // 如果没有昵称（新用户），不显示云同步状态栏
+// Without a nickname (new user), hide the cloud sync status bar
         const hasNickname = localStorage.getItem('pb_nickname');
         if (!hasNickname) {
             bar.style.display = 'none';
             return;
         }
 
-        // 初始化完成，显示状态栏
+        // initialized，Showstatepanel
         bar.style.display = 'flex';
 
         const statusEl = document.getElementById('cloud-sync-status');
@@ -755,7 +755,7 @@ const CloudSync = {
         }
     },
 
-    // 显示成功消息
+// Show a success message
     showSuccessMessage(msg) {
         if (typeof showNotification === 'function') {
             showNotification(msg);
@@ -764,14 +764,14 @@ const CloudSync = {
         }
     },
 
-    // 显示错误消息
+// Show an error message
     showErrorMessage(msg) {
         this.showErrorInPanel(msg);
     }
 };
 
 const OnlineSystem = {
-    // 通用确认框 (替代 confirm)
+    // commonuseconfirmbox (in place ofon behalf of confirm)
     showConfirm(content, title = I18N.tr('online', 'online_dialog_confirm_title')) {
         return new Promise((resolve) => {
             const overlay = document.getElementById('game-dialog-overlay');
@@ -805,7 +805,7 @@ const OnlineSystem = {
         });
     },
 
-    // 通用提示框 (替代 alert)
+    // commonusetoastbox (in place ofon behalf of alert)
     showAlert(content, title = I18N.tr('online', 'online_notice_title')) {
         return new Promise((resolve) => {
             const overlay = document.getElementById('game-dialog-overlay');
@@ -816,7 +816,7 @@ const OnlineSystem = {
 
             header.textContent = title;
             body.innerHTML = content.replace(/\n/g, '<br>');
-            btnCancel.style.display = 'none'; // Alert模式隐藏取消按钮
+            btnCancel.style.display = 'none'; // Alert mode hides the cancel button
             overlay.classList.add('active');
 
             const onConfirm = () => {
@@ -857,45 +857,45 @@ const OnlineSystem = {
         };
     },
 
-    // 初始化
+    // Init
     /**
-     * @param {boolean} showDialog - 是否立即显示昵称对话框（默认为true）
+     * @param {boolean} showDialog - whether to show the nickname dialog (default true)
     /**
-     * 初始化 - 只加载用户信息和UI，不建立在线状态
-     * 在线状态在进入游戏时（selectSlot）才建立
+     * Init - loads user info and UI only; does not build online presence
+     * Online presence builds only on game entry (selectSlot)
      */
     async init(showDialog = true) {
         this.bootstrapLocalIdentity();
 
-        // 初始化云同步
+        // Initcloud sync
         CloudSync.init();
 
-        // 老用户且非刚被踢：尝试清理属于本页面的残留状态
+// Returning users not just kicked: try cleaning leftover state owned by this page
         if (this.userId && !sessionStorage.getItem('kicked_reason')) {
             this.goOffline();
         }
 
         this.loadOnlineCount();
-        // 创建排行榜按钮（数据延迟加载）
+// Create the leaderboard button (data lazy-loaded)
         this.createLeaderboardUI();
 
-        // 检查是否是因为被踢才回到首页的
+// Check whether the homepage return was caused by a kick
         this.checkKickedStatus();
     },
 
-    // 检查被踢状态并弹窗
+// Check the kicked state and show a dialog
     checkKickedStatus() {
         const reason = sessionStorage.getItem('kicked_reason');
         if (reason === 'other_device') {
             sessionStorage.removeItem('kicked_reason');
-            // 延迟一点点弹出，确保页面已经渲染完成
+// Popup with a tiny delay so the page finishes rendering
             setTimeout(() => {
                 this.showAlert(I18N.tr('online', 'online_kicked_other_device'), I18N.tr('online', 'online_system_notice'));
             }, 500);
         }
     },
 
-    // 创建排行榜按钮和面板（不加载数据）
+// Create the leaderboard button and panel (no data load)
     createLeaderboardUI() {
         let leftBtns = document.getElementById('left-menu-btns');
         if (!leftBtns) {
@@ -915,7 +915,7 @@ const OnlineSystem = {
             btn.innerHTML = I18N.tr('online', 'leaderboard_title');
             btn.onclick = () => {
                 togglePanel('leaderboard');
-                // 点击时才加载数据
+// Load data only on click
                 this.loadLeaderboard();
             };
             btn.onmousedown = (e) => e.stopPropagation();
@@ -934,12 +934,12 @@ const OnlineSystem = {
         }
     },
 
-    // 排行榜缓存
+// Leaderboard cache
     leaderboardCache: null,
     leaderboardCacheTime: 0,
-    CACHE_DURATION: 5 * 60 * 1000,  // 5分钟缓存
+    CACHE_DURATION: 5 * 60 * 1000,  // 5 minutescache
 
-    // 显示昵称输入框
+// Show the nickname input
     showNicknameDialog() {
         const overlay = document.createElement('div');
         overlay.id = 'nickname-overlay';
@@ -978,7 +978,7 @@ const OnlineSystem = {
             }
         };
 
-        // 输入时清除错误提示
+// Clear the error hint while typing
         document.getElementById('nickname-input').oninput = () => {
             const errorEl = document.getElementById('nickname-error');
             if (errorEl) {
@@ -987,21 +987,21 @@ const OnlineSystem = {
         };
     },
 
-    // 设置昵称
+    // Setnickname
     async setNickname(name) {
         if (typeof ChatSystem !== 'undefined' && ChatSystem.ensureBlockedWordsLoaded) {
             await ChatSystem.ensureBlockedWordsLoaded();
         }
 
-        // 检查是否包含敏感词
+// Check for sensitive words
         const filteredName = ChatSystem.filterSensitiveWords(name);
         if (filteredName !== name) {
-            // 如果昵称包含敏感词，显示错误提示
+// Sensitive word in the nickname: show the error hint
             const errorEl = document.getElementById('nickname-error');
             if (errorEl) {
                 errorEl.textContent = I18N.tr('online', 'nickname_blocked_word');
                 errorEl.style.display = 'block';
-                // 3秒后自动隐藏
+// Auto-hide after 3 seconds
                 setTimeout(() => {
                     errorEl.style.display = 'none';
                 }, 3000);
@@ -1017,62 +1017,62 @@ const OnlineSystem = {
             localStorage.setItem('pb_user_id', this.userId);
         }
 
-        // 注意：不在这里调用 startOnline，改为进入游戏时调用
+// Note: startOnline is not called here; it's called on game entry
 
-        // 昵称设置完成后，显示云同步状态栏
+// Once the nickname is set, show the cloud sync status bar
         CloudSync.updateUI();
 
         return true;
     },
 
-    // 开始在线状态
+// Start the online presence
     async startOnline() {
-        // 生成本次会话Token
+// Generate this session's token
         this.sessionToken = this.generateSessionToken();
         sessionStorage.setItem('current_session_token', this.sessionToken);
 
-        await this.updateOnlineStatus(false);  // 首次登录，不检查被踢
-        this.heartbeatTimer = setInterval(() => this.updateOnlineStatus(true), 30000);  // 心跳时检查被踢
+        await this.updateOnlineStatus(false);  // First login: no kick check
+        this.heartbeatTimer = setInterval(() => this.updateOnlineStatus(true), 30000);  // Check kicks during heartbeats
         window.addEventListener('beforeunload', () => this.goOffline());
 
-        // 订阅 online 表变化，实时检测被踢
+// Subscribe to online table changes for real-time kick detection
         await this.subscribeToSessionChanges();
     },
 
-    // 订阅会话变化（实时被踢检测）
+// Subscribe to session changes (real-time kick detection)
     async subscribeToSessionChanges() {
-        console.log('[在线] 尝试订阅, recordId:', this.onlineRecordId);
+        console.log('[Online] subscribing, recordId:', this.onlineRecordId);
         if (!this.onlineRecordId) {
-            console.warn('[在线] 无法订阅: recordId 为空');
+            console.warn('[Online] cannot subscribe: recordId is empty');
             return;
         }
 
         try {
             await pb.collection('online').subscribe(this.onlineRecordId, (e) => {
-                console.log('[在线] 收到 Realtime 事件:', e.action);
+                console.log('[Online] Realtime event received:', e.action);
                 if (e.action === 'update') {
                     const newToken = e.record.session_token;
-                    console.log('[在线] 当前Token:', this.sessionToken, '新Token:', newToken);
+                    console.log('[Online] current token:', this.sessionToken, 'New token:', newToken);
                     if (newToken && newToken !== this.sessionToken) {
-                        console.log('[在线] Realtime 检测到会话被接管');
+                        console.log('[Online] Realtime detected session takeover');
                         this.handleKicked();
                     }
                 }
             });
-            console.log('[在线] Realtime 订阅成功, recordId:', this.onlineRecordId);
+            console.log('[Online] Realtime subscribed, recordId:', this.onlineRecordId);
         } catch (e) {
-            console.error('[在线] Realtime 订阅失败:', e);
+            console.error('[Online] Realtime subscribe failed:', e);
         }
     },
 
-    // 生成会话Token
+// Generate the session token
     generateSessionToken() {
         return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
     },
 
-    // 检查是否有其他设备在线（用于进入游戏前检测）
+// Check whether other devices are online (pre-entry check)
     async checkOtherDeviceOnline() {
-        // 必须已绑定云同步才检测
+// Only checked when cloud sync is bound
         const cloudRecordId = CloudSync.recordId;
         if (!cloudRecordId) return { online: false };
 
@@ -1086,7 +1086,7 @@ const OnlineSystem = {
                 const lastActive = new Date(record.last_active).getTime();
                 const now = Date.now();
 
-                // 5分钟内有活动视为在线
+// Activity within 5 minutes counts as online
                 if (now - lastActive < 5 * 60 * 1000) {
                     return {
                         online: true,
@@ -1097,12 +1097,12 @@ const OnlineSystem = {
             }
             return { online: false };
         } catch (e) {
-            console.error('[在线] 检查失败:', e);
+            console.error('[Online] check failed:', e);
             return { online: false };
         }
     },
 
-    // 强制接管会话（踢掉其他设备）
+// Force-takeover the session (kick other devices)
     async takeoverSession(recordId) {
         this.sessionToken = this.generateSessionToken();
         sessionStorage.setItem('current_session_token', this.sessionToken);
@@ -1112,15 +1112,15 @@ const OnlineSystem = {
                 last_active: new Date().toISOString()
             });
             this.onlineRecordId = recordId;
-            console.log('[在线] 已接管会话');
+            console.log('[Online] session taken over');
             return true;
         } catch (e) {
-            console.error('[在线] 接管失败:', e);
+            console.error('[Online] takeover failed:', e);
             return false;
         }
     },
 
-    // 更新在线状态（使用 cloud_record_id 实现跨设备检测）
+// Update presence (cloud_record_id enables cross-device detection)
     isUnknownPbFieldError(error, fieldName) {
         const text = JSON.stringify(error?.data || error?.response || error?.message || error || '').toLowerCase();
         return text.includes(fieldName.toLowerCase()) && (
@@ -1143,7 +1143,7 @@ const OnlineSystem = {
 
             const retryData = { ...data };
             delete retryData.user_id;
-            console.warn('[在线] online.user_id 字段不存在，已降级写入在线状态。私聊目标解析会使用聊天记录兜底。');
+            console.warn('[Online] online.user_id field missing, degraded to fallback status write. Direct message lookup will fall back to chat history.');
             if (recordId) {
                 return await pb.collection('online').update(recordId, retryData);
             }
@@ -1156,7 +1156,7 @@ const OnlineSystem = {
         if (!cloudRecordId || !this.nickname) return;
 
         try {
-            // 先尝试查找现有记录（基于云端账号ID）
+// Try finding an existing record first (by cloud account id)
             const records = await pb.collection('online').getList(1, 1, {
                 filter: `cloud_record_id = "${cloudRecordId}"`
             });
@@ -1165,14 +1165,14 @@ const OnlineSystem = {
                 const record = records.items[0];
                 this.onlineRecordId = record.id;
 
-                // 只有心跳时才检查是否被踢（首次登录时不检查）
+// Kick checks only during heartbeats (not on first login)
                 if (isHeartbeat && record.session_token && record.session_token !== this.sessionToken) {
-                    // 被其他设备踢掉了
+// Kicked by another device
                     this.handleKicked();
                     return;
                 }
 
-                // 更新现有记录
+// Update the existing record
                 await this.writeOnlineRecord(this.onlineRecordId, {
                     nickname: this.nickname,
                     user_id: this.userId,
@@ -1180,7 +1180,7 @@ const OnlineSystem = {
                     last_active: new Date().toISOString()
                 });
             } else {
-                // 创建新记录
+// Create a new record
                 const record = await this.writeOnlineRecord(null, {
                     cloud_record_id: cloudRecordId,
                     nickname: this.nickname,
@@ -1191,15 +1191,15 @@ const OnlineSystem = {
                 this.onlineRecordId = record.id;
             }
         } catch (e) {
-            console.error('[在线] 更新状态失败:', e);
+            console.error('[Online] status update failed:', e);
         }
     },
 
-    // 处理被踢
+    // handlebykick
     handleKicked() {
-        console.log('[在线] 检测到账号在其他设备登录');
+        console.log('[Online] account signed in on another device');
 
-        // 停止心跳
+        // stopheartbeat
         if (this.heartbeatTimer) {
             clearInterval(this.heartbeatTimer);
             this.heartbeatTimer = null;
@@ -1210,21 +1210,21 @@ const OnlineSystem = {
             }
         } catch (e) { }
 
-        // 设置被踢标记，页面刷新后读取
+// Set the kicked flag, read after page refresh
         sessionStorage.setItem('kicked_reason', 'other_device');
 
-        // 回到首页
+// Back to the homepage
         window.location.reload();
     },
 
-    // 下线（清理在线状态）
+// Go offline (clear presence)
     async goOffline() {
         const cloudRecordId = CloudSync.recordId || localStorage.getItem('cloud_record_id');
         const token = this.sessionToken || sessionStorage.getItem('current_session_token');
         if (!cloudRecordId || !token) return;
 
         try {
-            // 查找属于当前云账号且 Token 一致的记录
+// Find records for this cloud account with a matching token
             const records = await pb.collection('online').getList(1, 10, {
                 filter: `cloud_record_id = "${cloudRecordId}" && session_token = "${token}"`
             });
@@ -1236,23 +1236,23 @@ const OnlineSystem = {
             this.onlineRecordId = null;
             this.sessionToken = null;
             sessionStorage.removeItem('current_session_token');
-            console.log('[在线] 已清理属于本页面的在线状态');
+            console.log('[Online] cleaned up online status for this page');
         } catch (e) {
-            // 静默失败
+            // silentfailure
         }
     },
 
-    // 加载在线人数（只统计2分钟内活跃的用户）
+// Load the online count (only users active within 2 minutes)
     async loadOnlineCount() {
         try {
-            // 计算2分钟前的时间（转换为 PocketBase 格式：空格替代 T）
+// Compute 2 minutes ago (converted to PocketBase format: space instead of T)
             const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString().replace('T', ' ');
             const records = await pb.collection('online').getList(1, 1, {
                 filter: `last_active >= "${twoMinutesAgo}"`
             });
             this.updateOnlineDisplay(records.totalItems || 0);
 
-            // 清理超过5分钟的僵尸记录
+// Clean zombie records older than 5 minutes
             this.cleanupStaleRecords();
         } catch (e) {
             this.updateOnlineDisplay(0);
@@ -1260,35 +1260,35 @@ const OnlineSystem = {
         setTimeout(() => this.loadOnlineCount(), 60000);
     },
 
-    // 清理僵尸记录（超过5分钟未活跃的）
+// Clean zombie records (inactive for 5+ minutes)
     async cleanupStaleRecords() {
         const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString().replace('T', ' ');
         this.gc('online', `last_active < "${fiveMinutesAgo}"`, 10);
     },
 
-    // 机会性清理辅助函数 (Garbage Collection)
+// Opportunistic cleanup helpers (garbage collection)
     async gc(collection, filter, limit = 5) {
         try {
             const records = await pb.collection(collection).getList(1, limit, {
                 filter: filter,
                 sort: 'created',
-                requestKey: 'gc_' + collection // 使用固定 key 防止并发冲突
+                requestKey: 'gc_' + collection // use fixed keys to prevent concurrency conflicts
             });
             for (const r of records.items) {
-                // 尝试删除，忽略 403(权限) 和 404(已删除)
+// Try deleting; ignore 403 (permission) and 404 (already gone)
                 await pb.collection(collection).delete(r.id).catch(e => {
                     if (e.status === 403) {
-                        console.warn(`[GC] 清理 ${collection} 失败: 请在 PocketBase 后台开放 Delete 权限`);
+                        console.warn(`[GC] failed to clean ${collection}: open the Delete rule in the PocketBase admin`);
                     }
-                    // 404 表示记录已不存在，静默忽略
+// 404 means the record is gone; ignore silently
                 });
             }
         } catch (e) {
-            // 获取列表失败也静默
+// List fetch failures are silent too
         }
     },
 
-    // 保留最近N条记录，删除其余的
+// Keep the most recent N records, delete the rest
     async gcKeepRecent(collection, keepCount = 20) {
         try {
             const total = await pb.collection(collection).getList(1, 1, {
@@ -1316,10 +1316,10 @@ const OnlineSystem = {
         } catch (e) { }
     },
 
-    // 更新在线人数显示
-    // 更新在线人数显示
+// Update the online count display
+// Update the online count display
     updateOnlineDisplay(count) {
-        // 暂时隐藏在线人数显示
+// Temporarily hide the online count display
         let el = document.getElementById('online-count');
         if (el) {
             el.style.display = 'none';
@@ -1331,14 +1331,14 @@ const OnlineSystem = {
             el.id = 'online-count';
             document.querySelector('.ui-layer')?.appendChild(el);
         }
-        el.innerHTML = `🟢 在线: ${count * 9}`;
+        el.innerHTML = `🟢 Online: ${count * 9}`;
         */
     },
 
     recordWeeklyKill() {
         const floor = player.isInHell ? (player.maxHellFloor || player.hellFloor || 0) + 10 : (player.maxFloor || 0);
         const score = player.lvl * 100 + player.kills + floor * 50;
-        // 跨周首杀先按击杀前的累计值建基线，再记录这次击杀。
+// Cross-week first kills build the baseline from the pre-kill total, then record this kill.
         if (!player.weeklyLeaderboard || player.weeklyLeaderboard.version !== 2 || player.weeklyLeaderboard.week !== this.getWeekStart()) {
             this.getWeeklyProgress({ kills: player.kills - 1 }, score - 1);
         }
@@ -1360,11 +1360,11 @@ const OnlineSystem = {
         return progress;
     },
 
-    // 提交分数到排行榜（双轨匹配：优先 sync_code，兜底 user_id）
+// Submit scores to the leaderboard (dual-track match: sync_code first, user_id fallback)
     async submitScore(data) {
         if (!this.userId || !this.nickname) return;
 
-        // 获取 sync_code（优先云同步码，否则用临时ID）
+// Get the sync_code (cloud sync code preferred, else temp id)
         let syncCode = CloudSync.syncCode;
         if (!syncCode) {
             let tempId = localStorage.getItem('temp_user_id');
@@ -1378,7 +1378,7 @@ const OnlineSystem = {
         const currentWeekStart = this.getWeekStart();
         const scoreData = {
             user_id: this.userId,
-            sync_code: syncCode,  // 新增：同时写入 sync_code
+            sync_code: syncCode,  // New: also write sync_code
             nickname: this.nickname,
             level: data.level || 1,
             kills: data.kills || 0,
@@ -1390,12 +1390,12 @@ const OnlineSystem = {
         const weekly = this.getWeeklyProgress(data, scoreData.score);
 
         try {
-            // 双轨查询：优先用 sync_code，fallback 用 user_id
+// Dual-track query: sync_code first, user_id fallback
             let records = await pb.collection('leaderboard').getList(1, 1, {
                 filter: `sync_code = "${syncCode}"`
             });
 
-            // 如果 sync_code 没找到，尝试用 user_id 找老记录
+            // if sync_code sinkfindarrive at，try touse user_id findoldlog
             if (records.items.length === 0) {
                 records = await pb.collection('leaderboard').getList(1, 1, {
                     filter: `user_id = "${this.userId}"`
@@ -1405,20 +1405,20 @@ const OnlineSystem = {
             if (records.items.length > 0) {
                 const old = records.items[0];
 
-                // 检查是否需要重置周数据（新的一周）
+// Check whether weekly data needs a reset (new week)
                 const oldWeekStart = old.week_start || 0;
                 const isNewWeek = oldWeekStart < currentWeekStart;
 
-                // 周进度保存在角色存档中；旧档首次建立基线，不把历史击杀记入本周。
+                // Weekly progress is saved in the character save; legacy saves establish a baseline on first load and do not count historical kills into this week.
                 const weekKills = weekly.kills;
                 const weekScore = weekly.score;
 
-                // 添加周数据字段
+// Add weekly data fields
                 scoreData.week_kills = weekKills;
                 scoreData.week_score = weekScore;
                 scoreData.week_start = currentWeekStart;
 
-                // 分数更高 或 金币更高 或 周数据变化 或 需要迁移 sync_code 都触发更新
+// Higher score, more gold, weekly change, or a sync_code migration all trigger updates
                 const needsMigration = !old.sync_code || old.sync_code !== syncCode;
                 const shouldUpdate = scoreData.score > old.score ||
                     scoreData.gold > (old.gold || 0) ||
@@ -1428,28 +1428,28 @@ const OnlineSystem = {
                     needsMigration;
 
                 if (shouldUpdate) {
-                    // 更新时排除 user_id（唯一索引字段不能重复设置）
+// Updates exclude user_id (unique index fields can't be re-set)
                     const { user_id, ...updateData } = scoreData;
                     await pb.collection('leaderboard').update(old.id, updateData);
-                    this.loadLeaderboard(true);  // 强制刷新
+                    this.loadLeaderboard(true);  // Force refresh
                 }
             } else {
-                // 新角色先建立周统计基线
+// New characters build a weekly stats baseline first
                 scoreData.week_kills = weekly.kills;
                 scoreData.week_score = weekly.score;
                 scoreData.week_start = currentWeekStart;
                 await pb.collection('leaderboard').create(scoreData);
-                this.loadLeaderboard(true);  // 强制刷新
+                this.loadLeaderboard(true);  // Force refresh
             }
         } catch (e) { console.error('[Leaderboard] submitScore error:', e); }
     },
 
-    // 加载排行榜（带缓存）
+// Load the leaderboard (cached)
     async loadLeaderboard(forceRefresh = false) {
         const now = Date.now();
         const queryKey = `${this.leaderboardMode}:${this.currentTab}:${this.getWeekStart()}`;
 
-        // 使用缓存（5分钟内不重复请求）
+// Use the cache (no repeat requests within 5 minutes)
         if (!forceRefresh && this.leaderboardCacheKey === queryKey && this.leaderboardCache && (now - this.leaderboardCacheTime) < this.CACHE_DURATION) {
             this.updateLeaderboardDisplay(this.leaderboardCache);
             return;
@@ -1471,7 +1471,7 @@ const OnlineSystem = {
         } catch (e) { }
     },
 
-    // 更新排行榜显示
+// Update the leaderboard display
     updateLeaderboardDisplay(items) {
         let leftBtns = document.getElementById('left-menu-btns');
         if (!leftBtns) {
@@ -1508,23 +1508,23 @@ const OnlineSystem = {
         this.leaderboardData = items;
     },
 
-    // 当前选中的榜单类型
+// Currently selected board type
     currentTab: 'score',
-    // 周榜/总榜模式（默认周榜）
-    leaderboardMode: 'week',  // 'week' 或 'all'
+// Weekly/all-time mode (weekly default)
+    leaderboardMode: 'week',  // 'week' or 'all'
 
-    // 获取本周一 0:00 的时间戳（用于周榜重置判断）
+// Get this Monday 00:00 timestamp (weekly reset check)
     getWeekStart() {
         const now = new Date();
         const day = now.getDay();
-        const diff = day === 0 ? 6 : day - 1; // 周日是0，需要回退6天
+        const diff = day === 0 ? 6 : day - 1; // Sunday is 0, so step back 6 days
         const monday = new Date(now);
         monday.setDate(now.getDate() - diff);
         monday.setHours(0, 0, 0, 0);
         return monday.getTime();
     },
 
-    // 获取距离下周一的剩余时间（用于显示）
+// Get the time left until next Monday (for display)
     getTimeToNextWeek() {
         const now = Date.now();
         const weekStart = this.getWeekStart();
@@ -1535,53 +1535,53 @@ const OnlineSystem = {
         return I18N.tr('online', 'leaderboard_reset_span', '', { days, hours });
     },
 
-    // 渲染排行榜内容
+// Render the leaderboard content
     renderLeaderboardContent(panel, items) {
         let html = '<div class="panel-close" onclick="togglePanel(\'leaderboard\')"></div>';
         html += `<div class="panel-header">${I18N.tr('online', 'leaderboard_title')}</div>`;
 
-        // 周榜/总榜 顶级切换
+// Weekly/all-time top toggle
         html += `<div class="leaderboard-mode-tabs">
             <span class="lb-mode-tab ${this.leaderboardMode === 'week' ? 'active' : ''}" onclick="OnlineSystem.switchMode('week')">${I18N.tr('online', 'leaderboard_week_mode')}</span>
             <span class="lb-mode-tab ${this.leaderboardMode === 'all' ? 'active' : ''}" onclick="OnlineSystem.switchMode('all')">${I18N.tr('online', 'leaderboard_all_time_mode')}</span>
         </div>`;
 
-        // 周榜倒计时提示
+// Weekly countdown hint
         if (this.leaderboardMode === 'week') {
             html += `<div class="week-countdown">${I18N.tr('online', 'leaderboard_reset_countdown', '', { time: this.getTimeToNextWeek() })}</div>`;
         }
 
-        // 个人最佳记录区域
+// Personal best area
         html += this.renderPersonalBest();
 
-        // 榜单标签页（周榜模式只显示击杀和综合）
+// Board tabs (weekly mode shows kills and overall only)
         if (this.leaderboardMode === 'week') {
             html += `<div class="leaderboard-tabs">
                 <span class="lb-tab ${this.currentTab === 'score' ? 'active' : ''}" onclick="OnlineSystem.switchTab('score')">${I18N.tr('online', 'leaderboard_tab_overall')}</span>
-                <span class="lb-tab ${this.currentTab === 'kills' ? 'active' : ''}" onclick="OnlineSystem.switchTab('kills')">${I18N.tOr('slot_kills', '击杀')}</span>
+                <span class="lb-tab ${this.currentTab === 'kills' ? 'active' : ''}" onclick="OnlineSystem.switchTab('kills')">${I18N.tOr('slot_kills', 'Slain')}</span>
                 <span class="lb-tab ${this.currentTab === 'abyss' ? 'active' : ''}" onclick="OnlineSystem.switchTab('abyss')">${I18N.tr('online', 'leaderboard_tab_abyss')}</span>
             </div>`;
         } else {
             html += `<div class="leaderboard-tabs">
                 <span class="lb-tab ${this.currentTab === 'score' ? 'active' : ''}" onclick="OnlineSystem.switchTab('score')">${I18N.tr('online', 'leaderboard_tab_overall')}</span>
-                <span class="lb-tab ${this.currentTab === 'kills' ? 'active' : ''}" onclick="OnlineSystem.switchTab('kills')">${I18N.tOr('slot_kills', '击杀')}</span>
+                <span class="lb-tab ${this.currentTab === 'kills' ? 'active' : ''}" onclick="OnlineSystem.switchTab('kills')">${I18N.tOr('slot_kills', 'Slain')}</span>
                 <span class="lb-tab ${this.currentTab === 'floor' ? 'active' : ''}" onclick="OnlineSystem.switchTab('floor')">${I18N.tr('online', 'leaderboard_tab_floor')}</span>
                 <span class="lb-tab ${this.currentTab === 'gold' ? 'active' : ''}" onclick="OnlineSystem.switchTab('gold')">${I18N.tr('online', 'leaderboard_tab_gold')}</span>
                 <span class="lb-tab ${this.currentTab === 'abyss' ? 'active' : ''}" onclick="OnlineSystem.switchTab('abyss')">${I18N.tr('online', 'leaderboard_tab_abyss')}</span>
             </div>`;
         }
 
-        // 排行榜列表
+// Leaderboard list
         if (items.length === 0) {
             html += `<div style="color: #666; text-align: center; padding: 20px;">${I18N.tr('online', 'leaderboard_empty')}</div>`;
         } else {
-            const sortedItems = this.sortByTab(items).slice(0, 10); // 只显示前10名
+            const sortedItems = this.sortByTab(items).slice(0, 10); // Top 10 only
             if (sortedItems.length === 0) {
                 html += `<div style="color: #666; text-align: center; padding: 20px;">${I18N.tr('online', 'leaderboard_week_empty')}</div>`;
             }
             sortedItems.forEach((item, i) => {
                 const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
-                // 双轨匹配：优先 sync_code，兜底 user_id
+// Dual-track match: sync_code first, user_id fallback
                 const mySyncCode = CloudSync.syncCode || localStorage.getItem('temp_user_id');
                 const isMe = (mySyncCode && item.sync_code === mySyncCode) || item.user_id === this.userId;
                 const valueText = this.getValueText(item);
@@ -1596,9 +1596,9 @@ const OnlineSystem = {
         this.bindPanelDrag(panel);
     },
 
-    // 渲染个人最佳记录
+// Render personal bests
     renderPersonalBest() {
-        // 检查 player 对象是否存在
+// Check whether the player object exists
         if (typeof player === 'undefined' || !player.personalBest) {
             return '';
         }
@@ -1610,7 +1610,7 @@ const OnlineSystem = {
         html += '<div class="pb-grid">';
         html += `<div class="pb-item"><span class="pb-label">${I18N.tr('online', 'leaderboard_max_level')}</span><span class="pb-value">${I18N.tr('online', 'leaderboard_value_level', '', { level: pb.maxLevel || 1 })}</span></div>`;
 
-        // 显示最高层数（普通或地狱）
+// Show the max floor (normal or Hell)
         if (pb.maxHellFloor > 0) {
             html += `<div class="pb-item"><span class="pb-label">${I18N.tr('online', 'leaderboard_hell_floor')}</span><span class="pb-value" style="color:#ff6600;">${I18N.tr('online', 'leaderboard_value_hell_floor', '', { floor: pb.maxHellFloor })}</span></div>`;
         } else {
@@ -1623,12 +1623,12 @@ const OnlineSystem = {
         return html;
     },
 
-    // 切换榜单标签
+// Switch board tabs
     switchTab(tab) {
         this.currentTab = tab;
         const panel = document.getElementById('leaderboard-panel');
 
-        // 深渊榜单使用独立的数据源
+// Abyss boards use a separate data source
         if (tab === 'abyss') {
             this.renderAbyssLeaderboard(panel);
             return;
@@ -1637,21 +1637,21 @@ const OnlineSystem = {
         this.loadLeaderboard(true);
     },
 
-    // 渲染深渊排行榜（保持与普通榜一致的风格）
+// Render the abyss leaderboard (same style as the normal board)
     renderAbyssLeaderboard(panel) {
         if (!panel) return;
 
-        // 先显示加载状态，保持完整UI结构
+// Show the loading state first, keeping the full UI structure
         let html = '<div class="panel-close" onclick="togglePanel(\'leaderboard\')"></div>';
         html += `<div class="panel-header">${I18N.tr('online', 'leaderboard_title')}</div>`;
 
-        // 周榜/总榜切换（深渊榜不区分）
+// Weekly/all-time toggle (no split on abyss boards)
         html += `<div class="leaderboard-mode-tabs">
             <span class="lb-mode-tab ${this.leaderboardMode === 'week' ? 'active' : ''}" onclick="OnlineSystem.switchMode('week')">${I18N.tr('online', 'leaderboard_week_mode')}</span>
             <span class="lb-mode-tab ${this.leaderboardMode === 'all' ? 'active' : ''}" onclick="OnlineSystem.switchMode('all')">${I18N.tr('online', 'leaderboard_all_time_mode')}</span>
         </div>`;
 
-        // 深渊个人记录
+// Abyss personal record
         const bestScore = parseInt(localStorage.getItem('abyss_best_score') || '0');
         const bestFloor = parseInt(localStorage.getItem('abyss_best_floor') || '0');
         html += `<div class="personal-best">
@@ -1662,14 +1662,14 @@ const OnlineSystem = {
             </div>
         </div>`;
 
-        // 周重置倒计时
+// Weekly reset countdown
         html += `<div class="week-countdown">${I18N.tr('online', 'leaderboard_abyss_reset_countdown', '', { time: this.getTimeToNextWeek() })}</div>`;
 
 
-        // Tab标签（与其他榜一致）
+// Tab labels (consistent with other boards)
         html += `<div class="leaderboard-tabs">
             <span class="lb-tab" onclick="OnlineSystem.switchTab('score')">${I18N.tr('online', 'leaderboard_tab_overall')}</span>
-            <span class="lb-tab" onclick="OnlineSystem.switchTab('kills')">${I18N.tOr('slot_kills', '击杀')}</span>
+            <span class="lb-tab" onclick="OnlineSystem.switchTab('kills')">${I18N.tOr('slot_kills', 'Slain')}</span>
             ${this.leaderboardMode !== 'week' ? `<span class="lb-tab" onclick="OnlineSystem.switchTab('floor')">${I18N.tr('online', 'leaderboard_tab_floor')}</span>` : ''}
             ${this.leaderboardMode !== 'week' ? `<span class="lb-tab" onclick="OnlineSystem.switchTab('gold')">${I18N.tr('online', 'leaderboard_tab_gold')}</span>` : ''}
             <span class="lb-tab active">${I18N.tr('online', 'leaderboard_tab_abyss')}</span>
@@ -1679,9 +1679,9 @@ const OnlineSystem = {
         panel.innerHTML = html;
         this.bindPanelDrag(panel);
 
-        // 加载深渊数据
+        // Loadabyssdata
         this.getAbyssLeaderboard((data) => {
-            if (this.currentTab !== 'abyss') return; // 用户已切换走
+            if (this.currentTab !== 'abyss') return; // user has navigated away
 
             let listHtml = '';
             if (data.error) {
@@ -1697,7 +1697,7 @@ const OnlineSystem = {
                     </div>`;
                 });
 
-                // 我的排名
+                // myrank
                 if (data.myRank > 0) {
                     listHtml += `<div class="stat-row" style="margin-top: 10px; border-top: 1px solid #333; padding-top: 10px; color: #ffcc00;">
                         <span>${I18N.tr('online', 'leaderboard_my_rank')}</span>
@@ -1706,7 +1706,7 @@ const OnlineSystem = {
                 }
             }
 
-            // 只更新列表部分
+// Update the list part only
             const loadingDiv = document.getElementById('abyss-loading');
             if (loadingDiv) {
                 loadingDiv.outerHTML = listHtml;
@@ -1714,10 +1714,10 @@ const OnlineSystem = {
         });
     },
 
-    // 切换周榜/总榜模式
+// Toggle weekly/all-time mode
     switchMode(mode) {
         this.leaderboardMode = mode;
-        // 周榜模式下只支持 score 和 kills
+// Weekly mode supports only score and kills
         if (mode === 'week' && this.currentTab !== 'score' && this.currentTab !== 'kills') {
             this.currentTab = 'score';
         }
@@ -1725,7 +1725,7 @@ const OnlineSystem = {
         this.loadLeaderboard(true);
     },
 
-    // 根据当前标签排序
+// Sort by the current tab
     sortByTab(items) {
         const sorted = [...items];
         const isWeekMode = this.leaderboardMode === 'week';
@@ -1734,7 +1734,7 @@ const OnlineSystem = {
         switch (this.currentTab) {
             case 'kills':
                 if (isWeekMode) {
-                    // 周榜：按 week_kills 排序，过滤掉非本周数据
+                    // weekly leaderboard:according to week_kills sort，filterfallnon-this weekdata
                     return sorted
                         .filter(item => (item.week_start || 0) >= currentWeekStart)
                         .sort((a, b) => (b.week_kills || 0) - (a.week_kills || 0));
@@ -1750,7 +1750,7 @@ const OnlineSystem = {
                 return sorted.sort((a, b) => (b.gold || 0) - (a.gold || 0));
             default: // score
                 if (isWeekMode) {
-                    // 周榜：按 week_score 排序，过滤掉非本周数据
+                    // weekly leaderboard:according to week_score sort，filterfallnon-this weekdata
                     return sorted
                         .filter(item => (item.week_start || 0) >= currentWeekStart)
                         .sort((a, b) => (b.week_score || 0) - (a.week_score || 0));
@@ -1759,7 +1759,7 @@ const OnlineSystem = {
         }
     },
 
-    // 根据当前标签获取显示文本
+// Get the display text by the current tab
     getValueText(item) {
         const isWeekMode = this.leaderboardMode === 'week';
 
@@ -1776,7 +1776,7 @@ const OnlineSystem = {
                 if (isWeekMode) {
                     return I18N.tr('online', 'leaderboard_value_week_score', '', { score: item.week_score || 0 });
                 }
-                // {floor} 需要传入已本地化的层数文本
+// {floor} expects localized floor text
                 const floorText = item.is_hell
                     ? I18N.tr('online', 'leaderboard_value_hell_floor', '', { floor: item.max_floor })
                     : I18N.tr('online', 'leaderboard_value_floor', '', { floor: item.max_floor });
@@ -1784,7 +1784,7 @@ const OnlineSystem = {
         }
     },
 
-    // 绑定面板拖动
+    // bindpaneldrag
     bindPanelDrag(panel) {
         const header = panel.querySelector('.panel-header');
         if (!header) return;
@@ -1826,12 +1826,12 @@ const OnlineSystem = {
 
     leaderboardData: [],
 
-    // ========== 全服公告系统 ==========
-    announcementQueue: [],      // 公告队列
-    isScrolling: false,         // 是否正在滚动
-    lastAnnouncementTime: 0,    // 上次获取公告时间
-    shownAnnouncementIds: new Set(),  // 已显示的公告ID（防重复）
-    realtimeSubscribed: false,  // 是否已订阅 Realtime
+// ========== Server announcement system ==========
+    announcementQueue: [],      // Announcement queue
+    isScrolling: false,         // Whether scrolling
+    lastAnnouncementTime: 0,    // Last announcement fetch time
+    shownAnnouncementIds: new Set(),  // Shown announcement ids (de-dup)
+    realtimeSubscribed: false,  // Whether Realtime is subscribed
     announcementCooldowns: {},
     announcementPolicies: {
         boss_kill: { cooldownMs: 5 * 60 * 1000 },
@@ -1845,32 +1845,32 @@ const OnlineSystem = {
         item_sold: { enabled: false }
     },
 
-    // 初始化公告系统
+// Init the announcement system
     initAnnouncements() {
         this.createAnnouncementUI();
-        this.loadAnnouncements();  // 先加载历史公告
+        this.loadAnnouncements();  // Load historical announcements first
 
-        // ========== 方案B: Realtime 实时推送 ==========
+        // ========== directioncaseB: Realtime real-timepush ==========
         this.subscribeAnnouncements();
 
-        // ========== 方案A: 轮询（已注释） ==========
+// ========== Option A: polling (commented out) ==========
         // setInterval(() => this.loadAnnouncements(), 30000);
     },
 
-    // Realtime 订阅公告
+// Realtime announcement subscription
     async subscribeAnnouncements() {
         try {
-            // 订阅 announcements 表的所有变更
+// Subscribe to all announcements table changes
             await pb.collection('announcements').subscribe('*', (e) => {
-                // 只处理新创建的公告
+// Only handle newly created announcements
                 if (e.action === 'create') {
                     const record = e.record;
-                    // 防重复
+                    // de-dupe
                     if (!this.shownAnnouncementIds.has(record.id)) {
                         this.shownAnnouncementIds.add(record.id);
                         this.announcementQueue.push(this.formatAnnouncement(record));
 
-                        // 如果没在滚动，立即开始
+// Not currently scrolling: start immediately
                         if (!this.isScrolling) {
                             this.scrollNextAnnouncement();
                         }
@@ -1878,15 +1878,15 @@ const OnlineSystem = {
                 }
             });
             this.realtimeSubscribed = true;
-            console.log('[公告系统] Realtime 订阅成功');
+            console.log('[Announcements] Realtime subscribed');
         } catch (e) {
-            console.warn('[公告系统] Realtime 订阅失败，降级为轮询模式', e);
-            // 降级为轮询模式
+            console.warn('[Announcements] Realtime subscribe failed, falling back to polling', e);
+// Degrade to polling mode
             setInterval(() => this.loadAnnouncements(), 30000);
         }
     },
 
-    // 取消订阅（页面关闭时调用）
+// Unsubscribe (called on page close)
     unsubscribeAnnouncements() {
         if (this.realtimeSubscribed) {
             pb.collection('announcements').unsubscribe('*');
@@ -1894,7 +1894,7 @@ const OnlineSystem = {
         }
     },
 
-    // 创建公告UI
+    // CreateannounceUI
     createAnnouncementUI() {
         let bar = document.getElementById('announcement-bar');
         if (!bar) {
@@ -1905,17 +1905,17 @@ const OnlineSystem = {
         }
     },
 
-    // 加载历史公告（初始化时调用一次）
+// Load historical announcements (once at init)
     async loadAnnouncements() {
         try {
-            // 初始化只拉近期公告，避免刷新后把历史公告重新滚一遍。
+// Init pulls only recent announcements so a refresh doesn't re-scroll history.
             const recentCutoff = new Date(Date.now() - 45 * 1000).toISOString().replace('T', ' ');
             const records = await pb.collection('announcements').getList(1, 8, {
                 filter: `created >= "${recentCutoff}"`,
                 sort: '-created'
             });
 
-            // 过滤已显示的公告，添加新公告到队列
+// Filter shown announcements and queue new ones
             for (const record of records.items.reverse()) {
                 if (!this.shownAnnouncementIds.has(record.id)) {
                     this.shownAnnouncementIds.add(record.id);
@@ -1923,27 +1923,27 @@ const OnlineSystem = {
                 }
             }
 
-            // 清理过期的ID（保留最近100条）
+            // CleanupexpiredID（keepmostnear100entries）
             if (this.shownAnnouncementIds.size > 100) {
                 const arr = Array.from(this.shownAnnouncementIds);
                 this.shownAnnouncementIds = new Set(arr.slice(-50));
             }
 
-            // 开始滚动
+            // startscroll
             if (!this.isScrolling && this.announcementQueue.length > 0) {
                 this.scrollNextAnnouncement();
             }
         } catch (e) { }
     },
 
-    // 格式化公告文本
+// Format the announcement text
     formatAnnouncement(record) {
-        // 摆摊相关公告不需要楼层信息
+// Stall announcements need no floor info
         const needsFloor = !['stall_open', 'item_sold'].includes(record.type);
         let floorText = '';
         if (needsFloor) {
             const floorName = getFloorName(record.floor, record.is_hell);
-            // {floor} 传已本地化的楼层文本
+// {floor} receives localized floor text
             floorText = I18N.tr('online', 'announce_floor_label', '', { floor: record.floor, name: floorName });
         }
 
@@ -2001,7 +2001,7 @@ const OnlineSystem = {
         }
     },
 
-    // 滚动显示下一条公告
+// Scroll the next announcement
     scrollNextAnnouncement() {
         if (this.announcementQueue.length === 0) {
             this.isScrolling = false;
@@ -2013,7 +2013,7 @@ const OnlineSystem = {
         const content = document.getElementById('announcement-content');
         if (!content) return;
 
-        // 设置公告内容和样式
+// Set the announcement content and style
         content.innerText = announcement.text;
         const typeClassMap = {
             'boss': 'boss-announcement',
@@ -2025,16 +2025,16 @@ const OnlineSystem = {
         };
         content.className = typeClassMap[announcement.type] || 'set-announcement';
 
-        // 重置动画
+        // Resetanimation
         content.style.animation = 'none';
-        content.offsetHeight; // 触发重绘
+        content.offsetHeight; // triggerre-draw
         content.style.animation = 'scrollAnnouncement 8s linear';
 
-        // 动画结束后显示下一条
+// Show the next one after the animation
         setTimeout(() => this.scrollNextAnnouncement(), 8500);
     },
 
-    // 提交公告
+// Submit the announcement
     async announce(type, targetName, extraData) {
         if (!this.userId || !this.nickname) return;
         if (!this.shouldPublishAnnouncement(type, targetName, extraData)) return;
@@ -2051,14 +2051,14 @@ const OnlineSystem = {
             target_name: targetName
         };
 
-        // 如果有额外数据（如销售金额），添加到记录中
+        // ifthere isextradata（as ifsellgold coinforehead），addarrive atlogin
         if (extraData !== undefined) {
             recordData.extra_data = extraData.toString();
         }
 
         try {
             await pb.collection('announcements').create(recordData);
-            // 顺便清理旧公告，只保留最近30条
+// Also clean old announcements, keeping the latest 30
             this.gcKeepRecent('announcements', 30);
 
             if (this.shouldMirrorAnnouncementToChat(type, extraData)) {
@@ -2066,11 +2066,11 @@ const OnlineSystem = {
             }
         } catch (e) {
             if (e.status === 403) {
-                console.warn('[公告系统] 无法发布公告: 请在 PocketBase 后台将 announcements 表的 Create 权限设置为开放 (空字符串)。');
+                console.warn('[Announcements] cannot publish: please open the Create rule (empty string) for the announcements collection in the PocketBase admin.');
             } else {
-                console.error('[公告系统] 发布公告异常:', e.message);
+                console.error('[Announcements] publish error:', e.message);
                 if (e.response && e.response.data) {
-                    console.error('[公告系统] 错误详情:', JSON.stringify(e.response.data));
+                    console.error('[Announcements] error details:', JSON.stringify(e.response.data));
                 }
             }
         }
@@ -2099,11 +2099,11 @@ const OnlineSystem = {
         return false;
     },
 
-    // 发送公告到世界频道
+// Send the announcement to the world channel
     async sendAnnouncementToChat(type, targetName, floor, isHell, extraData) {
-        // 生成公告文本（带类型标记，用于显示时着色）；此处与跑马灯的差异只是没有表情前缀
+        // Generate announcement text (with type tag for display coloring); the only difference from the ticker is no emoji prefix
         const floorName = typeof getFloorName === 'function' ? getFloorName(floor, isHell) : I18N.tr('online', 'announce_floor_short', '', { floor });
-        // {floor} 传已本地化的楼层文本
+// {floor} receives localized floor text
         const floorText = I18N.tr('online', 'announce_floor_label', '', { floor, name: floorName });
 
         let message = '';
@@ -2138,43 +2138,43 @@ const OnlineSystem = {
                 message = I18N.tr('online', 'announce_chat_abyss_top10', '', { nickname: this.nickname, rank: extraData });
                 break;
             default:
-                return; // 其他类型（摆摊、卖出）不发到聊天
+                return; // othertype（stall、sell）notshoot outarrive atchatheaven
         }
 
         try {
-            // 消息格式：[type:xxx]实际内容，显示时解析类型并着色
+// Message format: [type:xxx]content; type parsed and colored at display time
             await pb.collection('chat_messages').create({
-                nickname: '系统',
+                nickname: 'System',
                 level: 0,
                 message: `[type:${msgType}]${message}`,
                 user_id: 'system',
                 title: ''
             });
         } catch (e) {
-            // 静默失败，不影响主流程
+// Silent failure; never disturbs the main flow
         }
     }
 };
 
 OnlineSystem.bootstrapLocalIdentity();
 
-// ========== 世界聊天系统 ==========
+// ========== World chat system ==========
 const ChatSystem = {
     isCollapsed: false,
     lastSendTime: 0,
-    SEND_COOLDOWN: 3000,  // 3秒发言冷却
-    MAX_MESSAGES: 50,     // 最大保留消息数
+    SEND_COOLDOWN: 3000,  // 3s chat cooldown
+    MAX_MESSAGES: 50,     // Max retained messages
     HISTORY_FETCH_LIMIT: 80,
     HISTORY_DISPLAY_LIMIT: 20,
     realtimeSubscribed: false,
-    unreadCount: 0,       // 未读消息数
-    isSending: false,     // 发送锁，防止重复发送
-    isReady: false,       // 聊天系统是否就绪（敏感词库+Realtime订阅完成）
+    unreadCount: 0,       // Unread message count
+    isSending: false,     // Send lock prevents duplicate sends
+    isReady: false,       // Whether chat is ready (sensitive-word list + Realtime subscription done)
     initStarted: false,
     blockedWordsReady: false,
     blockedWordsLoading: null,
 
-    // 获取当前应显示的称号（最新优先）
+// Get the title to display (newest first)
     getDisplayTitle() {
         if (typeof player === 'undefined') return '';
 
@@ -2183,33 +2183,33 @@ const ChatSystem = {
             : null;
         const abyssTitle = player.abyssTitle || null;
 
-        // 如果都没有称号
+        // ifallnotitle
         if (!purchasedTitle && !abyssTitle) return '';
 
-        // 如果只有一个，直接返回
+// Only one: return it directly
         if (!purchasedTitle) return abyssTitle;
         if (!abyssTitle) return purchasedTitle;
 
-        // 两者都有，比较获取时间（最新优先）
+// Both exist: compare acquired time (newest first)
         const titleTime = player.titleObtainedTime || 0;
         const abyssTitleTime = player.abyssTitleObtainedTime || 0;
 
         return titleTime >= abyssTitleTime ? purchasedTitle : abyssTitle;
     },
 
-    // 敏感词列表（从服务器加载，这里是备用默认值）
+// Sensitive word list (loaded from the server; these are fallback defaults)
     BLOCKED_WORDS: ['sb', 'cnm', 'nmsl'],
 
-    // 从服务器加载敏感词
+// Load sensitive words from the server
     async loadBlockedWords() {
         try {
             const record = await pb.collection('settings').getFirstListItem('key = "blocked_words"');
             if (record && Array.isArray(record.value)) {
                 this.BLOCKED_WORDS = record.value;
-                console.log('[聊天系统] 敏感词库已加载:', this.BLOCKED_WORDS.length, '个');
+                console.log('[Chat] sensitive-word list loaded:', this.BLOCKED_WORDS.length, ' entries');
             }
         } catch (e) {
-            console.warn('[聊天系统] 加载敏感词库失败，使用默认列表');
+            console.warn('[Chat] failed to load sensitive words, using default list');
         } finally {
             this.blockedWordsReady = true;
         }
@@ -2225,26 +2225,26 @@ const ChatSystem = {
         return this.blockedWordsLoading;
     },
 
-    // 敏感词过滤（全局通用，用*替代敏感词）
+// Sensitive word filter (global; replaces with *)
     filterSensitiveWords(text) {
         let result = text;
         for (const word of this.BLOCKED_WORDS) {
-            // 不区分大小写替换
+// Case-insensitive replacement
             const regex = new RegExp(this.escapeRegex(word), 'gi');
             result = result.replace(regex, '*'.repeat(word.length));
         }
         return result;
     },
 
-    // 初始化聊天系统
+// Init the chat system
     async init() {
         if (this.initStarted) return;
         this.initStarted = true;
 
-        // 初始时禁用聊天框（灰色、折叠、不可交互）
+// Start with the chat box disabled (gray, collapsed, inert)
         this.setDisabled(true);
 
-        // 并行加载敏感词库和订阅消息
+// Load the sensitive-word list and subscribe to messages in parallel
         await Promise.all([
             this.ensureBlockedWordsLoaded(),
             this.subscribeMessages()
@@ -2253,24 +2253,24 @@ const ChatSystem = {
         this.bindEvents();
         this.loadRecentMessages();
 
-        // 从 localStorage 恢复折叠状态
+// Restore the collapsed state from localStorage
         this.isCollapsed = localStorage.getItem('chat_collapsed') === 'true';
         if (this.isCollapsed) {
             document.getElementById('chat-box')?.classList.add('collapsed');
         }
 
-        // 初始化完成，激活聊天框
+// Init complete: activate the chat box
         this.setReady();
     },
 
-    // 设置聊天系统就绪状态
+// Set the chat ready state
     setReady() {
         this.isReady = true;
         this.setDisabled(false);
-        console.log('[聊天系统] 初始化完成，聊天功能已激活');
+        console.log('[Chat] initialized, chat active');
     },
 
-    // 设置聊天框禁用/启用状态
+// Set the chat box disabled/enabled state
     setDisabled(disabled) {
         const chatBox = document.getElementById('chat-box');
         if (!chatBox) return;
@@ -2282,22 +2282,22 @@ const ChatSystem = {
         }
     },
 
-    // 绑定事件
+// Bind events
     bindEvents() {
         const input = document.getElementById('chat-input');
         if (input) {
-            // 回车发送，阻止事件冒泡到游戏
+            // Enter to send; stop event bubbling to the game
             input.onkeydown = (e) => {
-                e.stopPropagation();  // 阻止冒泡，防止触发游戏交互
+                e.stopPropagation();  // Stop bubbling so game interactions don't fire
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     this.sendMessage();
                 }
             };
-            // 阻止游戏按键冲突
+// Prevent game key conflicts
             input.onkeyup = (e) => e.stopPropagation();
             input.onfocus = () => {
-                // 聊天输入时禁用游戏快捷键
+// Disable game hotkeys while typing in chat
                 window.chatInputFocused = true;
             };
             input.onblur = () => {
@@ -2306,7 +2306,7 @@ const ChatSystem = {
         }
     },
 
-    // 订阅实时消息
+    // subscribereal-timemessage
     async subscribeMessages() {
         try {
             await pb.collection('chat_messages').subscribe('*', (e) => {
@@ -2315,13 +2315,13 @@ const ChatSystem = {
                 }
             });
             this.realtimeSubscribed = true;
-            console.log('[聊天系统] Realtime 订阅成功');
+            console.log('[Chat] Realtime subscribed');
         } catch (e) {
-            console.warn('[聊天系统] Realtime 订阅失败', e);
+            console.warn('[Chat] Realtime subscribe failed', e);
         }
     },
 
-    // 加载最近消息
+// Load recent messages
     async loadRecentMessages() {
         try {
             const records = await pb.collection('chat_messages').getList(1, this.HISTORY_FETCH_LIMIT, {
@@ -2334,12 +2334,12 @@ const ChatSystem = {
             messages.forEach(msg => this.addMessage(msg, false));
             this.scrollToBottom();
         } catch (e) {
-            console.warn('[聊天系统] 加载历史消息失败', e);
+            console.warn('[Chat] failed to load history', e);
         }
     },
 
-    // 发送消息
-    // 私聊目标缓存 { nickname: userId }
+    // sendmessage
+    // private chattargetcache { nickname: userId }
     whisperTargetCache: {},
 
     escapePbFilterValue(value) {
@@ -2406,16 +2406,16 @@ const ChatSystem = {
             return;
         }
 
-        // 防止重复发送（网络卡顿时）
+// Prevent duplicate sends (during network lag)
         if (this.isSending) return;
 
-        // 检查登录状态
+// Check login state
         if (!OnlineSystem.nickname) {
             this.addSystemMessage(I18N.tr('online', 'chat_need_nickname'));
             return;
         }
 
-        // 检查冷却
+        // Checkcooldown
         const now = Date.now();
         if (now - this.lastSendTime < this.SEND_COOLDOWN) {
             const remaining = Math.ceil((this.SEND_COOLDOWN - (now - this.lastSendTime)) / 1000);
@@ -2423,7 +2423,7 @@ const ChatSystem = {
             return;
         }
 
-        // 解析私聊目标 @玩家名
+        // parseprivate chattarget @playername
         let targetUserId = null;
         let targetNickname = null;
         let actualMessage = message;
@@ -2433,7 +2433,7 @@ const ChatSystem = {
             targetNickname = whisperMatch[1];
             actualMessage = whisperMatch[2];
 
-            // 不能私聊自己
+            // notcanprivate chatown
             if (targetNickname === OnlineSystem.nickname) {
                 this.addSystemMessage(I18N.tr('online', 'chat_cannot_whisper_self'));
                 return;
@@ -2442,7 +2442,7 @@ const ChatSystem = {
             try {
                 targetUserId = await this.findWhisperTargetUserId(targetNickname);
             } catch (e) {
-                console.warn('[私聊] 查找用户失败', e);
+                console.warn('[DM] user lookup failed', e);
             }
 
             if (!targetUserId) {
@@ -2451,28 +2451,28 @@ const ChatSystem = {
             }
         }
 
-        // 处理物品分享链接（如果有待发送的物品）
+// Handle item share links (when an item awaits sending)
         let processedMessage = actualMessage;
         if (typeof pendingShareItem !== 'undefined' && pendingShareItem) {
             const itemData = pendingShareItem;
             const baseName = itemData.n;
-            const enhanceText = itemData.e > 0 ? ` +${itemData.e}` : '';  // 注意空格
+            const enhanceText = itemData.e > 0 ? ` +${itemData.e}` : '';  // mind the spaces
             const placeholder = `[${baseName}${enhanceText}]`;
 
-            // 生成编码后的物品链接
+// Generate the encoded item link
             const encoded = btoa(encodeURIComponent(JSON.stringify(itemData)));
             const itemLink = `[item:${encoded}]`;
 
-            // 替换显示名为编码格式
+// Swap the display name for the encoded format
             processedMessage = actualMessage.replace(placeholder, itemLink);
-            pendingShareItem = null;  // 清除待发送物品
+            pendingShareItem = null;  // Clear the pending item
         }
 
-        // 敏感词过滤 - 但跳过物品链接部分
+// Sensitive word filter - but skip item link parts
         let filtered = processedMessage;
         const itemLinkMatch = processedMessage.match(/\[item:[A-Za-z0-9+/=]+\]/);
         if (itemLinkMatch) {
-            // 保护物品链接，过滤其他部分
+// Protect item links; filter the rest
             const linkPlaceholder = '___ITEM_LINK___';
             const tempMsg = processedMessage.replace(itemLinkMatch[0], linkPlaceholder);
             const filteredTemp = this.filterMessage(tempMsg);
@@ -2481,26 +2481,26 @@ const ChatSystem = {
             filtered = this.filterMessage(processedMessage);
         }
 
-        // 获取玩家等级
+        // Getplayerlevel
         const level = typeof player !== 'undefined' ? player.lvl : 1;
 
-        // 设置发送锁
+        // Setsendlock
         this.isSending = true;
         input.disabled = true;
 
-        // 获取当前应显示的称号（最新优先）
+// Get the title to display (newest first)
         const displayTitle = this.getDisplayTitle();
 
         try {
             const msgData = {
                 nickname: OnlineSystem.nickname,
                 level: level,
-                message: filtered,  // 发送过滤后的消息
+                message: filtered,  // Send the filtered message
                 user_id: OnlineSystem.userId,
-                title: displayTitle  // 称号
+                title: displayTitle  // title
             };
 
-            // 私聊消息添加目标用户
+// Add the target user for whispers
             if (targetUserId) {
                 msgData.targetUserId = targetUserId;
                 msgData.targetNickname = targetNickname;
@@ -2509,39 +2509,39 @@ const ChatSystem = {
             const record = await pb.collection('chat_messages').create(msgData);
             input.value = '';
             this.lastSendTime = now;
-            // 立即本地显示自己发送的消息
+// Show your own sent message locally right away
             this.addMessage(record);
-            // 顺便清理旧消息，只保留最近50条
+// Also clean old messages, keeping the latest 50
             OnlineSystem.gcKeepRecent('chat_messages', 50);
         } catch (e) {
             this.addSystemMessage(I18N.tr('online', 'chat_send_failed'));
         } finally {
-            // 释放发送锁
+// Release the send lock
             this.isSending = false;
             input.disabled = false;
             input.focus();
         }
     },
 
-    // 转义正则特殊字符
+// Escape regex special characters
     escapeRegex(str) {
         return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     },
 
-    // 敏感词过滤（用*替代敏感词）
+// Sensitive word filter (replaces with *)
     filterMessage(message) {
         return this.filterSensitiveWords(message);
     },
 
-    shownMessageIds: new Set(),  // 防重复显示
+    shownMessageIds: new Set(),  // Prevent duplicate display
 
     shouldHideSystemAnnouncement(record) {
         return record.user_id === 'system' && typeof record.message === 'string' && /^\[type:\w+\]/.test(record.message);
     },
 
-    // 解析并渲染物品链接
+// Parse and render item links
     parseItemLinks(text) {
-        // 匹配 [item:base64data] 格式
+        // matching [item:base64data] format
         const itemLinkRegex = /\[item:([A-Za-z0-9+/=]+)\]/g;
 
         const result = text.replace(itemLinkRegex, (match, base64Data) => {
@@ -2549,30 +2549,30 @@ const ChatSystem = {
                 const jsonStr = decodeURIComponent(atob(base64Data));
                 const item = JSON.parse(jsonStr);
 
-                // 获取稀有度颜色
+                // Getraritycolor
                 const rarityColors = {
                     0: '#aaa', 1: '#fff', 2: '#4d94ff',
                     3: '#ffff00', 4: '#c7b377', 5: '#00ff00'
                 };
                 const color = rarityColors[item.r] || '#fff';
-                const enhanceText = item.e > 0 ? ` +${item.e}` : '';  // 注意空格
+                const enhanceText = item.e > 0 ? ` +${item.e}` : '';  // mind the spaces
 
-                // 返回可点击的物品链接
+// Return a clickable item link
                 return `<span class="chat-item-link" style="color:${color}" data-item='${this.escapeHtml(base64Data)}'>[${this.escapeHtml(item.n)}${enhanceText}]</span>`;
             } catch (e) {
-                return match; // 解析失败则原样返回
+                return match; // On parse failure, return as-is
             }
         });
         return result;
     },
 
-    // 显示物品链接的tooltip（定位在点击位置附近，无分享按钮）
+// Show the item link tooltip (near the tap point, no share button)
     showItemLinkTooltip(base64Data, event) {
         try {
             const jsonStr = decodeURIComponent(atob(base64Data));
             const data = JSON.parse(jsonStr);
 
-            // 重建物品对象用于tooltip显示
+// Rebuild the item object for tooltip display
             const item = {
                 name: data.n,
                 displayName: data.n,
@@ -2584,44 +2584,44 @@ const ChatSystem = {
                 enhanceLvl: data.e
             };
 
-            // 解析伤害
+            // parsedamage
             if (data.d) {
                 const [min, max] = data.d.split('-').map(Number);
                 item.minDmg = min;
                 item.maxDmg = max;
             }
 
-            // 使用专用的聊天链接tooltip显示函数（定位在点击位置，无分享按钮）
+// Use the dedicated chat-link tooltip renderer (positioned at the tap point, no share button)
             if (typeof showTooltipForChatLink === 'function') {
                 showTooltipForChatLink(item, event);
             }
         } catch (e) {
-            console.warn('解析物品链接失败', e);
+            console.warn('Failed to parse item link', e);
         }
     },
 
-    // 添加消息到聊天框
+// Add the message to the chat box
     addMessage(record, scroll = true) {
         const container = document.getElementById('chat-messages');
         if (!container) return;
 
-        // 防重复
+        // de-dupe
         if (this.shownMessageIds.has(record.id)) return;
         if (this.shouldHideSystemAnnouncement(record)) return;
         this.shownMessageIds.add(record.id);
-        // 清理过多的ID
+// Clean excess ids
         if (this.shownMessageIds.size > 200) {
             const arr = Array.from(this.shownMessageIds);
             this.shownMessageIds = new Set(arr.slice(-100));
         }
 
-        // 私聊消息过滤：只有发送者和接收者能看到
+// Whisper filter: only sender and receiver see them
         const isWhisper = record.targetUserId && record.targetUserId.length > 0;
         if (isWhisper) {
             const isSender = record.user_id === OnlineSystem.userId;
             const isReceiver = record.targetUserId === OnlineSystem.userId;
             if (!isSender && !isReceiver) {
-                return;  // 不是自己相关的私聊，不显示
+                return;  // Whispers unrelated to you are hidden
             }
         }
 
@@ -2629,63 +2629,63 @@ const ChatSystem = {
         const isSystem = record.user_id === 'system';
         msgEl.className = isSystem ? 'chat-msg system' : (isWhisper ? 'chat-msg whisper' : 'chat-msg');
 
-        // 判断是否是自己的消息
+// Decide whether it's your own message
         const isMe = record.user_id === OnlineSystem.userId;
         const nicknameColor = isSystem ? '#ffd700' : (isWhisper ? '#cc88ff' : (isMe ? '#ffff88' : '#88ccff'));
 
-        // 系统消息：解析类型标记并着色
+// System messages: parse the type tag and color it
         if (isSystem) {
             let msg = record.message;
-            let color = '#ffd700';  // 默认金色
+            let color = '#ffd700';  // default gold
 
-            // 解析类型标记 [type:xxx]
+            // parsetypemark [type:xxx]
             const typeMatch = msg.match(/^\[type:(\w+)\]/);
             if (typeMatch) {
                 const msgType = typeMatch[1];
-                msg = msg.replace(/^\[type:\w+\]/, '');  // 移除标记
+                msg = msg.replace(/^\[type:\w+\]/, '');  // remove marker
 
-                // 根据类型设置颜色（与顶部公告一致）
+// Color by type (consistent with the top announcements)
                 const typeColors = {
-                    boss: '#ffd700',    // 金色
-                    set: '#20ff20',     // 绿色
-                    level: '#ff66ff',   // 粉色
-                    enhance: '#ff8800', // 橙色
-                    abyss: '#ff4444',   // 红色
-                    title: '#ffd700'    // 金色
+                    boss: '#ffd700',    // gold
+                    set: '#20ff20',     // green
+                    level: '#ff66ff',   // pink
+                    enhance: '#ff8800', // orange
+                    abyss: '#ff4444',   // red
+                    title: '#ffd700'    // gold
                 };
                 color = typeColors[msgType] || '#ffd700';
             }
 
             msgEl.innerHTML = `<span class="chat-msg-content" style="color:${color}">${this.escapeHtml(msg)}</span>`;
         } else {
-            // 称号显示
+            // titleShow
             let titleHtml = '';
             if (record.title) {
                 titleHtml = `<span class="chat-msg-title">「${this.escapeHtml(record.title)}」</span>`;
             }
 
-            // 处理消息内容：先转义HTML，再解析物品链接
+// Process content: escape HTML first, then parse item links
             const escapedMsg = this.escapeHtml(record.message);
             const parsedMsg = this.parseItemLinks(escapedMsg);
 
-            // 私聊标签
+            // private chattab
             let whisperTag = '';
             if (isWhisper) {
                 if (isMe) {
-                    // 我发送的私聊
+                    // mysendprivate chat
                     whisperTag = `<span class="chat-whisper-tag">${I18N.tr('online', 'chat_whisper_to', '', { nickname: this.escapeHtml(record.targetNickname || '?') })}</span>`;
                 } else {
-                    // 收到的私聊
+                    // collectarrive atprivate chat
                     whisperTag = `<span class="chat-whisper-tag">${I18N.tr('online', 'chat_whisper_in')}</span>`;
                 }
             }
 
-            // 玩家昵称可点击触发私聊
+// Player nicknames are clickable to start whispers
             const nicknameHtml = isMe
                 ? `<span class="chat-msg-nickname" style="color:${nicknameColor}">${this.escapeHtml(record.nickname)}</span>`
                 : `<span class="chat-msg-nickname chat-nickname-clickable" style="color:${nicknameColor}" data-nickname="${this.escapeHtml(record.nickname)}">${this.escapeHtml(record.nickname)}</span>`;
 
-            // chat_level_prefix 自带结尾冒号，因此这里不再单独输出 ":"
+// chat_level_prefix already ends with a colon, so no separate ":" here
             msgEl.innerHTML = `
                 ${whisperTag}${nicknameHtml}${titleHtml}
                 <span class="chat-msg-level">${this.escapeHtml(I18N.tr('online', 'chat_level_prefix', '', { level: record.level }))}</span>
@@ -2693,7 +2693,7 @@ const ChatSystem = {
             `;
         }
 
-        // 绑定物品链接点击事件
+// Bind item link click events
         msgEl.querySelectorAll('.chat-item-link').forEach(link => {
             link.onclick = (e) => {
                 e.stopPropagation();
@@ -2704,7 +2704,7 @@ const ChatSystem = {
             };
         });
 
-        // 绑定昵称点击事件（触发私聊）
+// Bind nickname clicks (starts whispers)
         msgEl.querySelectorAll('.chat-nickname-clickable').forEach(nickname => {
             nickname.onclick = (e) => {
                 e.stopPropagation();
@@ -2717,12 +2717,12 @@ const ChatSystem = {
 
         container.appendChild(msgEl);
 
-        // 限制消息数量
+// Cap the message count
         while (container.children.length > this.MAX_MESSAGES) {
             container.removeChild(container.firstChild);
         }
 
-        // 折叠时增加未读计数（自己的消息不算）
+// While collapsed, count unread (own messages excluded)
         if (this.isCollapsed && scroll && !isMe) {
             this.unreadCount++;
             this.updateUnreadDisplay();
@@ -2733,7 +2733,7 @@ const ChatSystem = {
         }
     },
 
-    // 更新未读消息显示
+// Update the unread display
     updateUnreadDisplay() {
         const el = document.getElementById('chat-unread');
         if (!el) return;
@@ -2748,28 +2748,28 @@ const ChatSystem = {
         }
     },
 
-    // 开始私聊（在输入框填入 @玩家名）
+// Start a whisper (fills @name into the input)
     startWhisper(nickname) {
         const input = document.getElementById('chat-input');
         if (!input) return;
 
-        // 展开聊天框
+// Expand the chat box
         if (this.isCollapsed) {
             this.toggleExpand();
         }
 
-        // 设置输入框内容
+        // Setinput fieldcontent
         input.value = `@${nickname} `;
         input.focus();
 
-        // 缓存昵称对应的userId（优先查在线表，再回退最近聊天）
-        // 这里不阻塞，后台查找
+// Cache userId per nickname (online table first, then recent chat fallback)
+// Non-blocking; searched in the background
         if (!this.whisperTargetCache[nickname]) {
             this.findWhisperTargetUserId(nickname).catch(() => {});
         }
     },
 
-    // 添加系统消息
+// Add a system message
     addSystemMessage(text) {
         const container = document.getElementById('chat-messages');
         if (!container) return;
@@ -2781,7 +2781,7 @@ const ChatSystem = {
         this.scrollToBottom();
     },
 
-    // 滚动到底部
+    // scrollarrive atbasesection
     scrollToBottom() {
         const container = document.getElementById('chat-messages');
         if (container) {
@@ -2789,18 +2789,18 @@ const ChatSystem = {
         }
     },
 
-    // HTML 转义（防 XSS）
+    // HTML revolvedef（defended against XSS）
     escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
     },
 
-    // 切换折叠状态
+// Toggle the collapsed state
     toggle() {
-        // 未就绪时不允许展开
+// No expanding while not ready
         if (!this.isReady && this.isCollapsed) {
-            return;  // 保持折叠，不响应点击
+            return;  // Stay collapsed; ignore clicks
         }
 
         this.isCollapsed = !this.isCollapsed;
@@ -2810,11 +2810,11 @@ const ChatSystem = {
         }
         localStorage.setItem('chat_collapsed', this.isCollapsed);
 
-        // 展开时：清空未读、滚动到底部、聚焦输入框
+// On expand: clear unread, scroll to bottom, focus the input
         if (!this.isCollapsed) {
             this.unreadCount = 0;
             this.updateUnreadDisplay();
-            // 延迟执行，等待 CSS 动画完成
+// Deferred so the CSS animation finishes
             setTimeout(() => {
                 this.scrollToBottom();
                 document.getElementById('chat-input')?.focus();
@@ -2823,17 +2823,17 @@ const ChatSystem = {
     }
 };
 
-// 全局函数：切换聊天框
+// Global function: toggle the chat box
 function toggleChatBox() {
     ChatSystem.toggle();
 }
 
-// 全局函数：发送聊天消息
+// Global function: send a chat message
 function sendChatMessage() {
     ChatSystem.sendMessage();
 }
 
-// 全局函数：切换表情面板
+// Global function: toggle the emote panel
 function toggleEmotePanel(event) {
     event.stopPropagation();
     const panel = document.getElementById('emote-panel');
@@ -2842,7 +2842,7 @@ function toggleEmotePanel(event) {
     const isVisible = panel.style.display !== 'none';
     panel.style.display = isVisible ? 'none' : 'block';
 
-    // 绑定点击外部关闭
+// Bind outside-click closing
     if (!isVisible) {
         setTimeout(() => {
             document.addEventListener('click', closeEmotePanelOnClickOutside);
@@ -2850,7 +2850,7 @@ function toggleEmotePanel(event) {
     }
 }
 
-// 点击外部关闭表情面板
+// Outside clicks close the emote panel
 function closeEmotePanelOnClickOutside(e) {
     const panel = document.getElementById('emote-panel');
     const btn = document.getElementById('emote-btn');
@@ -2860,7 +2860,7 @@ function closeEmotePanelOnClickOutside(e) {
     }
 }
 
-// 初始化表情面板点击事件
+// Init emote panel click events
 function initEmotePanel() {
     const panel = document.getElementById('emote-panel');
     if (!panel) return;
@@ -2873,30 +2873,30 @@ function initEmotePanel() {
         const emote = item.dataset.emote;
         if (!emote) return;
 
-        // 直接发送表情
+// Send the emote directly
         const input = document.getElementById('chat-input');
         if (input) {
             input.value = emote;
             ChatSystem.sendMessage();
         }
 
-        // 关闭面板
+        // close panel
         panel.style.display = 'none';
         document.removeEventListener('click', closeEmotePanelOnClickOutside);
     });
 }
 
-// 页面加载后初始化
+// Init after page load
 window.addEventListener('load', () => {
     OnlineSystem.bootstrapLocalIdentity();
     initEmotePanel();
 
-    // 检查是否有未读的更新公告
+// Check for unread update announcements
     const lastReadVersion = localStorage.getItem('changelog_read_version');
     const currentVersion = typeof CURRENT_VERSION !== 'undefined' ? CURRENT_VERSION : null;
     const hasUnreadChangelog = !lastReadVersion || lastReadVersion !== currentVersion;
 
-    // 身份和云同步状态必须优先初始化，聊天词库放到后台空闲加载。
+    // Identity and cloud sync state must initialize first; the chat lexicon loads in background idle time.
     OnlineSystem.init(!hasUnreadChangelog);
     OnlineSystem.initAnnouncements();
 
@@ -2908,9 +2908,9 @@ window.addEventListener('load', () => {
     }
 });
 
-// ========== 深渊排行榜 Mock (Patch) ==========
+// ========== Abyss leaderboard mock (patch) ==========
 if (typeof OnlineSystem !== 'undefined') {
-    // ========== 深渊排行榜 (Real) ==========
+// ========== Abyss leaderboard (real) ==========
     OnlineSystem.getAbyssLeaderboard = async function (callback, minLvl, maxLvl) {
         try {
             let filter = '';
@@ -2920,7 +2920,7 @@ if (typeof OnlineSystem !== 'undefined') {
                 filter = `level >= ${minLvl}`;
             }
 
-            // 获取分赛区前100名
+// Get the bracket's top 100
             const result = await pb.collection('abyss_rank').getList(1, 100, {
                 sort: '-score',
                 filter: filter,
@@ -2933,24 +2933,24 @@ if (typeof OnlineSystem !== 'undefined') {
                 lvl: item.level || 1,
                 floor: item.floor || 1,
                 score: item.score || 0,
-                // 通过同步码识别自己（包括临时ID）
+// Identify yourself via sync code (including temp ids)
                 isSelf: item.sync_code === CloudSync.syncCode ||
                     item.sync_code === localStorage.getItem('temp_user_id')
             }));
 
-            // 获取我的排名 (如果在前100名里)
+            // Getmyrank (ifatbefore100namein)
             let myRank = -1;
             let myLevelRank = -1;
 
             const myRecord = records.find(r => r.isSelf);
             if (myRecord) myRank = myRecord.rank;
 
-            // TODO: 如果不在前100，需要单独查询
+// TODO: if outside the top 100, a separate query is needed
 
-            // 计算同级排名 (简单过滤前100名中的同级方便展示，准确数据需后端支持)
+// Compute same-tier rank (simple filtering of the top 100 for display; accurate data needs backend support)
             const myLvl = player.lvl;
             const levelSubset = records.filter(r => Math.abs(r.lvl - myLvl) <= 5);
-            // 重新排序子集
+// Re-sort the subset
             levelSubset.sort((a, b) => b.score - a.score);
 
             if (myRecord) {
@@ -2965,8 +2965,8 @@ if (typeof OnlineSystem !== 'undefined') {
             });
 
         } catch (e) {
-            console.error('[Online] 排行榜拉取失败:', e);
-            // 失败时返回空或显示错误，不再伪造数据
+            console.error('[Online] leaderboard fetch failed:', e);
+            // On failure return empty or show an error; never fabricate data
             if (callback) callback({
                 list: [],
                 myRank: 0,
@@ -2978,7 +2978,7 @@ if (typeof OnlineSystem !== 'undefined') {
     };
 
     OnlineSystem.submitAbyssScore = async function (score, floor) {
-        // 获取同步码，如果未绑定则使用临时ID（6位纯字母数字）
+// Get the sync code, or the temp id (6 alphanumerics) when unbound
         let syncCode = CloudSync.syncCode;
         if (!syncCode) {
             let tempId = localStorage.getItem('temp_user_id');
@@ -2997,10 +2997,10 @@ if (typeof OnlineSystem !== 'undefined') {
             level: player.lvl
         };
 
-        console.log('[Abyss] 提交数据:', JSON.stringify(data));
+        console.log('[Abyss] submitting data:', JSON.stringify(data));
 
         try {
-            // 先获取当前第1名（用于判断是否超越）
+// Get the current rank 1 first (to detect overtaking)
             const topResult = await pb.collection('abyss_rank').getList(1, 1, {
                 sort: '-score'
             });
@@ -3008,34 +3008,34 @@ if (typeof OnlineSystem !== 'undefined') {
             const previousChampionScore = previousChampion ? previousChampion.score : 0;
             const previousChampionName = previousChampion ? previousChampion.nickname : null;
 
-            // 获取我之前的排名
+// Get my previous rank
             const previousRankData = await pb.collection('abyss_rank').getList(1, 1, {
                 filter: `sync_code = "${syncCode}"`
             });
             const myPreviousScore = previousRankData.items.length > 0 ? previousRankData.items[0].score : 0;
 
-            // 查询是否已有记录
+// Query whether a record exists
             const existing = await pb.collection('abyss_rank').getList(1, 1, {
                 filter: `sync_code = "${syncCode}"`
             });
 
             if (existing.items.length > 0) {
                 const record = existing.items[0];
-                // 只有分数更高时才更新
+// Update only on a higher score
                 if (score > record.score) {
                     await pb.collection('abyss_rank').update(record.id, data);
-                    console.log('[Online] 更新深渊记录:', score);
+                    console.log('[Online] updating abyss record:', score);
                 }
             } else {
                 await pb.collection('abyss_rank').create(data);
-                console.log('[Online] 创建深渊记录:', score);
+                console.log('[Online] creating abyss record:', score);
             }
 
-            // 获取本赛区的排名（阶梯赛逻辑）
+            // Get my bracket rank (ladder logic)
             const myBracket = player.lvl <= 30 ? [20, 30] : (player.lvl <= 50 ? [31, 50] : [51, 999]);
             const bracketFilter = `level >= ${myBracket[0]} && level <= ${myBracket[1]}`;
 
-            // 检查赛区内是否超越第1名
+// Check whether rank 1 was overtaken in the bracket
             const bracketTopResult = await pb.collection('abyss_rank').getList(1, 1, {
                 sort: '-score',
                 filter: bracketFilter
@@ -3043,27 +3043,27 @@ if (typeof OnlineSystem !== 'undefined') {
             const previousBracketChampion = bracketTopResult.items.length > 0 ? bracketTopResult.items[0] : null;
 
             if (score > (previousBracketChampion?.score || 0) && previousBracketChampion?.nickname !== data.nickname) {
-                // 方括号是代码里写死的，赛区名本身不含括号
+// Square brackets are hardcoded in code; bracket names contain none
                 const bracketName = player.lvl <= 30 ? I18N.tr('online', 'announce_bracket_rookie') : (player.lvl <= 50 ? I18N.tr('online', 'announce_bracket_elite') : I18N.tr('online', 'announce_bracket_peak'));
                 OnlineSystem.announce('abyss_champion', `[${bracketName}]`, score);
-                console.log(`[Abyss] 公告：超越${bracketName}王者`);
+                console.log(`[Abyss] announcement: surpass the ${bracketName} champion`);
             }
 
-            // 检查赛区内是否进入前10
+// Check whether the bracket top 10 was reached
             const bracketRankResult = await pb.collection('abyss_rank').getList(1, 10, {
                 sort: '-score',
                 filter: bracketFilter
             });
             const myBracketRank = bracketRankResult.items.findIndex(r => r.sync_code === syncCode) + 1;
             if (myBracketRank > 0 && myBracketRank <= 10 && myPreviousScore === 0) {
-                OnlineSystem.announce('abyss_top10', '赛区挑战', myBracketRank);
+                OnlineSystem.announce('abyss_top10', 'Bracket Challenge', myBracketRank);
             }
 
         } catch (e) {
-            console.error('[Online] 提交分数失败:', e);
-            // 打印详细错误信息
+            console.error('[Online] score submit failed:', e);
+// Print detailed error info
             if (e.response && e.response.data) {
-                console.error('[Online] 错误详情:', JSON.stringify(e.response.data));
+                console.error('[Online] error details:', JSON.stringify(e.response.data));
             }
         }
     };

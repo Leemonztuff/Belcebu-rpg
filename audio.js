@@ -1,5 +1,5 @@
-// ========== 音频系统 ==========
-// Settings 全局设置（BGM/SFX 开关）
+// ========== Audio system ==========
+// Settings - global settings (BGM/SFX toggles)
 const Settings = { bgm: true, sfx: true };
 
 const AudioSys = {
@@ -7,13 +7,13 @@ const AudioSys = {
     bgmEl: null,
     bgmUrl: "bg.mp3",
     masterGain: null, sfxGain: null,
-    bgmNode: null, bgmGainNode: null, bgmFilter: null, // BGM 音频节点
+    bgmNode: null, bgmGainNode: null, bgmFilter: null, // BGM audio node
     bgmPlaying: false,
     bgmRetryNeeded: false,
-    // 金币连续拾取音调
+// Gold streak pickup pitch
     goldPitch: 1.0,
     lastGoldTime: 0,
-    // 心跳音效计时
+    // heartbeatSFXtiming
     heartbeatTimer: 0,
     sfxAssetConfig: {
         lightningImpact: { url: 'audio/sfx/lightning_impact.mp3', volume: 0.86 },
@@ -33,10 +33,10 @@ const AudioSys = {
 
             this.sfxGain.gain.value = Settings.sfx ? 1.0 : 0;
 
-            // BGM 链路: source -> bgmGainNode -> bgmFilter -> masterGain
+            // BGM chainroad: source -> bgmGainNode -> bgmFilter -> masterGain
             this.bgmFilter = this.ctx.createBiquadFilter();
             this.bgmFilter.type = 'lowpass';
-            this.bgmFilter.frequency.value = 22000; // 默认全通
+            this.bgmFilter.frequency.value = 22000; // all pass by default
             this.bgmFilter.connect(this.masterGain);
 
             this.bgmGainNode = this.ctx.createGain();
@@ -45,21 +45,21 @@ const AudioSys = {
 
             this.bgmEl = new Audio(this.bgmUrl);
             this.bgmEl.loop = true;
-            // 注意：当使用 MediaElementSource 时，element.volume 也可以控制，但我们主要用 GainNode
+// Note: with MediaElementSource, element.volume also works, but we mainly use GainNode
             this.bgmEl.volume = 1.0;
 
-            // 创建 MediaElementSource 需要在用户交互后或上下文 ready 时，但在 init 通常也可以
-            // 为了安全，我们只创建一次。注意：有些旧浏览器可能需要前缀，但现在通常不需要
+// Creating MediaElementSource normally needs user interaction or a ready context, but usually works in init too
+// We create it only once for safety. Note: some old browsers needed prefixes; usually not anymore
             try {
                 this.bgmNode = this.ctx.createMediaElementSource(this.bgmEl);
                 this.bgmNode.connect(this.bgmGainNode);
             } catch (e) {
                 console.error("Error creating MediaElementSource:", e);
-                // 降级处理：如果不成功，至少让它响，虽然没有滤镜效果
+// Fallback: if it fails, at least let it sound, though without the filter effect
                 this.bgmEl.volume = Settings.bgm ? 0.3 : 0;
             }
 
-            // 监听音频结束事件，确保循环播放
+// Listen for the audio-ended event to ensure looping
             this.bgmEl.addEventListener('ended', () => {
                 if (Settings.bgm && this.bgmPlaying) {
                     this.bgmEl.currentTime = 0;
@@ -82,7 +82,7 @@ const AudioSys = {
 
         this.sfxLoading[id] = fetch(config.url)
             .then(response => {
-                if (!response.ok) throw new Error(`音效加载失败 ${config.url}`);
+                if (!response.ok) throw new Error(`Audio load failed ${config.url}`);
                 return response.arrayBuffer();
             })
             .then(buffer => this.ctx.decodeAudioData(buffer))
@@ -128,7 +128,7 @@ const AudioSys = {
             }).catch(e => {
                 console.log("BGM play failed:", e);
                 this.bgmPlaying = false;
-                // 如果失败，可能是需要更多用户交互，设置标记稍后重试
+// On failure, more user interaction may be needed; set a flag to retry later
                 this.bgmRetryNeeded = true;
             });
         }
@@ -141,7 +141,7 @@ const AudioSys = {
     },
     resumeBGM: function () {
         if (this.bgmEl && Settings.bgm && !this.bgmPlaying) {
-            // 如果有重试标记，先尝试startBGM
+// If a retry flag exists, try startBGM first
             if (this.bgmRetryNeeded) {
                 this.bgmRetryNeeded = false;
                 this.startBGM();
@@ -156,7 +156,7 @@ const AudioSys = {
             }
         }
     },
-    // 在任何用户交互时调用，尝试启动BGM
+// Called on any user interaction; tries to start BGM
     tryAutoStartBGM: function () {
         if (this.bgmRetryNeeded && Settings.bgm) {
             console.log("Auto-retrying BGM start...");
@@ -217,7 +217,7 @@ const AudioSys = {
         filter.connect(this.sfxGain);
 
         if (kind === 'hit') {
-            // 普通近战命中：刀刃短擦 + 金属亮边 + 肉体冲击，避免木棒式闷低频。
+// Normal melee hit: short blade scrape + bright metal edge + body impact; avoid a club-like muffled low end.
             this.playNoiseLayer(t, 0.018, 0.075, 'highpass', 3600 + Math.random() * 900, 0.7, bus);
             this.playNoiseLayer(t + 0.006, 0.045, 0.07, 'bandpass', 2100 + Math.random() * 500, 1.4, bus);
             this.playToneLayer('sawtooth', t + 0.004, 0.035, 1700, 820, 0.035, bus);
@@ -226,7 +226,7 @@ const AudioSys = {
         }
 
         if (kind === 'crit') {
-            // 暴击命中：更尖的撕裂感和金属擦响，保留短促重心。
+// Crit hit: sharper tear and metal scrape, keeping a short, weighty center.
             this.playNoiseLayer(t, 0.024, 0.11, 'highpass', 4200 + Math.random() * 1200, 0.8, bus);
             this.playNoiseLayer(t + 0.01, 0.07, 0.1, 'bandpass', 2500 + Math.random() * 800, 1.6, bus);
             this.playToneLayer('sawtooth', t + 0.004, 0.06, 2300, 950, 0.055, bus);
@@ -235,7 +235,7 @@ const AudioSys = {
             return;
         }
 
-        // 击杀：命中后追加碎裂尾音，但不再用大块低频钝击当主体。
+// Kill: append a shatter tail after the hit, but no longer use a big low-frequency thud as the body.
         this.playNoiseLayer(t, 0.03, 0.13, 'highpass', 3800 + Math.random() * 1000, 0.75, bus);
         this.playNoiseLayer(t + 0.018, 0.095, 0.12, 'bandpass', 1600 + Math.random() * 500, 1.1, bus);
         this.playToneLayer('sawtooth', t + 0.003, 0.07, 1550, 620, 0.06, bus);
@@ -454,23 +454,23 @@ const AudioSys = {
         osc.connect(gain); gain.connect(this.sfxGain);
 
         if (type === 'gold') {
-            // 连续拾取音调递增逻辑
+// Streak pickup pitch-increase logic
             const now = Date.now();
             if (now - this.lastGoldTime < 1500) {
-                this.goldPitch = Math.min(this.goldPitch + 0.1, 2.0); // 最高 2.0 倍
+                this.goldPitch = Math.min(this.goldPitch + 0.1, 2.0); // max 2.0x
             } else {
                 this.goldPitch = 1.0;
             }
             this.lastGoldTime = now;
 
             osc.type = 'sine';
-            // 基础频率 1800 * pitch
+            // basefrequencyrate 1800 * pitch
             const freq = 1800 * this.goldPitch;
             osc.frequency.setValueAtTime(freq, t);
             gain.gain.setValueAtTime(0.1, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
             osc.start(); osc.stop(t + 0.15);
         } else if (type === 'heartbeat') {
-            // 心跳声：低频脉冲
+// Heartbeat: low-frequency pulse
             osc.type = 'triangle';
             osc.frequency.setValueAtTime(60, t);
             osc.frequency.exponentialRampToValueAtTime(40, t + 0.1);
@@ -485,17 +485,17 @@ const AudioSys = {
             this.playToneLayer('sawtooth', t, 0.075, 660, 210, 0.045);
             this.playToneLayer('triangle', t + 0.018, 0.055, 260, 150, 0.025);
         } else if (type === 'melee_hit') {
-            // 普通攻击保留短促的金属边缘和身体冲击。
+// Normal attacks keep the short metallic edge and body impact.
             this.playCombatImpact('hit');
         } else if (type === 'hit') {
             this.playSkillImpact('hit');
         } else if (type === 'melee_crit') {
-            // 暴击击中：更亮的撕裂感 + 金属高频点缀
+// Crit hit: brighter tear + high-frequency metal accents
             this.playCombatImpact('crit');
         } else if (type === 'hit_crit') {
             this.playSkillImpact('crit');
         } else if (type === 'melee_kill') {
-            // 击杀：重击下沉 + 碎裂尾音
+// Kill: heavy sinking blow + shatter tail
             this.playCombatImpact('kill');
         } else if (type === 'hit_kill') {
             this.playSkillImpact('kill');
@@ -541,7 +541,7 @@ const AudioSys = {
                 o.start(t + i * 0.1); o.stop(t + i * 0.1 + 0.3);
             });
         } else if (type === 'potion') {
-            // 咕噜噜的喝药音效 - 使用多个振荡器模拟液体流动声
+// Gurgling potion-drinking SFX - several oscillators simulate liquid flow
             [200, 250, 300].forEach((f, i) => {
                 let o = this.ctx.createOscillator();
                 let g = this.ctx.createGain();
@@ -556,7 +556,7 @@ const AudioSys = {
                 o.stop(t + i * 0.05 + 0.3);
             });
         } else if (type === 'click') {
-            // 加点/确认音效 - 清脆的点击声
+// Stat point/confirm SFX - crisp click
             osc.type = 'sine';
             osc.frequency.setValueAtTime(800, t);
             osc.frequency.exponentialRampToValueAtTime(600, t + 0.05);
@@ -640,8 +640,8 @@ const AudioSys = {
             this.playToneLayer('sine', t + 0.028, 0.19, 1180, 360, 0.032, bus);
             this.playToneLayer('triangle', t + 0.085, 0.16, 260, 90, 0.022, bus);
         } else if (type === 'drop_unique') {
-            // 暗金掉落音效 - 史诗感的金属共鸣 + 天堂之音
-            // 1. 金属撞击声
+// Unique drop SFX - epic metal resonance + heavenly tones
+// 1. Metal impact
             const osc1 = this.ctx.createOscillator();
             const gain1 = this.ctx.createGain();
             osc1.type = 'sine';
@@ -654,7 +654,7 @@ const AudioSys = {
             osc1.start(t);
             osc1.stop(t + 0.5);
 
-            // 2. 天堂和弦 (C-E-G-C)
+// 2. Heavenly chord (C-E-G-C)
             [523, 659, 784, 1047].forEach((f, i) => {
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
@@ -668,7 +668,7 @@ const AudioSys = {
                 osc.stop(t + 1);
             });
 
-            // 3. 低频共鸣
+// 3. Low-frequency resonance
             const osc3 = this.ctx.createOscillator();
             const gain3 = this.ctx.createGain();
             osc3.type = 'triangle';
@@ -680,8 +680,8 @@ const AudioSys = {
             osc3.start(t);
             osc3.stop(t + 0.6);
         } else if (type === 'drop_set') {
-            // 套装掉落音效 - 神秘的绿色能量
-            // 1. 神秘的低音脉冲
+// Set drop SFX - mysterious green energy
+// 1. Mysterious bass pulse
             const osc1 = this.ctx.createOscillator();
             const gain1 = this.ctx.createGain();
             osc1.type = 'sine';
@@ -694,7 +694,7 @@ const AudioSys = {
             osc1.start(t);
             osc1.stop(t + 0.5);
 
-            // 2. 魔法音阶 (小调神秘感)
+// 2. Magic scale (minor-key mystery)
             [330, 392, 440, 523].forEach((f, i) => {
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
@@ -735,7 +735,7 @@ const AudioSys = {
             gain2.connect(this.sfxGain);
             osc2.start(t); osc2.stop(t + 0.13);
         } else if (type === 'land_gold') {
-            // 金币落地：清脆叮当声 (高频正弦波脉冲)
+// Gold landing: crisp jingle (high-frequency sine pulses)
             [1200, 1500, 1800].forEach((f, i) => {
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
@@ -797,13 +797,13 @@ const AudioSys = {
 
         const t = this.ctx.currentTime;
 
-        // 根据等级计算参数
-        const filterFreq = 300 - (level - 5) * 10; // 5级=300Hz, 10级=250Hz
-        const volume = 0.3 + (level - 5) * 0.04;   // 5级=0.3, 10级=0.5
-        const duration = 0.25 + (level - 5) * 0.02; // 5级=0.25s, 10级=0.35s
+// Compute parameters by level
+        const filterFreq = 300 - (level - 5) * 10; // level 5=300Hz, level 10=250Hz
+        const volume = 0.3 + (level - 5) * 0.04;   // level 5=0.3, level 10=0.5
+        const duration = 0.25 + (level - 5) * 0.02; // level 5=0.25s, level 10=0.35s
 
-        // 第一层：低频轰鸣（主体爆炸声）
-        // 使用多个低频方波叠加模拟噪声
+// Layer 1: low rumble (main explosion)
+// Stack several low-frequency square waves to simulate noise
         [60, 80, 100, 120, 150].forEach((f) => {
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
@@ -826,7 +826,7 @@ const AudioSys = {
             osc.stop(t + duration);
         });
 
-        // 第二层：中频冲击（爆炸瞬间的"砰"）
+// Layer 2: mid-frequency impact (the bang of the blast)
         const osc2 = this.ctx.createOscillator();
         const gain2 = this.ctx.createGain();
         osc2.type = 'triangle';
@@ -839,7 +839,7 @@ const AudioSys = {
         osc2.start(t);
         osc2.stop(t + 0.08);
 
-        // 第三层：高频碎裂（火焰碎片飞溅）
+// Layer 3: high-frequency shatter (fire fragments flying)
         [800, 1000, 1200].forEach((f, i) => {
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
@@ -854,7 +854,7 @@ const AudioSys = {
             osc.stop(t + 0.15);
         });
 
-        // 等级10添加余波效果
+// Add aftershock at level 10
         if (level >= 10) {
             setTimeout(() => {
                 const t2 = this.ctx.currentTime;
@@ -877,29 +877,29 @@ const AudioSys = {
             }, 150);
         }
     },
-    // 更新低血量音效（由 update 循环调用）
-    // 注意：依赖全局 player 对象
+    // UpdatelowHPSFX（by update called in loop）
+    // Note:Depends onallround player object
     updateLowHpEffect: function (dt, hpPct) {
         if (!this.ctx || !this.bgmFilter) return;
 
-        // 阈值 30%
+        // thresholdworth 30%
         if (hpPct < 0.3 && !player.isDead) {
-            // 目标频率：越低越闷，最低 200Hz
+// Target frequency: lower is muffled, min 200Hz
             const targetFreq = 200 + hpPct * 1000;
-            // 平滑过渡
+// Smooth transition
             const currentFreq = this.bgmFilter.frequency.value;
             this.bgmFilter.frequency.value = currentFreq + (targetFreq - currentFreq) * dt * 5;
 
-            // 心跳声
+// Heartbeat
             if (this.heartbeatTimer <= 0) {
                 this.play('heartbeat');
-                // 血越少心跳越快：30% -> 1秒, 0% -> 0.4秒
+// Lower HP, faster heartbeat: 30% -> 1s, 0% -> 0.4s
                 this.heartbeatTimer = 0.4 + hpPct * 2;
             } else {
                 this.heartbeatTimer -= dt;
             }
         } else {
-            // 恢复正常
+// Return to normal
             const currentFreq = this.bgmFilter.frequency.value;
             if (currentFreq < 22000) {
                 this.bgmFilter.frequency.value = currentFreq + (22000 - currentFreq) * dt * 2;
@@ -912,10 +912,10 @@ const AudioSys = {
         if (key === 'bgm' && this.bgmEl) {
             this.bgmEl.volume = val ? 0.3 : 0;
             if (val && !this.bgmPlaying) {
-                // 如果开启BGM且当前没有播放，尝试播放
+// If BGM is on and not playing, try to play
                 this.startBGM();
             } else if (!val && this.bgmPlaying) {
-                // 如果关闭BGM且当前正在播放，暂停播放
+// If BGM is off and playing, pause it
                 this.stopBGM();
             }
         }
@@ -924,11 +924,11 @@ const AudioSys = {
         }
     },
     playPortalOpen: function () {
-        // 传送门打开音效：神秘的能量涌动
+        // portalopenSFX:godhiddenENEsurgevibrate
         if (!this.ctx) return;
         const t = this.ctx.currentTime;
 
-        // 1. 低频能量脉冲
+        // 1. lowfrequencyENEpulse
         const osc1 = this.ctx.createOscillator();
         const gain1 = this.ctx.createGain();
         osc1.type = 'sine';
@@ -941,7 +941,7 @@ const AudioSys = {
         osc1.start(t);
         osc1.stop(t + 0.8);
 
-        // 2. 高频魔法音
+// 2. High-frequency magic tone
         [400, 500, 600, 800].forEach((f, i) => {
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
@@ -956,11 +956,11 @@ const AudioSys = {
         });
     },
     playPortalArrive: function () {
-        // 到达城镇音效：温暖的环境音
+// Arrive-in-town SFX: warm ambience
         if (!this.ctx) return;
         const t = this.ctx.currentTime;
 
-        // 和弦音
+// Chord tones
         [262, 330, 392].forEach((f) => {
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();

@@ -1,4 +1,4 @@
-// 更新公告本地化内容表：键为 changelog.js 的 version，zh 为原始中文
+// Update announcement localization: keyed by changelog.js version; zh is the original Chinese
 (function () {
     'use strict';
     if (typeof window.I18N === 'undefined' || typeof window.I18N.registerTable !== 'function') return;

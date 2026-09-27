@@ -1,58 +1,58 @@
-// ========== 摆摊系统 (Market System) ==========
-// 版本: v1.0
-// 功能: 玩家摆摊、离线挂摊、实时交易
+// ========== stall system (Market System) ==========
+// version: v1.0
+// Features: player stalls, offline stalls, real-time trading
 
-// ========== 可配置常量 ==========
+// ========== Configurable constants ==========
 const MARKET_CONFIG = {
-  TAX_RATE: 0.05,                          // 交易税率 5%
-  MAX_STALLS: 5,                           // 最大摊位数
-  MAX_SLOTS: 10,                           // 每个摊位最大格子数
-  STALL_FEE_PER_HOUR: 500,                 // 摊位费：每小时500金币
-  MIN_STALL_HOURS: 1,                      // 最短摆摊时长：1小时
-  MAX_STALL_HOURS: 10,                     // 最长摆摊时长：10小时
-  STALL_NAME_MAX_LENGTH: 10,               // 摊位名最大长度
-  MIN_PRICE: 1,                            // 最低标价
-  MAX_PRICE: 999999999,                    // 最高标价
+  TAX_RATE: 0.05,                          // trade tax rate 5%
+  MAX_STALLS: 5,                           // Max stall count
+  MAX_SLOTS: 10,                           // Max cells per stall
+  STALL_FEE_PER_HOUR: 500,                 // Stall fee: 500 gold per hour
+  MIN_STALL_HOURS: 1,                      // Min stall duration: 1 hour
+  MAX_STALL_HOURS: 10,                     // Max stall duration: 10 hours
+  STALL_NAME_MAX_LENGTH: 10,               // Max stall name length
+  MIN_PRICE: 1,                            // Min listing price
+  MAX_PRICE: 999999999,                    // Max listing price
 
-  // 摊位坐标 (相对于 dungeonEntrance 的偏移)
+// Stall coords (offsets relative to dungeonEntrance)
   STALL_POSITIONS: [
-    { x: 420, y: -120 },  // 摊位1: 外侧上
-    { x: 455, y: 0 },     // 摊位2: 外侧中
-    { x: 420, y: 120 },   // 摊位3: 外侧下
-    { x: 315, y: -62 },   // 摊位4: 内侧上
-    { x: 315, y: 62 }     // 摊位5: 内侧下
+    { x: 420, y: -120 },  // stallslot1: outsidesideup
+    { x: 455, y: 0 },     // stallslot2: outsidesidein
+    { x: 420, y: 120 },   // Stall 3: outer lower
+    { x: 315, y: -62 },   // stallslot4: withinsideup
+    { x: 315, y: 62 }     // Stall 5: inner lower
   ]
 };
 
-// ========== 摆摊系统核心对象 ==========
+// ========== Stall system core objects ==========
 const MarketSystem = {
-  // 状态
-  stalls: [],              // 所有摊位数据 (从服务器同步)
-  localStallId: null,      // 当前玩家自己的摊位 ID
-  isStalling: false,       // 是否正在摆摊
-  isPanelOpen: false,      // 摆摊设置面板是否打开
-  stallStartTime: null,    // 摆摊开始时间
+  // state
+  stalls: [],              // All stall data (synced from the server)
+  localStallId: null,      // The current player's own stall id
+  isStalling: false,       // Whether running a stall
+  isPanelOpen: false,      // Whether the stall setup panel is open
+  stallStartTime: null,    // Stall start time
   realtimeSubscribed: false,
   initialized: false,
   expirationCheckTimer: null,
   buyLocks: new Set(),
 
-  // 当前操作的摊位索引 (用于 UI)
+// Stall index being operated on (for UI)
   currentStallIndex: -1,
-  setupItems: [],          // 摆摊设置面板中的商品 [{item, price}, ...]
+  setupItems: [],          // Goods in the stall setup panel [{item, price}, ...]
 
-  // ========== 初始化 ==========
+  // ========== Init ==========
   init() {
     this.createUI();
     this.loadStalls();
     if (!this.initialized) {
       this.subscribeStalls();
-      this.startExpirationCheck(); // 定时检查摊位过期
+      this.startExpirationCheck(); // Periodic stall expiry check
       this.initialized = true;
     }
     this.recoverPendingTransactions();
-    this.checkPendingSales(); // 检查未领取的销售收益
-    console.log('[摆摊系统] 初始化完成');
+    this.checkPendingSales(); // Check unclaimed sales earnings
+    console.log('[Stall System] initialized');
   },
 
   escapeHtml(value) {
@@ -71,12 +71,12 @@ const MarketSystem = {
       const parsed = JSON.parse(items);
       return Array.isArray(parsed) ? parsed : [];
     } catch (e) {
-      console.warn('[摆摊系统] 物品数据解析失败:', e);
+      console.warn('[Stall System] item data parse failed:', e);
       return [];
     }
   },
 
-  // ========== UI 创建 ==========
+  // ========== UI Create ==========
   createRequestId(prefix = 'market') {
     const userId = OnlineSystem?.userId || 'anonymous';
     return `${prefix}-${userId}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -96,12 +96,12 @@ const MarketSystem = {
 
   async requireReceiptProtocol(kind) {
     if (typeof pb === 'undefined' || typeof pb.send !== 'function') {
-      throw new Error(I18N.tr('market', 'market_upgrading', '市场升级中，暂时无法交易'));
+      throw new Error(I18N.tr('market', 'market_upgrading', 'Market upgrading, trading is unavailable right now'));
     }
     const protocol = await pb.send('/api/market/protocol', { method: 'GET' });
-    if (protocol?.version !== 2) throw new Error(I18N.tr('market', 'market_upgrading', '市场升级中，暂时无法交易'));
+    if (protocol?.version !== 2) throw new Error(I18N.tr('market', 'market_upgrading', 'Market upgrading, trading is unavailable right now'));
     if (['open-stall', 'close-stall'].includes(kind) && !protocol.stallReceipts) {
-      throw new Error(I18N.tr('market', 'market_upgrading_listings', '市场升级中，暂时无法上架或收摊'));
+      throw new Error(I18N.tr('market', 'market_upgrading_listings', 'Market upgrading, you cannot open or close a stall'));
     }
   },
 
@@ -119,10 +119,10 @@ const MarketSystem = {
     }, 0);
   },
 
-  // 请求与预扣款和角色存档一同提交，网络错误只能重放原请求。
+// The request submits with the prepaid gold and character save together; on network errors only the original request replays.
   async runMarketTransaction(kind, body, reservedGold) {
     if (this.transactionBusy) {
-      showNotification(I18N.tr('market', 'market_transaction_busy', '市场交易处理中，请稍候'), 'warning');
+      showNotification(I18N.tr('market', 'market_transaction_busy', 'A trade is in progress, please wait'), 'warning');
       return 'handled';
     }
     this.transactionBusy = true;
@@ -130,28 +130,28 @@ const MarketSystem = {
       await this.requireReceiptProtocol(player.marketPending?.kind || kind);
       if (player.marketPending) {
         await this.deliverPendingTransaction();
-        showNotification(I18N.tr('market', 'market_previous_handled', '已处理上次交易，请重新确认本次操作'), 'info');
+        showNotification(I18N.tr('market', 'market_previous_handled', 'Your last trade was handled, please confirm this one again'), 'info');
         return 'handled';
       }
       if (kind === 'purchase' && (!Number.isSafeInteger(reservedGold) || reservedGold <= 0 || player.gold < reservedGold)) {
-        throw new Error(I18N.tr('market', 'market_gold_or_price_invalid', '金币不足或价格无效'));
+        throw new Error(I18N.tr('market', 'market_gold_or_price_invalid', 'Not enough gold or invalid price'));
       }
       if (kind === 'purchase' && !player.inventory.includes(null)) {
-        throw new Error(I18N.tr('market', 'market_bag_full', '背包已满'));
+        throw new Error(I18N.tr('market', 'market_bag_full', 'Your bag is full'));
       }
       const pending = { kind, body: { ...body, requestId: this.createRequestId(kind) }, reservedGold, applied: false };
       if (kind === 'open-stall') {
-        if (!Number.isSafeInteger(reservedGold) || reservedGold <= 0 || player.gold < reservedGold) throw new Error('金币不足');
+        if (!Number.isSafeInteger(reservedGold) || reservedGold <= 0 || player.gold < reservedGold) throw new Error('Not enough gold');
         const indices = body.items.map(s => player.inventory.findIndex(i => i && i.id === s.item.id));
         if (indices.some(i => i < 0) || new Set(indices).size !== indices.length) {
-          throw new Error(I18N.tr('market', 'market_items_changed', '上架物品已变化，请重新选择'));
+          throw new Error(I18N.tr('market', 'market_items_changed', 'Your items changed, please select them again'));
         }
         pending.reservedItems = indices.map(i => player.inventory[i]);
         indices.forEach(i => { player.inventory[i] = null; });
       }
       player.marketPending = pending;
       player.gold -= reservedGold;
-      // 存档未成功前绝不请求服务端成交。
+// Never ask the server to finalize a sale before the save succeeds.
       let saved = false;
       try { saved = await SaveSystem.save(); }
       finally {
@@ -161,13 +161,13 @@ const MarketSystem = {
           delete player.marketPending;
         }
       }
-      if (!saved) throw new Error(I18N.tr('market', 'market_save_failed_not_sent', '存档失败，交易未发起'));
+      if (!saved) throw new Error(I18N.tr('market', 'market_save_failed_not_sent', 'Save failed, the trade was never sent'));
       await this.deliverPendingTransaction();
     } catch (error) {
-      console.error('[摆摊系统] 交易尚未完成:', error);
+      console.error('[Stall System] trade not completed:', error);
       showNotification(this.isHookNotInstalled(error)
-        ? I18N.tr('market', 'market_upgrading', '市场升级中，暂时无法交易')
-        : this.getPbErrorMessage(error, I18N.tr('market', 'market_pending_restore', '交易待恢复，请稍后重新打开市场')), 'warning');
+        ? I18N.tr('market', 'market_upgrading', 'Market upgrading, trading is unavailable right now')
+        : this.getPbErrorMessage(error, I18N.tr('market', 'market_pending_restore', 'Trade pending recovery, reopen the market later')), 'warning');
     } finally {
       this.transactionBusy = false;
       updateStats();
@@ -181,14 +181,14 @@ const MarketSystem = {
     if (!pending) return;
     const owner = pending.body.buyerId || pending.body.sellerId;
     if (owner !== OnlineSystem.userId) {
-      throw new Error(I18N.tr('market', 'market_wrong_identity', '请使用发起交易的在线身份恢复交易'));
+      throw new Error(I18N.tr('market', 'market_wrong_identity', 'Recover the trade with the same account that started it'));
     }
     if (!pending.applied) {
       let response;
       try {
         response = await pb.send(`/api/market/${pending.kind}`, { method: 'POST', body: pending.body });
       } catch (error) {
-        // 只有服务端明确拒绝且没有成交的错误才能退款；断网和 5xx 保留请求。
+// Only errors where the server explicitly rejects with no sale allow refunds; disconnects and 5xx keep the request.
         const code = error?.data?.code || error?.response?.code;
         if (['sold_out', 'price_changed', 'invalid_stall', 'own_stall', 'forbidden', 'invalid_request'].includes(code)) {
           player.gold += pending.reservedGold;
@@ -196,35 +196,35 @@ const MarketSystem = {
           pending.applied = true;
           pending.rejected = true;
           if (!await SaveSystem.save()) {
-            throw new Error(I18N.tr('market', 'market_refund_not_saved', '退款尚未保存，请重试恢复'));
+            throw new Error(I18N.tr('market', 'market_refund_not_saved', 'The refund is not saved yet, retry the recovery'));
           }
           delete player.marketPending;
         }
         throw error;
       }
       if (response?.ok !== true || response.requestId !== pending.body.requestId) {
-        throw new Error(I18N.tr('market', 'market_invalid_receipt', '交易收据无效，请稍后恢复'));
+        throw new Error(I18N.tr('market', 'market_invalid_receipt', 'Invalid trade receipt, please retry later'));
       }
       if (pending.kind === 'purchase') {
         if (!response.item || response.totalPrice !== pending.reservedGold) {
-          throw new Error(I18N.tr('market', 'market_purchase_receipt_error', '购买收据数据异常'));
+          throw new Error(I18N.tr('market', 'market_purchase_receipt_error', 'Purchase receipt data is inconsistent'));
         }
-        // 交付时重新寻找空位，绝不使用请求发送前的背包索引。
+// Delivery re-finds a free slot; pre-request inventory indexes are never reused.
         const index = player.inventory.findIndex(item => item === null);
         if (index === -1) {
-          throw new Error(I18N.tr('market', 'market_bought_bag_full', '已购买，背包已满；腾出空位后重新打开市场领取'));
+          throw new Error(I18N.tr('market', 'market_bought_bag_full', 'Purchased, but your bag is full: free a slot and reopen the market to claim it'));
         }
         player.inventory[index] = response.item;
       } else if (pending.kind === 'close-stall') {
         if (!Array.isArray(response.items) || response.items.some(i => !i || !i.id)) {
-          throw new Error(I18N.tr('market', 'market_close_receipt_error', '收摊收据异常'));
+          throw new Error(I18N.tr('market', 'market_close_receipt_error', 'Stall closing receipt is inconsistent'));
         }
         if (player.inventory.filter(i => i === null).length < response.items.length) {
-          throw new Error(I18N.tr('market', 'market_closed_bag_full', '收摊已完成，请腾出背包后重新打开市场领取商品'));
+          throw new Error(I18N.tr('market', 'market_closed_bag_full', 'Stall closed: free bag space and reopen the market to collect the items'));
         }
         response.items.forEach(item => { player.inventory[player.inventory.indexOf(null)] = item; });
       } else if (pending.kind === 'open-stall') {
-        if (!response.stallId) throw new Error(I18N.tr('market', 'market_open_receipt_error', '上架收据异常'));
+        if (!response.stallId) throw new Error(I18N.tr('market', 'market_open_receipt_error', 'Stall opening receipt is inconsistent'));
         this.localStallId = response.stallId;
         this.isStalling = true;
         this.setupItems = [];
@@ -232,15 +232,15 @@ const MarketSystem = {
         this.showCloseStallButton();
       } else {
         if (!Number.isSafeInteger(response.totalGold) || response.totalGold < 0) {
-          throw new Error(I18N.tr('market', 'market_sales_receipt_error', '收益收据数据异常'));
+          throw new Error(I18N.tr('market', 'market_sales_receipt_error', 'Sales receipt data is inconsistent'));
         }
         player.gold += response.totalGold;
       }
       pending.applied = true;
     }
-    // applied 与金币/物品同一存档事务，重启或存档重试都不会重复交付。
+// applied shares one save transaction with gold/items, so restarts or save retries never double-deliver.
     if (!await SaveSystem.save()) {
-      throw new Error(I18N.tr('market', 'market_saved_pending_retry', '交易已到账但尚未保存，请重试恢复'));
+      throw new Error(I18N.tr('market', 'market_saved_pending_retry', 'The trade went through but is not saved yet, retry the recovery'));
     }
     delete player.marketPending;
     if (pending.kind === 'close-stall') {
@@ -264,8 +264,8 @@ const MarketSystem = {
       if (this.pendingSales.length > 0) this.showClaimSalesButton(this.pendingGold);
     }
     showNotification(pending.rejected
-      ? I18N.tr('market', 'market_rejected_refunded', '交易未成交，预扣金币已退回')
-      : I18N.tr('market', 'market_done_saved', '市场交易已完成并保存'), 'success');
+      ? I18N.tr('market', 'market_rejected_refunded', 'The trade did not go through and the held gold was refunded')
+      : I18N.tr('market', 'market_done_saved', 'Trade completed and saved'), 'success');
     this.closeViewPanel();
     this.loadStalls();
   },
@@ -285,7 +285,7 @@ const MarketSystem = {
   },
 
   createUI() {
-    // 摆摊设置面板
+// Stall setup panel
     if (!document.getElementById('stall-setup-panel')) {
       const setupPanel = document.createElement('div');
       setupPanel.id = 'stall-setup-panel';
@@ -296,7 +296,7 @@ const MarketSystem = {
       document.querySelector('.ui-layer')?.appendChild(setupPanel);
     }
 
-    // 查看摊位面板
+// View stall panel
     if (!document.getElementById('stall-view-panel')) {
       const viewPanel = document.createElement('div');
       viewPanel.id = 'stall-view-panel';
@@ -307,7 +307,7 @@ const MarketSystem = {
       document.querySelector('.ui-layer')?.appendChild(viewPanel);
     }
 
-    // 定价弹窗
+// Pricing dialog
     if (!document.getElementById('stall-price-dialog')) {
       const priceDialog = document.createElement('div');
       priceDialog.id = 'stall-price-dialog';
@@ -316,30 +316,30 @@ const MarketSystem = {
       priceDialog.onmousedown = (e) => e.stopPropagation();
       priceDialog.innerHTML = `
         <div class="stall-price-box">
-          <div class="stall-price-title">${I18N.tr('market', 'stall_price_title', '设置售价')}</div>
-          <div class="stall-price-item" id="stall-price-item-name">${I18N.tr('market', 'stall_price_item_placeholder', '物品名')}</div>
+          <div class="stall-price-title">${I18N.tr('market', 'stall_price_title', 'Set Price')}</div>
+          <div class="stall-price-item" id="stall-price-item-name">${I18N.tr('market', 'stall_price_item_placeholder', 'Item name')}</div>
           <div class="stall-price-input-row">
-            <input type="number" id="stall-price-input" min="1" placeholder="${I18N.tr('market', 'stall_price_input_placeholder', '输入金币数')}">
+            <input type="number" id="stall-price-input" min="1" placeholder="${I18N.tr('market', 'stall_price_input_placeholder', 'Enter gold amount')}">
             <span class="stall-price-unit">G</span>
           </div>
           <div class="stall-price-actions">
-            <button class="stall-btn primary" onclick="MarketSystem.confirmPrice()">${I18N.tOr('confirm', '确定')}</button>
-            <button class="stall-btn" onclick="MarketSystem.cancelPrice()">${I18N.tOr('cancel', '取消')}</button>
+            <button class="stall-btn primary" onclick="MarketSystem.confirmPrice()">${I18N.tOr('confirm', 'Confirm')}</button>
+            <button class="stall-btn" onclick="MarketSystem.cancelPrice()">${I18N.tOr('cancel', 'Cancel')}</button>
           </div>
         </div>
       `;
       document.querySelector('.ui-layer')?.appendChild(priceDialog);
     }
 
-    // 为动态创建的面板绑定拖动事件
+// Bind drag events for dynamically created panels
     this.bindPanelDrag('stall-setup-panel');
     this.bindPanelDrag('stall-view-panel');
 
-    // 绑定输入框事件，防止触发游戏快捷键
+// Bind input events so game hotkeys don't fire
     const stopPropagation = (e) => e.stopPropagation();
 
-    // 1. 摊位名称输入框 (稍后绑定，因为是 innerHTML 插入的)
-    // 2. 价格输入框
+// 1. Stall name input (bound later since it's injected via innerHTML)
+    // 2. priceinput field
     const priceInput = document.getElementById('stall-price-input');
     if (priceInput) {
       priceInput.addEventListener('keydown', stopPropagation);
@@ -347,7 +347,7 @@ const MarketSystem = {
     }
   },
 
-  // 绑定面板拖动事件
+// Bind the panel drag events
   bindPanelDrag(panelId) {
     const panel = document.getElementById(panelId);
     if (!panel) return;
@@ -361,7 +361,7 @@ const MarketSystem = {
     let isDragging = false;
 
     const startDrag = (clientX, clientY) => {
-      if (window.innerWidth < 768) return; // 小屏幕禁用拖拽
+      if (window.innerWidth < 768) return; // Dragging disabled on small screens
 
       isDragging = true;
       document.querySelectorAll('.panel').forEach(p => p.style.zIndex = 60);
@@ -388,7 +388,7 @@ const MarketSystem = {
       isDragging = false;
     };
 
-    // 鼠标事件
+// Mouse events
     header.onmousedown = (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -401,7 +401,7 @@ const MarketSystem = {
 
     document.addEventListener('mouseup', endDrag);
 
-    // 触摸事件
+// Touch events
     header.ontouchstart = (e) => {
       e.stopPropagation();
       const touch = e.touches[0];
@@ -418,71 +418,71 @@ const MarketSystem = {
     document.addEventListener('touchend', endDrag);
   },
 
-  // 摆摊设置面板 HTML（垂直布局，适配手机）
+// Stall setup panel HTML (vertical layout, mobile-friendly)
   getSetupPanelHTML() {
-    // 生成时长选项
+// Generate duration options
     let durationOptions = '';
     for (let h = MARKET_CONFIG.MIN_STALL_HOURS; h <= MARKET_CONFIG.MAX_STALL_HOURS; h++) {
       const fee = h * MARKET_CONFIG.STALL_FEE_PER_HOUR;
-      durationOptions += `<option value="${h}">${I18N.tr('market', 'stall_duration_option', '{hours}小时 - {fee}G', { hours: h, fee })}</option>`;
+      durationOptions += `<option value="${h}">${I18N.tr('market', 'stall_duration_option', '{hours}h - {fee}G', { hours: h, fee })}</option>`;
     }
 
     return `
             <div class="panel-close" onclick="MarketSystem.closeSetupPanel()"></div>
-            <div class="panel-header">${I18N.tr('market', 'stall_setup_title', '🛒 摆摊')}</div>
+            <div class="panel-header">${I18N.tr('market', 'stall_setup_title', '🛒 Player Stall')}</div>
             <div class="stall-name-row">
-                <label>${I18N.tr('market', 'stall_name_label', '摊位名称:')}</label>
-                <input type="text" id="stall-name-input" maxlength="${MARKET_CONFIG.STALL_NAME_MAX_LENGTH}" placeholder="${I18N.tr('market', 'stall_name_placeholder', '最多{max}字', { max: MARKET_CONFIG.STALL_NAME_MAX_LENGTH })}">
+                <label>${I18N.tr('market', 'stall_name_label', 'Stall Name:')}</label>
+                <input type="text" id="stall-name-input" maxlength="${MARKET_CONFIG.STALL_NAME_MAX_LENGTH}" placeholder="${I18N.tr('market', 'stall_name_placeholder', 'Max {max} chars', { max: MARKET_CONFIG.STALL_NAME_MAX_LENGTH })}">
             </div>
-            <div class="stall-section-title">${I18N.tr('market', 'stall_shelf_title', '摊位货架 ({slots}格)', { slots: MARKET_CONFIG.MAX_SLOTS })} <span style="color:#888;font-size:10px;">${I18N.tr('market', 'stall_click_to_remove', '点击移除')}</span></div>
+            <div class="stall-section-title">${I18N.tr('market', 'stall_shelf_title', 'Stall shelf ({slots} slots)', { slots: MARKET_CONFIG.MAX_SLOTS })} <span style="color:#888;font-size:10px;">${I18N.tr('market', 'stall_click_to_remove', 'Tap to remove')}</span></div>
             <div id="stall-shelf-grid" class="stall-shelf-grid"></div>
             <div class="stall-duration-row">
-                <label>${I18N.tr('market', 'stall_duration_label', '摆摊时长:')}</label>
+                <label>${I18N.tr('market', 'stall_duration_label', 'Stall Duration:')}</label>
                 <select id="stall-duration-select" onchange="MarketSystem.updateFeeDisplay()">
                     ${durationOptions}
                 </select>
-                <span class="stall-tax-notice">${I18N.tr('market', 'stall_tax_notice', '💡 税率 {rate}%', { rate: MARKET_CONFIG.TAX_RATE * 100 })}</span>
+                <span class="stall-tax-notice">${I18N.tr('market', 'stall_tax_notice', '💡 Tax rate {rate}%', { rate: MARKET_CONFIG.TAX_RATE * 100 })}</span>
             </div>
             <div class="stall-setup-footer">
-                <button id="stall-start-btn" class="stall-btn primary" onclick="MarketSystem.startStall()">${I18N.tr('market', 'stall_start_btn', '开始营业 -{fee}G', { fee: MARKET_CONFIG.STALL_FEE_PER_HOUR })}</button>
+                <button id="stall-start-btn" class="stall-btn primary" onclick="MarketSystem.startStall()">${I18N.tr('market', 'stall_start_btn', 'Open Stall -{fee}G', { fee: MARKET_CONFIG.STALL_FEE_PER_HOUR })}</button>
             </div>
-            <!-- 内嵌背包 -->
+            <!-- Embedded bag -->
             <div class="embedded-bag-section">
-                <div class="embedded-bag-header">${I18N.tOr('bag_title', '📦 背包')} <span style="color:#888;font-size:11px;">${I18N.tr('market', 'stall_click_to_list', '(点击上架)')}</span> <span id="market-gold-display" style="color:gold; float:right;">${I18N.tr('market', 'stall_gold_display', '金币: {gold}', { gold: 0 })}</span></div>
+                <div class="embedded-bag-header">${I18N.tOr('bag_title', '📦 Backpack')} <span style="color:#888;font-size:11px;">${I18N.tr('market', 'stall_click_to_list', '(tap to list)')}</span> <span id="market-gold-display" style="color:gold; float:right;">${I18N.tr('market', 'stall_gold_display', 'Gold: {gold}', { gold: 0 })}</span></div>
                 <div id="stall-inventory-grid" class="embedded-bag-grid"></div>
             </div>
         `;
   },
 
-  // 更新按钮费用显示
+// Update the button cost display
   updateFeeDisplay() {
     const select = document.getElementById('stall-duration-select');
     const btn = document.getElementById('stall-start-btn');
     if (select && btn) {
       const hours = parseInt(select.value);
       const fee = hours * MARKET_CONFIG.STALL_FEE_PER_HOUR;
-      btn.textContent = I18N.tr('market', 'stall_start_btn', '开始营业 -{fee}G', { fee });
+      btn.textContent = I18N.tr('market', 'stall_start_btn', 'Open Stall -{fee}G', { fee });
     }
   },
 
-  // 查看摊位面板 HTML
+// View stall panel HTML
   getViewPanelHTML() {
     return `
             <div class="panel-close" onclick="MarketSystem.closeViewPanel()"></div>
-            <div class="panel-header" id="stall-view-header">${I18N.tr('market', 'stall_view_title', '🛒 摊位')}</div>
+            <div class="panel-header" id="stall-view-header">${I18N.tr('market', 'stall_view_title', '🛒 Player Stall')}</div>
             <div id="stall-view-content" class="stall-view-content"></div>
         `;
   },
 
-  // ========== 摊位数据加载 ==========
+// ========== Stall data loading ==========
   async loadStalls() {
     if (typeof pb === 'undefined') {
-      console.warn('[摆摊系统] PocketBase 未加载');
+      console.warn('[Stall System] PocketBase not loaded');
       return;
     }
 
     try {
-      // 获取所有未过期的摊位
+// Get all unexpired stalls
       const now = new Date().toISOString().replace('T', ' ');
       const records = await pb.collection('market_stalls').getList(1, MARKET_CONFIG.MAX_STALLS, {
         filter: `expires_at >= "${now}"`,
@@ -490,16 +490,16 @@ const MarketSystem = {
       });
 
       this.stalls = records.items || [];
-      // 离线期间过期的自有摊位也要加载，供收据流程返还商品。
+// Own stalls expired while offline load too, so the receipt flow can return the goods.
       if (typeof OnlineSystem !== 'undefined' && OnlineSystem.userId && !this.stalls.some(s => s.user_id === OnlineSystem.userId)) {
         const own = await pb.collection('market_stalls').getList(1, 1, {
           filter: `user_id = "${OnlineSystem.userId}"`, sort: '-created'
         });
         if (own.items?.length) this.stalls.push(own.items[0]);
       }
-      console.log('[摆摊系统] 加载摊位:', this.stalls.length);
+      console.log('[Stall System] loading stall:', this.stalls.length);
 
-      // 检查是否有自己的摊位
+// Check whether the player has their own stall
       if (typeof OnlineSystem !== 'undefined' && OnlineSystem.userId) {
         const myStall = this.stalls.find(s => s.user_id === OnlineSystem.userId);
         if (myStall) {
@@ -508,25 +508,25 @@ const MarketSystem = {
           this.currentStallIndex = myStall.stall_index;
           this.stallStartTime = new Date(myStall.created).getTime();
 
-          // 移动玩家到摊位位置
+// Move the player to the stall position
           const stallPos = this.getStallWorldPosition(myStall.stall_index);
           if (stallPos && typeof player !== 'undefined') {
             player.x = stallPos.x;
             player.y = stallPos.y;
-            player.target = null; // 清除移动目标
+            player.target = null; // Clear the movement target
           }
 
-          // 显示收摊按钮
+// Show the close-stall button
           this.showCloseStallButton();
-          showNotification(I18N.tr('market', 'stall_now_stalling', '正在摆摊: {name}', { name: myStall.stall_name }), 'info');
+          showNotification(I18N.tr('market', 'stall_now_stalling', 'Stalling at: {name}', { name: myStall.stall_name }), 'info');
         }
       }
     } catch (e) {
-      console.error('[摆摊系统] 加载摊位失败:', e);
+      console.error('[Stall System] stall load failed:', e);
     }
   },
 
-  // 获取摊位世界坐标
+// Get the stall's world coords
   getStallWorldPosition(stallIndex) {
     if (typeof dungeonEntrance === 'undefined') return null;
     const pos = MARKET_CONFIG.STALL_POSITIONS[stallIndex];
@@ -537,9 +537,9 @@ const MarketSystem = {
     };
   },
 
-  // 显示收摊按钮
+// Show the close-stall button
   showCloseStallButton() {
-    // 检查是否已存在
+// Check whether it already exists
     if (document.getElementById('close-stall-btn')) return;
 
     const container = document.createElement('div');
@@ -549,7 +549,7 @@ const MarketSystem = {
     const btn = document.createElement('button');
     btn.id = 'close-stall-btn';
     btn.className = 'close-stall-btn';
-    btn.innerHTML = I18N.tr('market', 'stall_close_btn', '收摊');
+    btn.innerHTML = I18N.tr('market', 'stall_close_btn', 'Close Stall');
     btn.onclick = (e) => {
       e.stopPropagation();
       MarketSystem.closeStall();
@@ -563,12 +563,12 @@ const MarketSystem = {
     container.appendChild(timer);
     document.body.appendChild(container);
 
-    // 启动位置更新和倒计时
+// Start the position updates and countdown
     this.updateCloseButtonPosition();
     this.startStallTimer();
   },
 
-  // 启动摊位倒计时
+// Start the stall countdown
   startStallTimer() {
     if (this._stallTimerInterval) clearInterval(this._stallTimerInterval);
 
@@ -576,10 +576,10 @@ const MarketSystem = {
       this.updateStallTimer();
     }, 1000);
 
-    this.updateStallTimer(); // 立即更新一次
+    this.updateStallTimer(); // Update once immediately
   },
 
-  // 更新摊位倒计时显示
+// Update the stall countdown display
   updateStallTimer() {
     const timer = document.getElementById('stall-timer');
     if (!timer || !this.isStalling || !this.localStallId) {
@@ -598,7 +598,7 @@ const MarketSystem = {
     const remainingMs = expiresAt - now;
 
     if (remainingMs <= 0) {
-      timer.textContent = I18N.tr('market', 'stall_expired', '已过期');
+      timer.textContent = I18N.tr('market', 'stall_expired', 'Expired');
       timer.style.color = '#ff4444';
       return;
     }
@@ -615,24 +615,24 @@ const MarketSystem = {
     timer.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
   },
 
-  // 更新收摊按钮位置（跟随玩家头顶）
+// Update the close-stall button position (above the player's head)
   updateCloseButtonPosition() {
     const container = document.getElementById('close-stall-container');
     if (!container || !this.isStalling) return;
 
     if (typeof player !== 'undefined' && typeof camera !== 'undefined') {
       const screenX = player.x - camera.x;
-      const screenY = player.y - camera.y - 70; // 玩家头顶上方
+      const screenY = player.y - camera.y - 70; // Above the player's head
 
-      // 使用 transform 定位减少重排
+// Position with transform to reduce reflows
       container.style.transform = `translate(${screenX}px, ${screenY}px) translateX(-50%)`;
     }
 
-    // 持续更新
+// Keep updating
     requestAnimationFrame(() => this.updateCloseButtonPosition());
   },
 
-  // 隐藏收摊按钮
+// Hide the close-stall button
   hideCloseStallButton() {
     const container = document.getElementById('close-stall-container');
     if (container) container.remove();
@@ -643,7 +643,7 @@ const MarketSystem = {
     }
   },
 
-  // ========== 实时订阅 ==========
+  // ========== real-timesubscribe ==========
   async subscribeStalls() {
     if (typeof pb === 'undefined') return;
     if (this.realtimeSubscribed) return;
@@ -651,94 +651,94 @@ const MarketSystem = {
     try {
       await pb.collection('market_stalls').subscribe('*', (e) => {
         if (e.action === 'create') {
-          // 新摊位
+          // newstallslot
           const existingIndex = this.stalls.findIndex(s => s.id === e.record.id);
           if (existingIndex === -1) {
             this.stalls.push(e.record);
           }
         } else if (e.action === 'update') {
-          // 更新摊位
+// Update the stall
           const index = this.stalls.findIndex(s => s.id === e.record.id);
           if (index !== -1) {
             this.stalls[index] = e.record;
 
-            // 如果玩家当前正在查看此摊位，即时刷新UI
+// If the player is viewing this stall, refresh the UI instantly
             if (this.currentViewStall && this.currentViewStall.id === e.record.id) {
               this.openViewPanel({ stall: e.record });
             }
           }
         } else if (e.action === 'delete') {
-          // 删除摊位
+// Delete the stall
           this.stalls = this.stalls.filter(s => s.id !== e.record.id);
 
-          // 如果玩家当前正在查看此摊位，关闭面板
+// If the player is viewing this stall, close the panel
           if (this.currentViewStall && this.currentViewStall.id === e.record.id) {
             this.closeViewPanel();
-            showNotification(I18N.tr('market', 'stall_closed_by_owner', '该摊位已关闭'), 'info');
+            showNotification(I18N.tr('market', 'stall_closed_by_owner', 'That stall has been closed'), 'info');
           }
 
-          // 如果是自己的摊位被删除（商品售罄）
+          // Own stall was removed (goods sold out)
           if (this.localStallId === e.record.id) {
             this.localStallId = null;
             this.isStalling = false;
             this.stallStartTime = null;
             this.currentStallIndex = -1;
             this.hideCloseStallButton();
-            showNotification(I18N.tr('market', 'sell_all_sold_out', '🎉 商品已全部售罄！'), 'success');
+            showNotification(I18N.tr('market', 'sell_all_sold_out', '🎉 Sold out!'), 'success');
           }
         }
       });
       this.realtimeSubscribed = true;
-      console.log('[摆摊系统] Realtime 订阅成功');
+      console.log('[Stall System] Realtime subscribed');
 
-      // 订阅销售记录，当有新销售时实时通知卖家
+      // Subscribe to sales records; notify the seller in real time on new sales
       await pb.collection('market_sales').subscribe('*', (e) => {
         if (e.action === 'create') {
-          // 新销售记录，检查是否是卖给自己的
+          // New sales record; check if it was sold to self
           if (e.record.seller_id === OnlineSystem?.userId && !e.record.claimed) {
-            showNotification(I18N.tr('market', 'sell_item_sold_notice', '💰 {buyer} 购买了 {item}！+{price}G 待领取', {
+            showNotification(I18N.tr('market', 'sell_item_sold_notice', '💰 {buyer} bought {item}! +{price}G to claim', {
               buyer: e.record.buyer_name, item: e.record.item_name, price: e.record.price
             }), 'success');
             if (typeof AudioSys !== 'undefined') AudioSys.play('gold');
 
-            // 发送销售公告
+// Send the sales announcement
             if (typeof OnlineSystem !== 'undefined' && e.record.item_name) {
               OnlineSystem.announce('item_sold', e.record.item_name, e.record.price);
             }
 
-            // 刷新领取按钮
+// Refresh the claim button
             this.checkPendingSales();
           }
         }
       });
 
     } catch (e) {
-      console.warn('[摆摊系统] Realtime 订阅失败:', e);
+      console.warn('[Stall System] Realtime subscribe failed:', e);
     }
   },
 
-  // ========== 摊位过期检查 ==========
+// ========== Stall expiry checks ==========
   startExpirationCheck() {
     if (this.expirationCheckTimer) return;
-    // 每分钟检查一次
+// Checked once per minute
     this.expirationCheckTimer = setInterval(() => {
       this.checkExpiration();
       this.performMarketGC();
     }, 60000);
-    // 立即检查一次
+    // standi.e.Checkonesecond
     setTimeout(() => {
       this.checkExpiration();
       this.performMarketGC();
     }, 3000);
   },
 
-  // 市场垃圾清理 (机会性清理)
+  // Market garbage collection (opportunistic cleanup)
   performMarketGC() {
     if (typeof OnlineSystem === 'undefined' || !OnlineSystem.gc) return;
 
-    // 未领取商品必须保留，过期摊位由收摊收据回收。
+// Unclaimed goods must persist; expired stalls are recovered by the close-stall receipt.
 
-    // 2. 清理超过 15 天未领取的销售收益 (按用户要求保留 15 天)
+// 2. Clean sales earnings unclaimed for 15+ days (kept 15 days per user request)
     const fifteenDaysAgo = new Date(Date.now() - 15 * 24 * 3600 * 1000).toISOString().replace('T', ' ');
     OnlineSystem.gc('market_sales', `created < "${fifteenDaysAgo}"`, 5);
   },
@@ -753,16 +753,16 @@ const MarketSystem = {
     const now = new Date();
 
     if (now >= expiresAt) {
-      // 已过期，自动收摊
+// Expired: close the stall automatically
       this.handleExpiredStall(myStall);
     } else {
-      // 计算剩余时间，如果小于5分钟则提醒
+// Compute remaining time; warn under 5 minutes
       const remainingMs = expiresAt - now;
       const remainingMinutes = Math.floor(remainingMs / 60000);
 
       if (remainingMinutes <= 5 && remainingMinutes > 0 && !this._expirationWarned) {
         this._expirationWarned = true;
-        showNotification(I18N.tr('market', 'stall_expiring_soon', '⏰ 摊位将在 {minutes} 分钟后过期', { minutes: remainingMinutes }), 'warning');
+        showNotification(I18N.tr('market', 'stall_expiring_soon', '⏰ Your stall expires in {minutes} min', { minutes: remainingMinutes }), 'warning');
       }
     }
   },
@@ -772,7 +772,7 @@ const MarketSystem = {
     return this.runMarketTransaction('close-stall', { sellerId: OnlineSystem.userId, stallId: stall.id }, 0);
   },
 
-  // ========== 检查未领取的销售收益 ==========
+// ========== Check unclaimed sales earnings ==========
   async checkPendingSales() {
     if (typeof pb === 'undefined' || typeof OnlineSystem === 'undefined' || !OnlineSystem.userId) {
       return;
@@ -787,54 +787,54 @@ const MarketSystem = {
       if (records.items.length > 0) {
         const totalGold = records.items.reduce((sum, r) => sum + r.price, 0);
 
-        // 显示领取提示
+        // Showclaimtoast
         setTimeout(() => {
           this.showSalesNotification(records.items, totalGold);
         }, 1000);
       }
     } catch (e) {
-      console.warn('[摆摊系统] 检查销售收益失败:', e);
+      console.warn('[Stall System] sales check failed:', e);
     }
   },
 
-  // 显示销售收益通知
+// Show the earnings notification
   showSalesNotification(sales, totalGold) {
-    showNotification(I18N.tr('market', 'sell_pending_summary', '💰 您有 {count} 件商品已售出，共 {gold}G 待领取！', {
+    showNotification(I18N.tr('market', 'sell_pending_summary', '💰 You have {count} items sold for {gold}G!', {
       count: sales.length, gold: totalGold
     }), 'success');
 
-    // 保存待领取列表
+// Store the pending claim list
     this.pendingSales = sales;
     this.pendingGold = totalGold;
 
-    // 显示领取按钮
+// Show the claim button
     this.showClaimSalesButton(totalGold);
   },
 
-  // 显示领取收益按钮
+// Show the claim earnings button
   showClaimSalesButton(totalGold) {
-    // 移除旧按钮
+// Remove old buttons
     const oldBtn = document.getElementById('claim-sales-btn');
     if (oldBtn) oldBtn.remove();
 
     const btn = document.createElement('button');
     btn.id = 'claim-sales-btn';
     btn.className = 'claim-sales-btn';
-    btn.innerHTML = I18N.tr('market', 'sell_claim_btn', '💰 领取 {gold}G', { gold: totalGold });
+    btn.innerHTML = I18N.tr('market', 'sell_claim_btn', '💰 Claim {gold}G', { gold: totalGold });
     btn.onclick = (e) => {
       e.stopPropagation();
       MarketSystem.openSalesPanel();
     };
-    // 阻止点击穿透导致玩家移动
+// Stop click-through from moving the player
     btn.onmousedown = (e) => e.stopPropagation();
     btn.ontouchstart = (e) => e.stopPropagation();
     document.body.appendChild(btn);
   },
 
-  // 打开销售明细面板
+// Open the sales detail panel
   openSalesPanel() {
     this.recoverPendingTransactions();
-    // 创建面板（如果不存在）
+    // Createpanel（ifnotsaveat）
     let panel = document.getElementById('sales-panel');
     if (!panel) {
       panel = document.createElement('div');
@@ -864,28 +864,28 @@ const MarketSystem = {
 
     panel.innerHTML = `
       <div class="panel-close" onclick="MarketSystem.closeSalesPanel()"></div>
-      <div class="panel-header">${I18N.tr('market', 'sell_details_title', '💰 摆摊收益明细')}</div>
-      <div class="sales-list">${listHtml || `<div class="sales-empty">${I18N.tr('market', 'sell_empty', '暂无销售记录')}</div>`}</div>
+      <div class="panel-header">${I18N.tr('market', 'sell_details_title', '💰 Sales Details')}</div>
+      <div class="sales-list">${listHtml || `<div class="sales-empty">${I18N.tr('market', 'sell_empty', 'No sales yet')}</div>`}</div>
       <div class="sales-total">
-        <span>${I18N.tr('market', 'sell_total_count', '总计: {count} 件', { count: sales.length })}</span>
+        <span>${I18N.tr('market', 'sell_total_count', 'Total: {count} items', { count: sales.length })}</span>
         <span class="sales-total-gold">${totalGold}G</span>
       </div>
-      <button class="stall-btn primary sales-claim-all" onclick="MarketSystem.claimAllSales()">${I18N.tr('market', 'sell_claim_all', '领取全部')}</button>
+      <button class="stall-btn primary sales-claim-all" onclick="MarketSystem.claimAllSales()">${I18N.tr('market', 'sell_claim_all', 'Claim All')}</button>
     `;
 
-    // 绑定拖动（在 innerHTML 设置后，确保 panel-header 存在）
+    // binddrag（at innerHTML Setafter，ensure panel-header saveat）
     this.bindPanelDrag('sales-panel');
 
     panel.style.display = 'block';
   },
 
-  // 关闭销售明细面板
+// Close the sales detail panel
   closeSalesPanel() {
     const panel = document.getElementById('sales-panel');
     if (panel) panel.style.display = 'none';
   },
 
-  // 领取全部收益
+// Claim all earnings
   async claimAllSales() {
     const sales = this.pendingSales || [];
     if (sales.length === 0) return;
@@ -894,14 +894,14 @@ const MarketSystem = {
     this.closeSalesPanel();
   },
 
-  // 领取销售收益
+// Claim sales earnings
   async claimSales(sales) {
     if (typeof pb === 'undefined' || typeof player === 'undefined') return;
 
     return this.tryServerClaimSales(sales);
   },
 
-  // ========== 获取摊位交互点 ==========
+// ========== Get stall interaction points ==========
   getStallInteractionPoints() {
     if (typeof dungeonEntrance === 'undefined') return [];
 
@@ -913,7 +913,7 @@ const MarketSystem = {
     }));
   },
 
-  // ========== 检测点击摊位 ==========
+// ========== Detect stall clicks ==========
   getStallAtPosition(worldX, worldY) {
     const points = this.getStallInteractionPoints();
     const clickRange = 30;
@@ -926,24 +926,24 @@ const MarketSystem = {
     return null;
   },
 
-  // ========== 点击摊位处理 ==========
+// ========== Stall click handling ==========
   onStallClick(stallPoint) {
     if (!stallPoint) return;
 
     if (stallPoint.stall) {
-      // 有人摆摊，打开查看面板
+// Occupied stall: open the view panel
       this.openViewPanel(stallPoint);
     } else {
-      // 空摊位，打开设置面板并绑定玩家点击的具体位置
+      // Empty stall: open the setup panel and bind the clicked position
       this.openSetupPanel(stallPoint.index);
     }
   },
 
-  // ========== 打开摆摊设置面板 ==========
+// ========== Open the stall setup panel ==========
   openSetupPanel(stallIndex = -1) {
     this.recoverPendingTransactions();
     if (this.isStalling) {
-      showNotification(I18N.tr('market', 'stall_already_stalling', '你已经在摆摊了'), 'warning');
+      showNotification(I18N.tr('market', 'stall_already_stalling', 'You are already stalling'), 'warning');
       return;
     }
 
@@ -953,7 +953,7 @@ const MarketSystem = {
     const panel = document.getElementById('stall-setup-panel');
     if (!panel) return;
 
-    // 停止玩家移动
+// Stop player movement
     if (typeof player !== 'undefined') {
       player.target = null;
     }
@@ -961,7 +961,7 @@ const MarketSystem = {
     panel.style.display = 'block';
     this.isPanelOpen = true;
 
-    // 绑定输入框事件阻止冒泡
+// Bind input events to stop bubbling
     const nameInput = document.getElementById('stall-name-input');
     if (nameInput) {
       nameInput.onkeydown = (e) => e.stopPropagation();
@@ -971,21 +971,21 @@ const MarketSystem = {
     this.renderSetupPanel();
   },
 
-  // 关闭设置面板
+// Close the setup panel
   closeSetupPanel() {
     const panel = document.getElementById('stall-setup-panel');
     if (panel) panel.style.display = 'none';
     this.isPanelOpen = false;
 
-    // 货架仅引用背包物品，关闭面板不重复返还。
+// Shelves only reference inventory items; closing the panel never returns them twice.
     this.setupItems = [];
     this.currentStallIndex = -1;
     renderInventory();
   },
 
-  // 渲染设置面板
+// Render the setup panel
   renderSetupPanel() {
-    // 获取已上架物品的背包索引
+// Get inventory indexes of listed items
     const shelfInvIndexes = new Set();
     for (const slotData of this.setupItems) {
       if (slotData && slotData.invIndex !== undefined) {
@@ -993,7 +993,7 @@ const MarketSystem = {
       }
     }
 
-    // 自定义渲染背包（标记已上架物品）
+// Custom inventory render (marking listed items)
     const grid = document.getElementById('stall-inventory-grid');
     if (grid && typeof player !== 'undefined') {
       grid.innerHTML = '';
@@ -1002,12 +1002,12 @@ const MarketSystem = {
         slot.className = 'embedded-bag-slot';
 
         if (item) {
-          // 检查是否已上架
+// Check whether already listed
           if (shelfInvIndexes.has(idx)) {
             slot.classList.add('stall-on-shelf');
-            slot.innerHTML = `<span style="color:#888;font-size:10px;">${I18N.tr('market', 'stall_listed_badge', '已上架')}</span>`;
+            slot.innerHTML = `<span style="color:#888;font-size:10px;">${I18N.tr('market', 'stall_listed_badge', 'Listed')}</span>`;
           } else {
-            // 稀有度样式
+            // raritystyle
             if (item.rarity >= 3 && item.rarity <= 4) slot.classList.add('rarity-unique');
             else if (item.rarity === 5) slot.classList.add('rarity-set');
             else if (item.rarity === 2) slot.classList.add('rarity-rare');
@@ -1016,7 +1016,7 @@ const MarketSystem = {
               applyItemSpriteToElement(slot, item);
             }
 
-            // 点击事件（消耗品不可上架）
+// Click events (consumables cannot be listed)
             if (item.type !== 'potion' && item.type !== 'scroll') {
               slot.onclick = (e) => {
                 e.stopPropagation();
@@ -1036,14 +1036,14 @@ const MarketSystem = {
         grid.appendChild(slot);
       });
 
-      // 更新金币显示
+// Update the gold display
       const goldDisplay = document.getElementById('market-gold-display');
       if (goldDisplay) {
-        goldDisplay.textContent = I18N.tr('market', 'stall_gold_display', '金币: {gold}', { gold: player.gold });
+        goldDisplay.textContent = I18N.tr('market', 'stall_gold_display', 'Gold: {gold}', { gold: player.gold });
       }
     }
 
-    // 渲染货架（横挢10格）
+    // Render shelves (10 cells across)
     const shelfGrid = document.getElementById('stall-shelf-grid');
     if (shelfGrid) {
       shelfGrid.innerHTML = '';
@@ -1059,18 +1059,18 @@ const MarketSystem = {
           slot.style.borderColor = color;
           slot.onclick = () => MarketSystem.removeFromShelf(i);
 
-          // 使用精灵图渲染
+// Render with sprites
           if (typeof applyItemSpriteToElement === 'function') {
             applyItemSpriteToElement(slot, item);
           }
 
-          // 价格标签
+          // pricetab
           const priceLabel = document.createElement('span');
           priceLabel.className = 'stall-item-price';
           priceLabel.textContent = slotData.price + 'G';
           slot.appendChild(priceLabel);
 
-          // 绑定 tooltip
+          // bind tooltip
           if (typeof bindItemTooltip === 'function') {
             bindItemTooltip(slot, item);
           }
@@ -1083,7 +1083,7 @@ const MarketSystem = {
       }
     }
 
-    // 更新按钮状态
+// Update button states
     const startBtn = document.getElementById('stall-start-btn');
     if (startBtn) {
       const hasItems = this.setupItems.some(s => s && s.item);
@@ -1091,20 +1091,20 @@ const MarketSystem = {
     }
   },
 
-  // 添加物品到货架
+  // additemarrive atgoodsrack
   addToShelf(invIndex) {
     if (typeof player === 'undefined') return;
 
     const item = player.inventory[invIndex];
     if (!item) return;
 
-    // 只禁止消耗品上架（药水、卷轴）
+// Only consumables (potions, scrolls) are barred from listing
     if (item.type === 'potion' || item.type === 'scroll') {
-      showNotification(I18N.tr('market', 'stall_consumable_blocked', '消耗品不可出售'), 'warning');
+      showNotification(I18N.tr('market', 'stall_consumable_blocked', 'Consumables cannot be sold'), 'warning');
       return;
     }
 
-    // 找到空的货架格子
+// Find an empty shelf cell
     let emptySlot = -1;
     for (let i = 0; i < MARKET_CONFIG.MAX_SLOTS; i++) {
       if (!this.setupItems[i]) {
@@ -1114,16 +1114,16 @@ const MarketSystem = {
     }
 
     if (emptySlot === -1) {
-      showNotification(I18N.tr('market', 'stall_shelf_full', '货架已满'), 'warning');
+      showNotification(I18N.tr('market', 'stall_shelf_full', 'The shelf is full'), 'warning');
       return;
     }
 
-    // 保存临时状态，打开定价弹窗
+// Store temp state and open the pricing dialog
     this.pendingItem = { invIndex, item, emptySlot };
     this.showPriceDialog(item);
   },
 
-  // 显示定价弹窗
+// Show the pricing dialog
   showPriceDialog(item) {
     const dialog = document.getElementById('stall-price-dialog');
     const itemName = document.getElementById('stall-price-item-name');
@@ -1131,27 +1131,27 @@ const MarketSystem = {
 
     if (!dialog) return;
 
-    // 计算建议售价（基于稀有度，比商人买价高一些）
+    // Compute suggested sale price (based on rarity, a bit above merchant buy price)
     let suggestedPrice = 50;
     if (item.rarity > 1) suggestedPrice *= item.rarity * 2;
-    suggestedPrice = Math.floor(suggestedPrice * 1.5); // 比商人收购价高50%
+    suggestedPrice = Math.floor(suggestedPrice * 1.5); // 50% above the merchant buy price
 
     const color = getRarityColor(item.rarity);
     itemName.innerHTML = `<span style="color:${color}">${this.escapeHtml(item.name)}</span>`;
     priceInput.value = suggestedPrice;
     dialog.style.display = 'flex';
 
-    // 自动聚焦输入框
+// Auto-focus the input
     setTimeout(() => priceInput.focus(), 100);
   },
 
-  // 确认定价
+// Confirm the price
   confirmPrice() {
     const priceInput = document.getElementById('stall-price-input');
     const priceNum = parseInt(priceInput?.value);
 
     if (isNaN(priceNum) || priceNum < MARKET_CONFIG.MIN_PRICE || priceNum > MARKET_CONFIG.MAX_PRICE) {
-      showNotification(I18N.tr('market', 'stall_price_range', '价格必须在 {min} ~ {max} 之间', {
+      showNotification(I18N.tr('market', 'stall_price_range', 'Price must be between {min} and {max}', {
         min: MARKET_CONFIG.MIN_PRICE, max: MARKET_CONFIG.MAX_PRICE
       }), 'warning');
       return;
@@ -1161,54 +1161,54 @@ const MarketSystem = {
 
     const { invIndex, item, emptySlot } = this.pendingItem;
 
-    // 验证物品是否仍在背包中
+// Validate the item is still in the inventory
     const currentItem = player.inventory[invIndex];
     if (!currentItem || currentItem.id !== item.id) {
-      showNotification(I18N.tr('market', 'stall_item_not_in_bag', '物品已不在背包中'), 'warning');
+      showNotification(I18N.tr('market', 'stall_item_not_in_bag', 'The item is no longer in your bag'), 'warning');
       this.closePriceDialog();
       this.renderSetupPanel();
       return;
     }
 
-    // 验证该物品是否已被上架（防止重复上架）
+// Validate the item isn't already listed (prevents double listing)
     const alreadyShelf = this.setupItems.some(s => s && s.item && s.item.id === item.id);
     if (alreadyShelf) {
-      showNotification(I18N.tr('market', 'stall_item_already_listed', '该物品已在货架上'), 'warning');
+      showNotification(I18N.tr('market', 'stall_item_already_listed', 'That item is already on the shelf'), 'warning');
       this.closePriceDialog();
       return;
     }
 
-    // 注意：不从背包移除，只记录索引，防止刷新页面丢失物品
+// Note: never removed from the inventory, only the index recorded, so refreshes can't lose the item
     this.setupItems[emptySlot] = { item, price: priceNum, invIndex };
 
-    // 关闭弹窗，清除临时状态
+// Close the dialog and clear temp state
     this.closePriceDialog();
 
     this.renderSetupPanel();
   },
 
-  // 取消定价
+// Cancel pricing
   cancelPrice() {
     this.closePriceDialog();
   },
 
-  // 关闭定价弹窗
+// Close the pricing dialog
   closePriceDialog() {
     const dialog = document.getElementById('stall-price-dialog');
     if (dialog) dialog.style.display = 'none';
     this.pendingItem = null;
   },
 
-  // 从货架移除物品
+// Remove the item from the shelf
   removeFromShelf(shelfIndex) {
     const slotData = this.setupItems[shelfIndex];
     if (!slotData || !slotData.item) return;
 
-    // 物品还在背包中，只需清除货架记录
+// The item is still in the inventory; just clear the shelf record
     this.setupItems[shelfIndex] = null;
     this.renderSetupPanel();
 
-    // 强制隐藏 tooltip (如果有全局函数则调用，否则操作 DOM)
+// Force-hide the tooltip (call the global function if present, else touch the DOM)
     if (typeof hideTooltip === 'function') {
       hideTooltip();
     } else {
@@ -1217,41 +1217,41 @@ const MarketSystem = {
     }
   },
 
-  // ========== 开始摆摊 ==========
+  // ========== startstall ==========
   async startStall() {
     const stallName = document.getElementById('stall-name-input')?.value.trim()
-      || I18N.tr('market', 'stall_default_name', '摊位');
+      || I18N.tr('market', 'stall_default_name', 'Stall');
     const itemsToSell = this.setupItems.filter(s => s && s.item);
 
     if (itemsToSell.length === 0) {
-      showNotification(I18N.tr('market', 'stall_add_items_first', '请先添加商品'), 'warning');
+      showNotification(I18N.tr('market', 'stall_add_items_first', 'Add some items first'), 'warning');
       return;
     }
 
-    // 读取选择的摆摊时长
+// Read the chosen stall duration
     const durationSelect = document.getElementById('stall-duration-select');
     const hours = durationSelect ? parseInt(durationSelect.value) : 1;
     const stallFee = hours * MARKET_CONFIG.STALL_FEE_PER_HOUR;
 
-    // 检查金币是否足够
+// Check whether gold is enough
     if (typeof player === 'undefined' || player.gold < stallFee) {
-      showNotification(I18N.tr('market', 'stall_not_enough_gold', '金币不足，需要 {fee}G', { fee: stallFee }), 'warning');
+      showNotification(I18N.tr('market', 'stall_not_enough_gold', 'Not enough gold: {fee}G needed', { fee: stallFee }), 'warning');
       return;
     }
 
     if (typeof pb === 'undefined' || typeof OnlineSystem === 'undefined' || !OnlineSystem.userId) {
-      showNotification(I18N.tr('market', 'stall_offline', '网络未连接'), 'error');
+      showNotification(I18N.tr('market', 'stall_offline', 'Network not connected'), 'error');
       return;
     }
 
-    // 实时获取最新摊位数据，查找空位
+// Fetch the latest stall data live and look for a free spot
     await this.loadStalls();
     const occupiedIndices = this.stalls.map(s => s.stall_index);
     let assignedIndex = -1;
 
     if (this.currentStallIndex >= 0) {
       if (occupiedIndices.includes(this.currentStallIndex)) {
-        showNotification(I18N.tr('market', 'stall_slot_taken', '该摊位已被占用，请重新选择'), 'warning');
+        showNotification(I18N.tr('market', 'stall_slot_taken', 'That stall is taken, pick another one'), 'warning');
         this.loadStalls();
         return;
       }
@@ -1266,7 +1266,7 @@ const MarketSystem = {
     }
 
     if (assignedIndex === -1) {
-      showNotification(I18N.tr('market', 'stall_all_full', '摊位已满，请稍后再试'), 'warning');
+      showNotification(I18N.tr('market', 'stall_all_full', 'All stalls are taken, try again later'), 'warning');
       return;
     }
 
@@ -1279,7 +1279,7 @@ const MarketSystem = {
     }, stallFee);
   },
 
-  // 服务器收摊与收据原子提交，断网保留请求，绝不提前返还。
+// Server-side stall closing commits atomically with the receipt; offline keeps the request and never returns early.
   async closeStall() {
     if (!this.localStallId) return;
     return this.runMarketTransaction('close-stall', {
@@ -1287,13 +1287,13 @@ const MarketSystem = {
     }, 0);
   },
 
-  // ========== 打开查看摊位面板 ==========
+// ========== Open the view stall panel ==========
   openViewPanel(stallPoint) {
     this.recoverPendingTransactions();
     const stall = stallPoint.stall;
     if (!stall) return;
 
-    this.currentViewStall = stall; // 保存当前查看的摊位
+    this.currentViewStall = stall; // Store the currently viewed stall
 
     const panel = document.getElementById('stall-view-panel');
     const header = document.getElementById('stall-view-header');
@@ -1303,14 +1303,14 @@ const MarketSystem = {
 
     header.innerHTML = `🛒 ${this.escapeHtml(stall.stall_name)} <span style="color:#888">(${this.escapeHtml(stall.nickname)})</span>`;
 
-    // 解析商品数据
+// Parse the goods data
     const items = this.parseItems(stall.items);
 
-    // 清空并使用 DOM 方式渲染
+// Clear and render via DOM
     content.innerHTML = '';
 
     if (items.length === 0) {
-      content.innerHTML = `<div class="stall-empty-notice">${I18N.tr('market', 'stall_view_empty', '摊位空空如也')}</div>`;
+      content.innerHTML = `<div class="stall-empty-notice">${I18N.tr('market', 'stall_view_empty', 'This stall is empty')}</div>`;
       panel.style.display = 'block';
       return;
     }
@@ -1329,7 +1329,7 @@ const MarketSystem = {
       const row = document.createElement('div');
       row.className = 'stall-view-item';
 
-      // 物品图标
+      // itemicon
       const iconBox = document.createElement('div');
       iconBox.className = 'stall-view-icon';
       iconBox.style.borderColor = color;
@@ -1341,29 +1341,29 @@ const MarketSystem = {
       }
       row.appendChild(iconBox);
 
-      // 物品信息
+      // iteminfo
       const info = document.createElement('div');
       info.className = 'stall-view-info';
       info.innerHTML = `
         <div class="stall-view-name" style="color:${color}">${this.escapeHtml(item.name)}</div>
-        <div class="stall-view-price">${slotData.price}G <span class="stall-tax">${I18N.tr('market', 'stall_tax_suffix', '+{tax}G税', { tax: taxAmount })}</span></div>
+        <div class="stall-view-price">${slotData.price}G <span class="stall-tax">${I18N.tr('market', 'stall_tax_suffix', '+{tax}G tax', { tax: taxAmount })}</span></div>
       `;
       row.appendChild(info);
 
-      // 购买按钮
+// Buy button
       const buyBtn = document.createElement('button');
       buyBtn.className = 'stall-buy-btn';
 
       const isMyStall = (stall.user_id === OnlineSystem?.userId);
 
       if (isMyStall) {
-        buyBtn.textContent = I18N.tr('market', 'buy_own_stall_label', '我的');
+        buyBtn.textContent = I18N.tr('market', 'buy_own_stall_label', 'Mine');
         buyBtn.disabled = true;
         buyBtn.style.opacity = '0.5';
         buyBtn.style.cursor = 'default';
         buyBtn.style.background = '#555';
       } else {
-        buyBtn.textContent = I18N.tOr('title_buy', '购买');
+        buyBtn.textContent = I18N.tOr('title_buy', 'Buy');
         buyBtn.onclick = (e) => {
           e.stopPropagation();
           MarketSystem.buyItem(stall.id, i);
@@ -1378,23 +1378,23 @@ const MarketSystem = {
     panel.style.display = 'block';
   },
 
-  // 关闭查看面板
+// Close the view panel
   closeViewPanel() {
     const panel = document.getElementById('stall-view-panel');
     if (panel) panel.style.display = 'none';
   },
 
-  // ========== 购买商品 ==========
+  // ========== purchasegoods ==========
   async buyItem(stallId, itemIndex) {
     if (typeof pb === 'undefined' || typeof player === 'undefined') return;
 
     try {
-      // 重新获取最新摊位数据
+// Re-fetch the latest stall data
       const stall = await pb.collection('market_stalls').getOne(stallId);
 
-      // 禁止购买自己的
+// Banned from buying your own
       if (stall.user_id === OnlineSystem?.userId) {
-        showNotification(I18N.tr('market', 'buy_own_item_blocked', '不能购买自己的商品'), 'warning');
+        showNotification(I18N.tr('market', 'buy_own_item_blocked', 'You cannot buy your own item'), 'warning');
         return;
       }
 
@@ -1402,7 +1402,7 @@ const MarketSystem = {
       const slotData = items[itemIndex];
 
       if (!slotData || !slotData.item) {
-        showNotification(I18N.tr('market', 'buy_item_sold', '商品已售出'), 'warning');
+        showNotification(I18N.tr('market', 'buy_item_sold', 'Item already sold'), 'warning');
         this.closeViewPanel();
         return;
       }
@@ -1410,31 +1410,31 @@ const MarketSystem = {
       const taxAmount = Math.ceil(slotData.price * MARKET_CONFIG.TAX_RATE);
       const totalPrice = slotData.price + taxAmount;
 
-      // 检查金币
+      // check gold
       if (player.gold < totalPrice) {
-        showNotification(I18N.tr('market', 'buy_not_enough_gold', '金币不足，需要 {price}G', { price: totalPrice }), 'warning');
+        showNotification(I18N.tr('market', 'buy_not_enough_gold', 'Not enough gold: {price}G needed', { price: totalPrice }), 'warning');
         return;
       }
 
-      // 检查背包空间
+// Check inventory space
       const emptySlot = player.inventory.findIndex(i => i === null);
       if (emptySlot === -1) {
-        showNotification(I18N.tr('market', 'market_bag_full', '背包已满'), 'warning');
+        showNotification(I18N.tr('market', 'market_bag_full', 'Your bag is full'), 'warning');
         return;
       }
 
-      // 显示购买确认弹窗
+// Show the purchase confirm dialog
       this.showBuyConfirmDialog(stall, slotData, itemIndex, totalPrice, taxAmount, emptySlot);
 
     } catch (e) {
-      console.error('[摆摊系统] 获取商品失败:', e);
-      showNotification(I18N.tr('market', 'buy_fetch_failed', '获取商品信息失败'), 'error');
+      console.error('[Stall System] item fetch failed:', e);
+      showNotification(I18N.tr('market', 'buy_fetch_failed', 'Could not load the item info'), 'error');
     }
   },
 
-  // 显示购买确认弹窗
+// Show the purchase confirm dialog
   showBuyConfirmDialog(stall, slotData, itemIndex, totalPrice, taxAmount, emptySlot) {
-    // 创建弹窗（如果不存在）
+    // Createpopup（ifnotsaveat）
     let dialog = document.getElementById('buy-confirm-dialog');
     if (!dialog) {
       dialog = document.createElement('div');
@@ -1446,27 +1446,27 @@ const MarketSystem = {
 
     const item = slotData.item;
     const color = getRarityColor(item.rarity);
-    const confirmLabel = I18N.tr('market', 'buy_confirm_label', '确认购买');
+    const confirmLabel = I18N.tr('market', 'buy_confirm_label', 'Confirm Purchase');
 
     dialog.innerHTML = `
       <div class="stall-price-box buy-confirm-box">
         <div class="stall-price-title">${confirmLabel}</div>
         <div class="buy-confirm-item" style="color:${color}">${this.escapeHtml(item.name)}</div>
         <div class="buy-confirm-price">
-          <div>${I18N.tr('market', 'buy_price_line', '售价: {price}G', { price: slotData.price })}</div>
-          <div class="buy-confirm-tax">${I18N.tr('market', 'buy_tax_line', '+ 税费: {tax}G', { tax: taxAmount })}</div>
-          <div class="buy-confirm-total">${I18N.tr('market', 'buy_total_line', '= 总计: {total}G', { total: totalPrice })}</div>
+          <div>${I18N.tr('market', 'buy_price_line', 'Price: {price}G', { price: slotData.price })}</div>
+          <div class="buy-confirm-tax">${I18N.tr('market', 'buy_tax_line', '+ Tax: {tax}G', { tax: taxAmount })}</div>
+          <div class="buy-confirm-total">${I18N.tr('market', 'buy_total_line', '= Total: {total}G', { total: totalPrice })}</div>
         </div>
         <div class="stall-price-actions">
           <button class="stall-btn primary" id="buy-confirm-yes">${confirmLabel}</button>
-          <button class="stall-btn" id="buy-confirm-no">${I18N.tOr('cancel', '取消')}</button>
+          <button class="stall-btn" id="buy-confirm-no">${I18N.tOr('cancel', 'Cancel')}</button>
         </div>
       </div>
     `;
 
     dialog.style.display = 'flex';
 
-    // 绑定按钮事件
+// Bind button events
     document.getElementById('buy-confirm-yes').onclick = () => {
       dialog.style.display = 'none';
       this.executeBuy(stall, slotData, itemIndex, totalPrice, emptySlot);
@@ -1476,55 +1476,55 @@ const MarketSystem = {
     };
   },
 
-  // 执行购买
+// Execute the purchase
   async executeBuy(stall, slotData, itemIndex, totalPrice, emptySlot) {
     return this.tryServerPurchase(stall, slotData, itemIndex, totalPrice);
   },
 
-  // ========== 渲染摊位到游戏世界 ==========
+  // ========== render stallsarrive atgameworld ==========
   drawStalls(ctx) {
     const points = this.getStallInteractionPoints();
 
     for (const point of points) {
-      // 注意：draw() 函数已经做了 ctx.translate(-camera.x, -camera.y)
-      // 所以这里直接使用世界坐标，不需要再减去 camera 偏移
+// Note: draw() already applies ctx.translate(-camera.x, -camera.y)
+// So world coords are used directly here; no camera offset subtraction needed
       if (point.stall) {
-        // 有人摆摊：绘制摊主（但如果是自己的摊位就跳过，因为玩家已在渲染）
+// Occupied stall: draw the vendor (skip for your own stall since the player already renders)
         if (point.stall.user_id !== OnlineSystem?.userId) {
           this.drawStallOwner(ctx, point.x, point.y, point.stall);
         } else {
-          // 只绘制自己摊位的名称气泡（底座 + 气泡，不绘制摊主精灵）
+// Draw only your own stall's name bubble (pedestal + bubble, no vendor sprite)
           this.drawStallNameBubble(ctx, point.x, point.y, point.stall);
         }
       } else {
-        // 空摊位：绘制底座 + "空"字标识
+// Empty stall: draw the pedestal + the 'Empty' marker
         this.drawStallBase(ctx, point.x, point.y, point.index, true);
       }
     }
   },
 
-  // 空摊位画布标识：按语言缓存一次，避免逐帧查表
+// Empty-stall canvas label: cached per language to avoid per-frame lookups
   getEmptyStallMarker() {
     const lang = I18N.currentLang;
     if (this._emptyMarkerLang !== lang) {
       this._emptyMarkerLang = lang;
-      this._emptyMarkerText = I18N.tr('market', 'stall_empty_marker', '空');
+      this._emptyMarkerText = I18N.tr('market', 'stall_empty_marker', 'Free');
     }
     return this._emptyMarkerText;
   },
 
-  // 绘制摊位底座（空摊位和有人摊位共用）
-  // isEmpty: true 显示"空"字，false 不显示
+// Draw the stall pedestal (shared by empty and occupied stalls)
+// isEmpty: true shows the 'Empty' mark, false hides it
   drawStallBase(ctx, x, y, index, isEmpty = true) {
     ctx.save();
 
-    // 地面投影
+    // groundshadow casting
     ctx.fillStyle = 'rgba(0, 0, 0, 0.36)';
     ctx.beginPath();
     ctx.ellipse(x, y + 24, 42, 13, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // 摊位地毯
+    // Stall carpet
     const rug = ctx.createLinearGradient(x, y - 4, x, y + 30);
     rug.addColorStop(0, '#5a261f');
     rug.addColorStop(1, '#2b1511');
@@ -1536,7 +1536,7 @@ const MarketSystem = {
     ctx.lineWidth = 1;
     ctx.strokeRect(x - 29, y + 8, 58, 16);
 
-    // 木质货台
+// Wooden counter
     const wood = ctx.createLinearGradient(x, y - 12, x, y + 24);
     wood.addColorStop(0, '#765034');
     wood.addColorStop(0.55, '#4a2f1d');
@@ -1546,7 +1546,7 @@ const MarketSystem = {
     ctx.roundRect(x - 31, y - 11, 62, 34, 5);
     ctx.fill();
 
-    // 顶棚布帘
+    // Canopy cloth
     const canopy = ctx.createLinearGradient(x, y - 36, x, y - 16);
     canopy.addColorStop(0, isEmpty ? '#4b3a30' : '#8f2f2b');
     canopy.addColorStop(1, isEmpty ? '#2a211d' : '#4a1714');
@@ -1557,7 +1557,7 @@ const MarketSystem = {
     ctx.strokeStyle = 'rgba(255, 205, 126, 0.25)';
     ctx.stroke();
 
-    // 支柱
+    // sustainpillar
     ctx.strokeStyle = '#2a170d';
     ctx.lineWidth = 3;
     ctx.beginPath();
@@ -1567,7 +1567,7 @@ const MarketSystem = {
     ctx.lineTo(x + 26, y + 22);
     ctx.stroke();
 
-    // 木纹和商品色块
+// Wood grain and goods color blocks
     ctx.strokeStyle = 'rgba(255, 210, 140, 0.20)';
     ctx.lineWidth = 1;
     for (let i = 0; i < 3; i++) {
@@ -1585,7 +1585,7 @@ const MarketSystem = {
       ctx.fillRect(x + 15, y + 2, 6, 5);
     }
 
-    // 空摊位显示"空"字和编号
+// Empty stalls show the 'Empty' mark and their number
     if (isEmpty) {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.58)';
       ctx.beginPath();
@@ -1605,22 +1605,22 @@ const MarketSystem = {
     ctx.restore();
   },
 
-  // 绘制摊主
+  // drawstallmain
   drawStallOwner(ctx, x, y, stall) {
-    // 先绘制木质底座（不显示"空"字）
+// Draw the wooden pedestal first (without the 'Empty' mark)
     this.drawStallBase(ctx, x, y, 0, false);
 
-    // 摊主 (使用坐姿精灵图，第一排第5帧 frame index 4)
-    // 使用与 game.js 玩家绘制相同的参数，保持视觉一致性
+// Vendor (sitting sprite, first row 5th frame, index 4)
+// Use the same draw parameters as game.js's player for visual consistency
     if (typeof processedSpriteSheet !== 'undefined' && processedSpriteSheet && typeof SPRITE_CONFIG !== 'undefined') {
       const frame = {
-        x: 4 * SPRITE_CONFIG.frameWidth, // sit = 4 (第5帧)
+        x: 4 * SPRITE_CONFIG.frameWidth, // sit = 4 (ordinal5frame)
         y: SPRITE_CONFIG.heroRow * SPRITE_CONFIG.frameHeight,
         width: SPRITE_CONFIG.frameWidth,
         height: SPRITE_CONFIG.frameHeight
       };
 
-      // 与 game.js 保持一致的渲染参数
+// Render parameters consistent with game.js
       const renderHeight = 48;
       const renderWidth = renderHeight * frame.width / frame.height;
       ctx.drawImage(
@@ -1629,7 +1629,7 @@ const MarketSystem = {
         x - renderWidth / 2, y - renderHeight / 2, renderWidth, renderHeight
       );
     } else {
-      // 备用：简易蓝色小人
+// Fallback: simple blue figure
       ctx.fillStyle = '#4a90d9';
       ctx.beginPath();
       ctx.arc(x, y - 15, 10, 0, Math.PI * 2);
@@ -1637,12 +1637,12 @@ const MarketSystem = {
       ctx.fillRect(x - 8, y - 5, 16, 20);
     }
 
-    // 摊位名称气泡
-    const name = stall.stall_name || I18N.tr('market', 'stall_default_name', '摊位');
+// Stall name bubble
+    const name = stall.stall_name || I18N.tr('market', 'stall_default_name', 'Stall');
     ctx.font = 'bold 11px Arial';
     const textWidth = ctx.measureText(name).width;
 
-    // 气泡背景
+// Bubble background
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
     const bubbleWidth = textWidth + 12;
     const bubbleHeight = 18;
@@ -1650,35 +1650,35 @@ const MarketSystem = {
     ctx.roundRect(x - bubbleWidth / 2, y - 45, bubbleWidth, bubbleHeight, 4);
     ctx.fill();
 
-    // 气泡三角
+// Bubble triangle
     ctx.beginPath();
     ctx.moveTo(x - 5, y - 27);
     ctx.lineTo(x + 5, y - 27);
     ctx.lineTo(x, y - 22);
     ctx.fill();
 
-    // 文字
+    // text
     ctx.fillStyle = '#ffd700';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(name, x, y - 36);
 
-    // 昵称
+    // nickname
     ctx.fillStyle = '#fff';
     ctx.font = '10px Arial';
     ctx.fillText(stall.nickname, x, y + 35);
   },
 
-  // 只绘制摊位名称气泡（自己的摊位用，不绘制摊主精灵）
+// Draw only the stall name bubble (your own stall; no vendor sprite)
   drawStallNameBubble(ctx, x, y, stall) {
-    // 先绘制木质底座（不显示"空"字）
+// Draw the wooden pedestal first (without the 'Empty' mark)
     this.drawStallBase(ctx, x, y, 0, false);
 
-    const name = stall.stall_name || I18N.tr('market', 'stall_default_name', '摊位');
+    const name = stall.stall_name || I18N.tr('market', 'stall_default_name', 'Stall');
     ctx.font = 'bold 11px Arial';
     const textWidth = ctx.measureText(name).width;
 
-    // 气泡背景
+// Bubble background
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
     const bubbleWidth = textWidth + 12;
     const bubbleHeight = 18;
@@ -1686,14 +1686,14 @@ const MarketSystem = {
     ctx.roundRect(x - bubbleWidth / 2, y - 45, bubbleWidth, bubbleHeight, 4);
     ctx.fill();
 
-    // 气泡三角
+// Bubble triangle
     ctx.beginPath();
     ctx.moveTo(x - 5, y - 27);
     ctx.lineTo(x + 5, y - 27);
     ctx.lineTo(x, y - 22);
     ctx.fill();
 
-    // 文字
+    // text
     ctx.fillStyle = '#ffd700';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -1701,17 +1701,17 @@ const MarketSystem = {
   }
 };
 
-// ========== 辅助函数 ==========
-// 获取物品图标 (复用现有逻辑或提供默认)
+// ========== Helper functions ==========
+// Get the item icon (reuse existing logic or a default)
 function getItemIcon(item) {
   if (!item) return '?';
 
-  // 尝试使用现有的 getItemEmoji 函数
+// Try the existing getItemEmoji function
   if (typeof getItemEmoji === 'function') {
     return getItemEmoji(item);
   }
 
-  // 默认图标
+  // defaulticon
   const iconMap = {
     'weapon': '⚔️',
     'armor': '🛡️',

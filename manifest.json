@@ -1,7 +1,7 @@
 {
-  "name": "菠萝战纪 Brawlore",
-  "short_name": "菠萝战纪",
-  "description": "经典ARPG网页游戏",
+  "name": "Brawlore",
+  "short_name": "Brawlore",
+  "description": "Classic browser ARPG",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#1a1a2e",

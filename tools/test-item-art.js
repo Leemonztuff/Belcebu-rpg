@@ -2,12 +2,12 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 const {loadImage,createCanvas}=require('@napi-rs/canvas');
 const root=path.resolve(__dirname,'..'),code=fs.readFileSync(path.join(root,'item-system.js'),'utf8');
 const context=vm.createContext({itemSpritesLoaded:true,RARITY:{RARE:3},getRarityColor:()=> '#abcdef'});
-vm.runInContext(code.slice(0,code.indexOf('// 统计追踪：'))+';globalThis.frames=ITEM_FRAMES;',context);
+vm.runInContext(code.slice(0,code.indexOf('// Stat tracking:'))+';globalThis.frames=ITEM_FRAMES;',context);
 const cases=[
-    {type:'gold',name:'金币'},{type:'potion',name:'治疗药剂',heal:10},{type:'potion',name:'法力药剂',mana:10},{type:'scroll',name:'回城卷轴'},
-    {type:'weapon',name:'铁剑'},{type:'weapon',name:'战斧'},{type:'weapon',name:'法杖'},{type:'weapon',name:'长弓'},
-    {type:'helm',name:'头盔'},{type:'body',name:'铠甲'},{type:'gloves',name:'手套'},{type:'boots',name:'靴子'},
-    {type:'belt',name:'腰带'},{type:'shield',name:'盾牌'},{type:'ring',name:'戒指'},{type:'amulet',name:'项链'}
+    {type:'gold',name:'Gold'},{type:'potion',name:'Health Potion',heal:10},{type:'potion',name:'Mana Potion',mana:10},{type:'scroll',name:'Town Portal Scroll'},
+    {type:'weapon',name:'Iron Sword'},{type:'weapon',name:'Great Axe'},{type:'weapon',name:'Staff'},{type:'weapon',name:'Long Bow'},
+    {type:'helm',name:'Helm'},{type:'body',name:'Plate Armor'},{type:'gloves',name:'Gloves'},{type:'boots',name:'Boots'},
+    {type:'belt',name:'Belt'},{type:'shield',name:'Shield'},{type:'ring',name:'Ring'},{type:'amulet',name:'Amulet'}
 ];
 for(const [index,item]of cases.entries()){
     const coords=context.getItemSpriteCoords(item),element={style:{}};

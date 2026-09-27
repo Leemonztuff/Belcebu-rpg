@@ -1,4 +1,4 @@
-// 独立分支图标；生成原图、提示词与切片坐标保存在 art/skills/。
+// Standalone branch icons; source art, prompts and slice coords live in art/skills/.
 const SkillArt = (() => {
     const families = {
     "fireball": [
@@ -40,7 +40,7 @@ const SkillArt = (() => {
     const installed = new WeakSet();
     function applyIcon(sprite, skill, node) {
         const file = definitions[skill]?.[node];
-        if (!file) throw new Error(`技能分支缺少独立图标：${skill}/${node}`);
+        if (!file) throw new Error(`Skill branch missing dedicated icon: ${skill}/${node}`);
         const key = `${skill}/${node}`;
         if (sprite.dataset.skillArt === key) return;
         sprite.style.backgroundImage = `url("${file}?v=2026090602")`;
@@ -54,7 +54,7 @@ const SkillArt = (() => {
             if (node.dataset.stage === '1') continue;
             applyIcon(node.querySelector('.skill-sprite'), node.dataset.skill, node.dataset.node);
         }
-        // 未选择二阶段时也为所有终极路线预览展示各自图标。
+// Even without a stage-2 pick, every ultimate route preview shows its own icon.
         for (const branch of root.querySelectorAll('.skill-tree-branch[data-skill]')) {
             const skill = branch.dataset.skill;
             const options = Object.values(SKILL_TREE[skill].stage3).flatMap(route => Object.entries(route));
@@ -62,7 +62,7 @@ const SkillArt = (() => {
                 if (preview.querySelector('.skill-route-art')) continue;
                 const name = preview.querySelector('strong').textContent;
                 const entry = options.find(([, option]) => option.name === name);
-                if (!entry) throw new Error(`技能路线预览未匹配：${skill}/${name}`);
+                if (!entry) throw new Error(`Skill path preview mismatch: ${skill}/${name}`);
                 const icon = document.createElement('span');
                 icon.className = 'skill-route-art';
                 icon.setAttribute('aria-hidden', 'true');

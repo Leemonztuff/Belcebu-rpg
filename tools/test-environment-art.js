@@ -52,9 +52,9 @@ for (const name of Object.keys(environment.scenicFrames)) assert.ok(environment.
     for (const match of game.matchAll(/npcs\.push\(\{[^\n]*type:\s*"([^"]+)"/g)) assert.ok(environment.npc(match[1]), `实际NPC缺少美术覆盖：${match[1]}`);
     assert.equal(environment.scenic('unknown'), null); assert.equal(environment.npc('unknown'), null);
     assert.equal(environment.destructible('unknown', false), null); assert.equal(environment.floor('unknown', 1), null);
-    assert.throws(() => environment.frame('ice', 3, 0), /越界/);
+    assert.throws(() => environment.frame('ice', 3, 0), /out of range/);
     const opaque = createCanvas(100, 100); opaque.getContext('2d').fillRect(0, 0, 100, 100);
-    assert.throws(() => environment.registerAtlas('ice', opaque), /透明/);
+    assert.throws(() => environment.registerAtlas('ice', opaque), /alpha/);
     assert.ok(environment.scenic('ice_cluster'), '错误输入不能替换已验收图集');
     console.log(`PASS: ${Object.keys(environment.scenicFrames).length}种场景道具 / 6位NPC / 3对破坏状态 / 全生物群系地面装饰映射`);
     if (process.argv.includes('--write-audit')) fs.writeFileSync(path.join(root, 'docs/environment-art-alpha-audit.json'), JSON.stringify(audit, null, 2) + '\n');

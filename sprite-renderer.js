@@ -1,4 +1,4 @@
-// 透明素材直接绘制；状态染色只缓存命中的帧，避免复制整张图集。
+// Transparent assets draw directly; status tinting caches only the frames actually hit, avoiding whole-atlas copies.
 const SpriteRenderer = (() => {
     const filters = Object.freeze({
         white: 'brightness(500%) sepia(100%) saturate(0%)',
@@ -9,7 +9,7 @@ const SpriteRenderer = (() => {
 
     function createTintCache({ maxFrames = 96, maxBytes = 6 * 1024 * 1024 } = {}) {
         if (!Number.isInteger(maxFrames) || maxFrames < 1 || !Number.isInteger(maxBytes) || maxBytes < 4) {
-            throw new RangeError('精灵缓存容量必须为正整数');
+            throw new RangeError('Sprite cache size must be a positive integer');
         }
         const sources = new WeakMap();
         const entries = new Map();
@@ -18,9 +18,9 @@ const SpriteRenderer = (() => {
         return {
             get(source, frame, tint) {
                 if (!tint) return null;
-                if (!Object.hasOwn(filters, tint)) throw new RangeError(`未知染色状态: ${tint}`);
+                if (!Object.hasOwn(filters, tint)) throw new RangeError(`Unknown tint state: ${tint}`);
                 const frameBytes = frame.width * frame.height * 4;
-                // 超大帧使用即时 filter，不分配超过预算的离屏画布。
+// Oversized frames use an immediate filter and never allocate offscreen canvases beyond budget.
                 if (frameBytes > maxBytes) return null;
                 if (!sources.has(source)) sources.set(source, ++nextSourceId);
                 const key = `${sources.get(source)}:${frame.x},${frame.y},${frame.width},${frame.height}:${tint}`;

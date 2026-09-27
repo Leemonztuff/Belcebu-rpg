@@ -1,4 +1,4 @@
-// 陨石/雷暴的立体表现。陨石使用小型GPU纹理；只读取战斗状态，不计算伤害。
+// 3D presentation of meteors/thunderstorms. Meteors use small GPU textures; reads combat state only, no damage calc.
 const Elemental3D = (() => {
     const CELL=128, MAX_IMPACTS=12, MAX_BOLTS=24, MAX_STORMS=6;
     let canvas,gl,program,timeUniform,failed=false,lastTick=-1,frames=0;
@@ -39,7 +39,7 @@ void main(){
             const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]),gl.STATIC_DRAW);
             const location=gl.getAttribLocation(program,'position');gl.enableVertexAttribArray(location);gl.vertexAttribPointer(location,2,gl.FLOAT,false,0,0);
             timeUniform=gl.getUniformLocation(program,'time');
-        }catch(error){console.warn('立体元素特效初始化失败，使用原有特效',error);failed=true;gl=null;return false;}
+        }catch(error){console.warn('3D elemental VFX init failed, using legacy effects',error);failed=true;gl=null;return false;}
         return true;
     }
     function texture(now){
@@ -55,7 +55,7 @@ void main(){
         if(!enabled||!p.meteorTarget||p.life<=0||!texture(now))return false;
         ctx.save();
         const age=p.age === undefined ? 0 : p.age;
-        // 外焰、亮芯与侧向火舌形成有厚度的高速尾迹。
+        // Outer flame, bright core and side tongues form a thick high-speed trail.
         for(let layer=0;layer<3;layer++){
             const length=155-layer*29,width=25-layer*7,sway=Math.sin(age*28+layer)*9;
             const tail=ctx.createLinearGradient(p.x,p.y-length,p.x,p.y+15);
@@ -88,7 +88,7 @@ void main(){
                 glow(ctx,fx.x,fx.y,fx.radius*.8,'#e96920',(1-t)*.42);
                 ring(ctx,fx.x,fx.y,fx.radius*(.15+.85*Math.sqrt(shock)),'#ffd296',(1-shock)*.95,.55);
                 ring(ctx,fx.x,fx.y,fx.radius*(.12+.68*shock),'#ff7832',(1-shock)*.65,.55);
-                // 短暂熔纹落在地面层，留出角色与怪物轮廓。
+                // Brief melt scars land on the ground layer, leaving room for character and monster silhouettes.
                 ctx.save();ctx.globalAlpha=Math.pow(1-t,1.3);ctx.lineJoin='round';
                 for(let i=0;i<7;i++){
                     const angle=i*2.399+fx.x*.01;ctx.beginPath();ctx.moveTo(fx.x,fx.y);
@@ -124,7 +124,7 @@ void main(){
             ctx.beginPath();for(let j=0;j<points.length;j++)ctx[j?'lineTo':'moveTo'](...points[j]);
             ctx.strokeStyle='rgba(70,100,255,.18)';ctx.lineWidth=17*surge;ctx.stroke();
             ctx.strokeStyle='#6e9fff';ctx.lineWidth=6*surge;ctx.stroke();ctx.strokeStyle='#f3fbff';ctx.lineWidth=2.1*surge;ctx.stroke();
-            // 分叉只在主雷附近展开，不暗示额外目标受到伤害。
+// Forks only spread near the main bolt; they don't imply extra targets took damage.
             for(let i=0;i<3;i++){
                 const j=3+i*2,[x,y]=points[j],side=i%2?1:-1;
                 ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+side*20,y+12);ctx.lineTo(x+side*13,y+25);ctx.lineTo(x+side*(29+i*6),y+39);

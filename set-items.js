@@ -1,4 +1,4 @@
-// ========== 套装系统数据库 ==========
+// ========== Set system database ==========
 const SET_BODY_SPRITES = {
     'tals_set': 'public/spritesheets/frame_047.webp',
     'immortal_king': 'public/spritesheets/Armor/frame_009.webp',
@@ -14,18 +14,18 @@ const SET_BODY_SPRITES = {
 
 const SET_ITEMS = {
     'tals_set': {
-        name: "塔拉夏的外袍",
-        description: "法师专属套装，强化火焰技能",
+        name: "Tal Rasha's Regalia",
+        description: "Mage-exclusive set that boosts fire skills",
         pieces: {
             helm: {
-                name: "塔拉夏的守护",
+                name: "Tal Rasha's Ward",
                 icon: '🪖',
                 type: 'helm',
                 def: 15,
-                stats: { maxMp: 30, mpRegen: 5, allRes: 10 }  // mpRegen改为百分比
+                stats: { maxMp: 30, mpRegen: 5, allRes: 10 }  // mpRegenchangein order topercentage
             },
             body: {
-                name: "塔拉夏的外袍",
+                name: "Tal Rasha's Regalia",
                 icon: '🛡️',
                 type: 'armor',
                 spriteUrl: 'public/spritesheets/frame_047.webp',
@@ -33,13 +33,13 @@ const SET_ITEMS = {
                 stats: { maxHp: 50, maxMp: 45, allRes: 15 }
             },
             amulet: {
-                name: "塔拉夏的裁决",
+                name: "Tal Rasha's Verdict",
                 icon: '📿',
                 type: 'amulet',
                 stats: { maxMp: 45, fireDmg: 25, lightningDmg: 25 }
             },
             mainhand: {
-                name: "塔拉夏的永恒权杖",
+                name: "Tal Rasha's Eternal Staff",
                 icon: '⚔️',
                 type: 'weapon',
                 minDmg: 15,
@@ -47,14 +47,14 @@ const SET_ITEMS = {
                 stats: { maxMp: 60, fireDmg: 40 }
             },
             belt: {
-                name: "塔拉夏的束带",
+                name: "Tal Rasha's Sash",
                 icon: '🎗️',
                 type: 'belt',
                 def: 10,
                 stats: { maxMp: 60, fireDmg: 15 }
             },
             gloves: {
-                name: "塔拉夏的灵巧",
+                name: "Tal Rasha's Dexterity",
                 icon: '🧤',
                 type: 'gloves',
                 def: 8,
@@ -63,33 +63,33 @@ const SET_ITEMS = {
         },
         bonuses: {
             2: {
-                desc: "+50 全抗性",
+                desc: "+50 All Resistances",
                 stats: { allRes: 50 }
             },
             4: {
-                desc: "法力恢复速度 +10%，最大法力 +60",
-                stats: { mpRegen: 10, maxMp: 60 }  // 从100%降到10%
+                desc: "+10% Mana Regen, +60 Max Mana",
+                stats: { mpRegen: 10, maxMp: 60 }  // from100%lowerarrive at10%
             },
             6: {
-                desc: "火焰伤害 +200，法力回复 +5%，暴击率 +10%",
-                stats: { fireDmg: 200, mpRegen: 5, critChance: 10 }  // 从50%降到5%
+                desc: "+200 Fire Damage, +5% Mana Regen, +10% Crit Chance",
+                stats: { fireDmg: 200, mpRegen: 5, critChance: 10 }  // from50%lowerarrive at5%
             }
         }
     },
 
     'immortal_king': {
-        name: "不朽之王",
-        description: "战士专属套装，强化物理攻击",
+        name: "The Immortal King",
+        description: "Warrior-exclusive set that boosts physical attacks",
         pieces: {
             helm: {
-                name: "不朽之王的意志",
+                name: "Immortal King's Will",
                 icon: '🪖',
                 type: 'helm',
                 def: 20,
                 stats: { dmgPct: 50, maxHp: 50 }
             },
             body: {
-                name: "不朽之王的灵魂牢笼",
+                name: "Immortal King's Soul Prison",
                 icon: '🛡️',
                 type: 'armor',
                 spriteUrl: 'public/spritesheets/Armor/frame_009.webp',
@@ -97,14 +97,14 @@ const SET_ITEMS = {
                 stats: { dmgPct: 75, maxHp: 100, def: 50 }
             },
             boots: {
-                name: "不朽之王的践踏",
+                name: "Immortal King's Trample",
                 icon: '👢',
                 type: 'boots',
                 def: 15,
                 stats: { dmgPct: 50, maxHp: 50 }
             },
             mainhand: {
-                name: "不朽之王的石碎器",
+                name: "Immortal King's Stonecrusher",
                 icon: '🪓',
                 type: 'weapon',
                 minDmg: 30,
@@ -112,14 +112,14 @@ const SET_ITEMS = {
                 stats: { dmgPct: 175 }
             },
             belt: {
-                name: "不朽之王的细节",
+                name: "Immortal King's Detail",
                 icon: '🥋',
                 type: 'belt',
                 def: 18,
                 stats: { dmgPct: 60, maxHp: 75, def: 25 }
             },
             gloves: {
-                name: "不朽之王的钢铁之握",
+                name: "Immortal King's Iron Grasp",
                 icon: '🧤',
                 type: 'gloves',
                 def: 12,
@@ -128,33 +128,33 @@ const SET_ITEMS = {
         },
         bonuses: {
             2: {
-                desc: "+100 最大生命",
+                desc: "+100 Max Life",
                 stats: { maxHp: 100 }
             },
             4: {
-                desc: "生命偷取 +10%，攻击速度 +30%",
+                desc: "+10% Life Steal, +30% Attack Speed",
                 stats: { lifeSteal: 10, attackSpeed: 30 }
             },
             6: {
-                desc: "物理伤害 +450%，防御 +150",
+                desc: "+450% Physical Damage, +150 Defense",
                 stats: { dmgPct: 450, def: 150 }
             }
         }
     },
 
     'shadow_dancer': {
-        name: "暗影舞者",
-        description: "刺客专属套装，强化暴击和攻速",
+        name: "Shadow Dancer",
+        description: "Assassin-exclusive set that boosts crit and attack speed",
         pieces: {
             helm: {
-                name: "暗影舞者的面罩",
+                name: "Shadow Dancer's Mask",
                 icon: '🪖',
                 type: 'helm',
                 def: 27,
                 stats: { critChance: 8, attackSpeed: 10 }
             },
             body: {
-                name: "暗影舞者的披风",
+                name: "Shadow Dancer's Cloak",
                 icon: '🛡️',
                 type: 'armor',
                 spriteUrl: 'public/spritesheets/Clothes/assasin_081.webp',
@@ -162,28 +162,28 @@ const SET_ITEMS = {
                 stats: { critChance: 10, attackSpeed: 15 }
             },
             gloves: {
-                name: "暗影舞者的利爪",
+                name: "Shadow Dancer's Talons",
                 icon: '🧤',
                 type: 'gloves',
                 def: 23,
                 stats: { critChance: 8, attackSpeed: 20 }
             },
             boots: {
-                name: "暗影舞者的迅捷",
+                name: "Shadow Dancer's Swiftness",
                 icon: '👢',
                 type: 'boots',
                 def: 25,
                 stats: { critChance: 8, attackSpeed: 15 }
             },
             belt: {
-                name: "暗影舞者的束缚",
+                name: "Shadow Dancer's Binding",
                 icon: '🎗️',
                 type: 'belt',
                 def: 21,
                 stats: { critChance: 6, attackSpeed: 12, critDamage: 20 }
             },
             amulet: {
-                name: "暗影舞者的徽记",
+                name: "Shadow Dancer's Sigil",
                 icon: '📿',
                 type: 'amulet',
                 stats: { critChance: 9, critDamage: 30, dmgPct: 25 }
@@ -191,35 +191,35 @@ const SET_ITEMS = {
         },
         bonuses: {
             2: {
-                desc: "攻击速度 +30%",
+                desc: "+30% Attack Speed",
                 stats: { attackSpeed: 30 }
             },
             4: {
-                desc: "暴击伤害 +75%，暴击率 +10%",
+                desc: "+75% Crit Damage, +10% Crit Chance",
                 stats: { critDamage: 75, critChance: 10 }
             },
             6: {
-                desc: "暴击率 +20%，伤害 +150%，防御 +40",
+                desc: "+20% Crit Chance, +150% Damage, +40 Defense",
                 stats: { critChance: 35, dmgPct: 150, def: 40 }
             }
         }
     },
 
-    // ========== 新增套装 v4.1 ==========
+    // ========== addsset v4.1 ==========
 
     'natalya': {
-        name: "娜塔亚的复仇",
-        description: "亚马逊套装，强化弓箭和闪电",
+        name: "Natalya's Revenge",
+        description: "Amazon set that boosts bows and lightning",
         pieces: {
             helm: {
-                name: "娜塔亚的凝视",
+                name: "Natalya's Gaze",
                 icon: '🪖',
                 type: 'helm',
                 def: 18,
                 stats: { lightningDmg: 30, critChance: 5 }
             },
             body: {
-                name: "娜塔亚的影甲",
+                name: "Natalya's Shadow Armor",
                 icon: '🛡️',
                 type: 'armor',
                 spriteUrl: 'public/spritesheets/Armor/frame_058.webp',
@@ -227,27 +227,27 @@ const SET_ITEMS = {
                 stats: { lightningDmg: 45, def: 30, allRes: 15 }
             },
             gloves: {
-                name: "娜塔亚的触感",
+                name: "Natalya's Touch",
                 icon: '🧤',
                 type: 'gloves',
                 def: 10,
                 stats: { lightningDmg: 35, attackSpeed: 25 }
             },
             boots: {
-                name: "娜塔亚的灵魂",
+                name: "Natalya's Soul",
                 icon: '👢',
                 type: 'boots',
                 def: 12,
                 stats: { lightningDmg: 25, critChance: 6 }
             },
             ring: {
-                name: "娜塔亚的印记",
+                name: "Natalya's Signet",
                 icon: '💍',
                 type: 'ring',
                 stats: { lightningDmg: 40, dmgPct: 30 }
             },
             mainhand: {
-                name: "娜塔亚的锋刃",
+                name: "Natalya's Edge",
                 icon: '🗡️',
                 type: 'weapon',
                 minDmg: 20,
@@ -257,33 +257,33 @@ const SET_ITEMS = {
         },
         bonuses: {
             2: {
-                desc: "闪电伤害 +80",
+                desc: "+80 Lightning Damage",
                 stats: { lightningDmg: 80 }
             },
             4: {
-                desc: "攻击速度 +40%，暴击率 +12%",
+                desc: "+40% Attack Speed, +12% Crit Chance",
                 stats: { attackSpeed: 40, critChance: 12 }
             },
             6: {
-                desc: "闪电伤害 +250，多重射击伤害 +100%",
+                desc: "+250 Lightning Damage, +100% Multishot Damage",
                 stats: { lightningDmg: 250, dmgPct: 200 }
             }
         }
     },
 
     'griswold': {
-        name: "格里斯沃尔德的传承",
-        description: "圣骑士套装，强化防御和神圣",
+        name: "Griswold's Legacy",
+        description: "Paladin set that boosts defense and holy power",
         pieces: {
             helm: {
-                name: "格里斯沃尔德的荣耀",
+                name: "Griswold's Glory",
                 icon: '🪖',
                 type: 'helm',
                 def: 35,
                 stats: { def: 40, maxHp: 60, allRes: 20 }
             },
             body: {
-                name: "格里斯沃尔德的圣铠",
+                name: "Griswold's Sacred Plate",
                 icon: '🛡️',
                 type: 'armor',
                 spriteUrl: 'public/spritesheets/Armor/frame_056.webp',
@@ -291,21 +291,21 @@ const SET_ITEMS = {
                 stats: { def: 80, maxHp: 120, allRes: 30 }
             },
             gloves: {
-                name: "格里斯沃尔德的圣手",
+                name: "Griswold's Holy Hands",
                 icon: '🧤',
                 type: 'gloves',
                 def: 20,
                 stats: { def: 25, dmgPct: 40, lifeSteal: 3 }
             },
             boots: {
-                name: "格里斯沃尔德的坚毅",
+                name: "Griswold's Steadfastness",
                 icon: '👢',
                 type: 'boots',
                 def: 22,
                 stats: { def: 30, maxHp: 50 }
             },
             mainhand: {
-                name: "格里斯沃尔德的救赎",
+                name: "Griswold's Redemption",
                 icon: '⚔️',
                 type: 'weapon',
                 minDmg: 25,
@@ -313,7 +313,7 @@ const SET_ITEMS = {
                 stats: { dmgPct: 80, def: 35, lifeSteal: 5 }
             },
             amulet: {
-                name: "格里斯沃尔德的圣符",
+                name: "Griswold's Holy Sigil",
                 icon: '📿',
                 type: 'amulet',
                 stats: { allRes: 40, maxHp: 80, def: 20 }
@@ -321,33 +321,33 @@ const SET_ITEMS = {
         },
         bonuses: {
             2: {
-                desc: "防御 +120，全抗性 +30",
+                desc: "+120 Defense, +30 All Resistances",
                 stats: { def: 120, allRes: 30 }
             },
             4: {
-                desc: "最大生命 +200，生命偷取 +8%",
+                desc: "+200 Max Life, +8% Life Steal",
                 stats: { maxHp: 200, lifeSteal: 8 }
             },
             6: {
-                desc: "伤害 +300%，受到伤害减少20%",
+                desc: "+300% Damage, -20% Damage Taken",
                 stats: { dmgPct: 300, def: 200 }
             }
         }
     },
 
     'trang_oul': {
-        name: "庄·欧的化身",
-        description: "死灵法师套装，强化毒素和召唤",
+        name: "Trang Oul's Avatar",
+        description: "Necromancer set that boosts poison and summons",
         pieces: {
             helm: {
-                name: "庄·欧的面甲",
+                name: "Trang Oul's Visor",
                 icon: '🪖',
                 type: 'helm',
                 def: 16,
                 stats: { poisonDmg: 35, maxMp: 40 }
             },
             body: {
-                name: "庄·欧的圣甲",
+                name: "Trang Oul's Sacred Plate",
                 icon: '🛡️',
                 type: 'armor',
                 spriteUrl: 'public/spritesheets/Clothes/necromancer_063.webp',
@@ -355,28 +355,28 @@ const SET_ITEMS = {
                 stats: { poisonDmg: 55, maxMp: 60, allRes: 20 }
             },
             gloves: {
-                name: "庄·欧的利爪",
+                name: "Trang Oul's Talons",
                 icon: '🧤',
                 type: 'gloves',
                 def: 9,
                 stats: { poisonDmg: 40, coldDmg: 25 }
             },
             boots: {
-                name: "庄·欧的鳞靴",
+                name: "Trang Oul's Scale Boots",
                 icon: '👢',
                 type: 'boots',
                 def: 11,
                 stats: { poisonDmg: 30, maxMp: 35 }
             },
             belt: {
-                name: "庄·欧的腰带",
+                name: "Trang Oul's Belt",
                 icon: '🎗️',
                 type: 'belt',
                 def: 8,
-                stats: { poisonDmg: 45, mpRegen: 5 }  // mpRegen改为百分比
+                stats: { poisonDmg: 45, mpRegen: 5 }  // mpRegenchangein order topercentage
             },
             mainhand: {
-                name: "庄·欧的权杖",
+                name: "Trang Oul's Scepter",
                 icon: '⚔️',
                 type: 'weapon',
                 minDmg: 18,
@@ -386,33 +386,33 @@ const SET_ITEMS = {
         },
         bonuses: {
             2: {
-                desc: "毒素伤害 +100",
+                desc: "+100 Poison Damage",
                 stats: { poisonDmg: 100 }
             },
             4: {
-                desc: "法力回复 +15%，最大法力 +100",
-                stats: { mpRegen: 15, maxMp: 100 }  // 从150%降到15%
+                desc: "+15% Mana Regen, +100 Max Mana",
+                stats: { mpRegen: 15, maxMp: 100 }  // from150%lowerarrive at15%
             },
             6: {
-                desc: "毒素伤害 +300，敌人中毒持续时间翻倍",
+                desc: "+300 Poison Damage, Double Poison Duration",
                 stats: { poisonDmg: 300, dmgPct: 100 }
             }
         }
     },
 
     'aldur': {
-        name: "奥杜尔的节拍",
-        description: "德鲁伊套装，强化自然和生命恢复",
+        name: "Aldur's Rhythm",
+        description: "Druid set that boosts nature and life regeneration",
         pieces: {
             helm: {
-                name: "奥杜尔的凝视",
+                name: "Aldur's Gaze",
                 icon: '🪖',
                 type: 'helm',
                 def: 22,
                 stats: { maxHp: 80, hpRegen: 20 }
             },
             body: {
-                name: "奥杜尔的驱邪铠",
+                name: "Aldur's Exorcist Plate",
                 icon: '🛡️',
                 type: 'armor',
                 spriteUrl: 'public/spritesheets/Clothes/druid_078.webp',
@@ -420,14 +420,14 @@ const SET_ITEMS = {
                 stats: { maxHp: 150, hpRegen: 35, allRes: 25 }
             },
             boots: {
-                name: "奥杜尔的前进",
+                name: "Aldur's Advance",
                 icon: '👢',
                 type: 'boots',
                 def: 18,
                 stats: { maxHp: 60, hpRegen: 15, def: 20 }
             },
             mainhand: {
-                name: "奥杜尔的节律",
+                name: "Aldur's Cadence",
                 icon: '🪓',
                 type: 'weapon',
                 minDmg: 22,
@@ -435,14 +435,14 @@ const SET_ITEMS = {
                 stats: { dmgPct: 100, hpRegen: 25, lifeSteal: 6 }
             },
             gloves: {
-                name: "奥杜尔的蛮力",
+                name: "Aldur's Might",
                 icon: '🧤',
                 type: 'gloves',
                 def: 14,
                 stats: { dmgPct: 50, maxHp: 50, hpRegen: 10 }
             },
             ring: {
-                name: "奥杜尔的命运",
+                name: "Aldur's Fate",
                 icon: '💍',
                 type: 'ring',
                 stats: { maxHp: 70, hpRegen: 30, allRes: 15 }
@@ -450,33 +450,33 @@ const SET_ITEMS = {
         },
         bonuses: {
             2: {
-                desc: "生命恢复 +50/秒，最大生命 +100",
+                desc: "+50 Life Regen/s, +100 Max Life",
                 stats: { hpRegen: 50, maxHp: 100 }
             },
             4: {
-                desc: "生命偷取 +12%，全抗性 +50",
+                desc: "+12% Life Steal, +50 All Resistances",
                 stats: { lifeSteal: 12, allRes: 50 }
             },
             6: {
-                desc: "最大生命 +400，伤害 +200%",
+                desc: "+400 Max Life, +200% Damage",
                 stats: { maxHp: 400, dmgPct: 200 }
             }
         }
     },
 
     'mavina': {
-        name: "马维娜的战斗颂歌",
-        description: "狂战套装，强化狂暴和双倍伤害",
+        name: "Mavina's Battle Song",
+        description: "Berserker set that boosts rage and double damage",
         pieces: {
             helm: {
-                name: "马维娜的真面目",
+                name: "Mavina's True Face",
                 icon: '🪖',
                 type: 'helm',
                 def: 25,
                 stats: { dmgPct: 60, critDamage: 25 }
             },
             body: {
-                name: "马维娜的怀抱",
+                name: "Mavina's Embrace",
                 icon: '🛡️',
                 type: 'armor',
                 spriteUrl: 'public/spritesheets/Clothes/frame_023.webp',
@@ -484,28 +484,28 @@ const SET_ITEMS = {
                 stats: { dmgPct: 90, attackSpeed: 20 }
             },
             gloves: {
-                name: "马维娜的紧握",
+                name: "Mavina's Grasp",
                 icon: '🧤',
                 type: 'gloves',
                 def: 15,
                 stats: { dmgPct: 55, critDamage: 30, attackSpeed: 15 }
             },
             boots: {
-                name: "马维娜的跟腱",
+                name: "Mavina's Achilles Heel",
                 icon: '👢',
                 type: 'boots',
                 def: 17,
                 stats: { dmgPct: 45, attackSpeed: 10 }
             },
             belt: {
-                name: "马维娜的束腰",
+                name: "Mavina's Corset",
                 icon: '🎗️',
                 type: 'belt',
                 def: 13,
                 stats: { dmgPct: 50, maxHp: 40 }
             },
             mainhand: {
-                name: "马维娜的弯弓",
+                name: "Mavina's Bow",
                 icon: '🏹',
                 type: 'weapon',
                 minDmg: 28,
@@ -515,33 +515,33 @@ const SET_ITEMS = {
         },
         bonuses: {
             2: {
-                desc: "伤害 +100%",
+                desc: "+100% Damage",
                 stats: { dmgPct: 100 }
             },
             4: {
-                desc: "暴击伤害 +100%，攻击速度 +35%",
+                desc: "+100% Crit Damage, +35% Attack Speed",
                 stats: { critDamage: 100, attackSpeed: 35 }
             },
             6: {
-                desc: "伤害 +400%，暴击率 +25%",
+                desc: "+400% Damage, +25% Crit Chance",
                 stats: { dmgPct: 400, critChance: 25 }
             }
         }
     },
 
     'sigon': {
-        name: "希冈的钢铁",
-        description: "混沌套装，全属性均衡提升",
+        name: "Sigon's Steel",
+        description: "Chaos set with a balanced boost to all stats",
         pieces: {
             helm: {
-                name: "希冈的护面",
+                name: "Sigon's Faceguard",
                 icon: '🪖',
                 type: 'helm',
                 def: 20,
                 stats: { maxHp: 40, maxMp: 30, def: 15 }
             },
             body: {
-                name: "希冈的铁甲",
+                name: "Sigon's Iron Plate",
                 icon: '🛡️',
                 type: 'armor',
                 spriteUrl: 'public/spritesheets/Armor/frame_046.webp',
@@ -549,28 +549,28 @@ const SET_ITEMS = {
                 stats: { maxHp: 80, def: 50, allRes: 20 }
             },
             gloves: {
-                name: "希冈的铁手",
+                name: "Sigon's Iron Hands",
                 icon: '🧤',
                 type: 'gloves',
                 def: 12,
                 stats: { dmgPct: 35, attackSpeed: 15, critChance: 5 }
             },
             boots: {
-                name: "希冈的军靴",
+                name: "Sigon's War Boots",
                 icon: '👢',
                 type: 'boots',
                 def: 14,
                 stats: { maxHp: 35, def: 20, allRes: 10 }
             },
             belt: {
-                name: "希冈的腰带",
+                name: "Sigon's Belt",
                 icon: '🥋',
                 type: 'belt',
                 def: 10,
                 stats: { maxHp: 50, maxMp: 40, lifeSteal: 4 }
             },
             amulet: {
-                name: "希冈的徽章",
+                name: "Sigon's Medal",
                 icon: '📿',
                 type: 'amulet',
                 stats: { dmgPct: 40, critChance: 6, allRes: 25 }
@@ -578,34 +578,34 @@ const SET_ITEMS = {
         },
         bonuses: {
             2: {
-                desc: "全属性 +50 (HP/MP/防御)",
+                desc: "+50 All Stats (Life/Mana/Defense)",
                 stats: { maxHp: 50, maxMp: 50, def: 50 }
             },
             4: {
-                desc: "伤害 +150%，全抗性 +40",
+                desc: "+150% Damage, +40 All Resistances",
                 stats: { dmgPct: 150, allRes: 40 }
             },
             6: {
-                desc: "全属性大幅提升",
+                desc: "All Stats Greatly Increased",
                 stats: { maxHp: 200, maxMp: 100, def: 100, dmgPct: 250, critChance: 15 }
             }
         }
     },
 
-    // ========== 深渊挑战专属套装 ==========
+// ========== Abyss challenge exclusive sets ==========
     'abyss_conqueror': {
-        name: "深渊征服者",
-        description: "深渊挑战专属套装，只有周榜前列才能获得",
+        name: "Abyss Conqueror",
+        description: "Abyss challenge exclusive set, only earned by top weekly rankings",
         pieces: {
             helm: {
-                name: "深渊征服者的冠冕",
+                name: "Abyss Conqueror's Crown",
                 icon: '👑',
                 type: 'helm',
                 def: 45,
                 stats: { dmgPct: 100, maxHp: 100, allRes: 30 }
             },
             body: {
-                name: "深渊征服者的战甲",
+                name: "Abyss Conqueror's War Plate",
                 icon: '🛡️',
                 type: 'armor',
                 spriteUrl: 'public/spritesheets/Armor/frame_002.webp',
@@ -613,28 +613,28 @@ const SET_ITEMS = {
                 stats: { dmgPct: 150, maxHp: 200, def: 80, allRes: 40 }
             },
             gloves: {
-                name: "深渊征服者的铁拳",
+                name: "Abyss Conqueror's Iron Fists",
                 icon: '🧤',
                 type: 'gloves',
                 def: 28,
                 stats: { dmgPct: 80, critChance: 12, attackSpeed: 25 }
             },
             boots: {
-                name: "深渊征服者的践踏",
+                name: "Abyss Conqueror's Trample",
                 icon: '👢',
                 type: 'boots',
                 def: 30,
                 stats: { dmgPct: 70, maxHp: 80, def: 40 }
             },
             belt: {
-                name: "深渊征服者的束缚",
+                name: "Abyss Conqueror's Binding",
                 icon: '🎗️',
                 type: 'belt',
                 def: 22,
                 stats: { dmgPct: 60, maxHp: 60, lifeSteal: 8 }
             },
             amulet: {
-                name: "深渊征服者的徽记",
+                name: "Abyss Conqueror's Sigil",
                 icon: '📿',
                 type: 'amulet',
                 stats: { dmgPct: 120, critChance: 15, critDamage: 50 }
@@ -642,24 +642,24 @@ const SET_ITEMS = {
         },
         bonuses: {
             2: {
-                desc: "伤害 +200%，全抗性 +50",
+                desc: "+200% Damage, +50 All Resistances",
                 stats: { dmgPct: 200, allRes: 50 }
             },
             4: {
-                desc: "暴击率 +20%，生命偷取 +15%",
+                desc: "+20% Crit Chance, +15% Life Steal",
                 stats: { critChance: 20, lifeSteal: 15 }
             },
             6: {
-                desc: "伤害 +500%，最大生命 +500，攻速 +50%",
+                desc: "+500% Damage, +500 Max Life, +50% Attack Speed",
                 stats: { dmgPct: 500, maxHp: 500, attackSpeed: 50 }
             }
         }
     }
 };
 
-// ========== 套装本地化辅助（渲染层专用） ==========
-// SET_ITEMS 保留中文原值作为数据源（存档/成就/掉落判定都依赖它），
-// 界面文案在渲染时按当前语言查 sets 表，切换语言无需重建数据。
+// ========== Set localization helpers (render layer only) ==========
+// SET_ITEMS keeps zh originals as the data source (saves/achievements/drop checks depend on it);
+// UI copy resolves through the sets table at render time, so language switches never rebuild data.
 
 function getSetName(setId) {
     const setData = SET_ITEMS[setId];
@@ -693,7 +693,7 @@ function getSetBonusDesc(setId, pieceCount) {
     return I18N.trPath('sets', setId, 'bonuses.' + pieceCount + '.desc', zhDesc);
 }
 
-// 导出全局
+// Export globals
 if (typeof window !== 'undefined') {
     window.getSetName = getSetName;
     window.getSetDescription = getSetDescription;

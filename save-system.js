@@ -1,20 +1,20 @@
-// ========== save-system.js - 存档系统模块 ==========
-// 从 game.js 拆分出来，负责 IndexedDB 存档管理
+// ========== save-system.js - save system module ==========
+// Split from game.js; owns IndexedDB save management
 
-// IndexedDB 配置
+// IndexedDB configuration
 const DB_NAME = 'DiabloCloneDB';
 const DB_VERSION = 8;
 let db;
 
-// 存档数据版本（用于数据迁移）
-const SAVE_DATA_VERSION = 2;  // v2: 新增统一伤害系统、护甲公式改进
+// Save data version (for migrations)
+const SAVE_DATA_VERSION = 2;  // v2: unified damage system, improved armor formula
 
-// ========== 属性系统迁移函数 ==========
-// 将旧版本的基础属性(str/dex/vit/ene)转换为直接效果属性
+// ========== Stat migration helpers ==========
+// Convert legacy base attributes (str/dex/vit/ene) into direct-effect stats
 function migrateItemStats() {
   let migratedCount = 0;
 
-  // 迁移单个物品
+  // Migrate one item
   function migrateItem(item) {
     if (!item || !item.stats) return false;
     let migrated = false;
@@ -48,8 +48,8 @@ function migrateItemStats() {
       migrated = true;
     }
 
-    // mpRegen 迁移：旧版是固定值(30-100)，新版是百分比(3-10%)
-    // 检测：如果 > 20，说明是旧版固定值，除以10转为百分比
+    // mpRegen migration: legacy fixed values (30-100) became percentages (3-10%)
+    // Detection: values > 20 are legacy fixed values, divide by 10
     if (item.stats.mpRegen && item.stats.mpRegen > 20) {
       item.stats.mpRegen = Math.round(item.stats.mpRegen / 10);
       migrated = true;
@@ -58,31 +58,103 @@ function migrateItemStats() {
     return migrated;
   }
 
-  // 迁移背包物品
+  // Migrate inventory items
   player.inventory.forEach(item => {
     if (migrateItem(item)) migratedCount++;
   });
 
-  // 迁移仓库物品
+  // Migrate stash items
   player.stash.forEach(item => {
     if (migrateItem(item)) migratedCount++;
   });
 
-  // 迁移已装备物品
+  // Migrate equipped items
   Object.values(player.equipment).forEach(item => {
     if (migrateItem(item)) migratedCount++;
   });
 
   if (migratedCount > 0) {
-    console.log(I18N.tr('saveErrors', 'log_stat_migration', '[属性迁移] 已转换 {count} 件物品的旧属性', { count: migratedCount }));
-    showNotification(I18N.tr('saveErrors', 'toast_stat_migrated', '已自动升级 {count} 件装备属性', { count: migratedCount }));
+    console.log(I18N.tr('saveErrors', 'log_stat_migration', '[Stat Migration] Converted legacy stats on {count} items', { count: migratedCount }));
+    showNotification(I18N.tr('saveErrors', 'toast_stat_migrated', 'Auto-upgraded the stats of {count} items', { count: migratedCount }));
   }
 }
 
+// ========== Legacy name migration (Chinese -> English) ==========
+// Old saves persisted localized item/affix names. English is now the storage
+// language; display names are translated at render time via I18N.
+function migrateLegacyNames() {
+  if (typeof I18N === 'undefined' || !I18N.items || !I18N.affixes) return 0;
+  let migratedCount = 0;
+
+  // zh item key -> canonical EN item key
+  const itemZhToEn = {};
+  for (const [key, entry] of Object.entries(I18N.items)) {
+    if (/[\u4e00-\u9fff]/.test(key)) itemZhToEn[key] = entry.en;
+  }
+
+  // zh affix key -> canonical EN affix key
+  const affixZhToEn = {};
+  for (const [key, entry] of Object.entries(I18N.affixes)) {
+    if (/[\u4e00-\u9fff]/.test(key)) affixZhToEn[key] = entry.en;
+  }
+
+  const hasHan = (s) => typeof s === 'string' && /[\u4e00-\u9fff]/.test(s);
+
+  function migrateItem(item) {
+    if (!item || typeof item !== 'object') return false;
+    let migrated = false;
+
+    if (item.name && itemZhToEn[item.name]) {
+      item.name = itemZhToEn[item.name];
+      migrated = true;
+    }
+
+    if (hasHan(item.displayName)) {
+      let dn = item.displayName;
+      // Legacy unique prefix: Unique·BaseName -> Unique · BaseName
+      if (dn.startsWith('暗金·')) {
+        dn = 'Unique · ' + dn.slice('暗金·'.length);
+      }
+      // Replace zh affix fragments with their EN equivalents
+      for (const [zh, en] of Object.entries(affixZhToEn)) {
+        if (dn.includes(zh)) {
+          dn = dn.split(zh).join(en);
+        }
+      }
+      // Normalize spacing between base name and EN suffixes/prefixes
+      dn = dn.replace(/([a-z])(A|S|O|D|V|B|I|H)/g, (m, a, b) => `${a} ${b}`)
+             .replace(/\s{2,}/g, ' ').trim();
+      item.displayName = dn;
+      migrated = true;
+    }
+
+    return migrated;
+  }
+
+  (player.inventory || []).forEach(item => {
+    if (migrateItem(item)) migratedCount++;
+  });
+
+  (player.stash || []).forEach(item => {
+    if (migrateItem(item)) migratedCount++;
+  });
+
+  Object.values(player.equipment || {}).forEach(item => {
+    if (migrateItem(item)) migratedCount++;
+  });
+
+  if (player.targetItem && migrateItem(player.targetItem)) migratedCount++;
+
+  if (migratedCount > 0) {
+    console.log(I18N.tr('saveErrors', 'log_name_migration', '[Name Migration] Converted legacy names on {count} items', { count: migratedCount }));
+  }
+  return migratedCount;
+}
+
 const SaveSystem = {
-  currentSlot: 1,  // 当前使用的存档槽位
-  MAX_SLOTS: 3,    // 最大存档数
-  isReady: false,  // IndexedDB是否初始化完成
+  currentSlot: 1,  // currently selected save slot
+  MAX_SLOTS: 3,    // max save slots
+  isReady: false,  // IndexedDBinitialized flag
 
   init: function () {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
@@ -94,25 +166,25 @@ const SaveSystem = {
       db = e.target.result;
       this.migrateOldSave().then(() => {
         this.loadAllSlotsMeta();
-        // 标记为就绪，激活开始按钮
+        // Mark ready, activate start button
         this.setReady();
       });
     };
     req.onerror = e => {
       console.error("DB Init Failed", e);
-      // 即使失败也标记为就绪（允许新建角色）
+      // Still mark ready on failure (allows new characters)
       this.setReady();
     };
   },
 
-  // 设置存档系统就绪状态
+  // Mark save system ready
   setReady: function () {
     this.isReady = true;
     this.tryActivateStartButton();
-    console.log('[存档系统] 初始化完成');
+    console.log('[SaveSystem] initialized');
   },
 
-  // 尝试激活开始按钮（需要本地存档和云同步都就绪）
+  // Activate start button (needs local saves + cloud sync ready)
   tryActivateStartButton: function () {
     const cloudReady = typeof CloudSync !== 'undefined' ? CloudSync.isReady : true;
     if (!this.isReady || !cloudReady) return;
@@ -124,26 +196,26 @@ const SaveSystem = {
     }
   },
 
-  // 迁移旧存档到槽位1
+  // Migrate legacy save into slot 1
   migrateOldSave: async function () {
     return new Promise((resolve) => {
       if (!db) { resolve(); return; }
       const tx = db.transaction(['saveData'], 'readonly');
       const store = tx.objectStore('saveData');
 
-      // 检查是否有旧格式存档
+      // Check for legacy save format
       const oldReq = store.get('player1');
       oldReq.onsuccess = (e) => {
         const oldData = e.target.result;
         if (oldData && !oldData.slotId) {
-          // 旧存档存在且未迁移，迁移到槽位1
+          // Legacy save found and unmigrated; move it to slot 1
           const newData = { ...oldData, id: 'slot_1', slotId: 1 };
           const writeTx = db.transaction(['saveData'], 'readwrite');
           const writeStore = writeTx.objectStore('saveData');
           writeStore.put(newData);
-          writeStore.delete('player1');  // 删除旧存档
+          writeStore.delete('player1');  // delete legacy save
           writeTx.oncomplete = () => {
-            console.log(I18N.tr('saveErrors', 'log_slot_migration', '[存档迁移] 已将旧存档迁移到槽位1'));
+            console.log(I18N.tr('saveErrors', 'log_slot_migration', '[Save Migration] Legacy save migrated to slot 1'));
             resolve();
           };
           writeTx.onerror = writeTx.onabort = () => resolve();
@@ -155,10 +227,10 @@ const SaveSystem = {
     });
   },
 
-  // 加载所有槽位的元数据（用于显示存档选择界面）
+  // Load slot metadata for the save selection screen
   loadAllSlotsMeta: function () {
     if (!db) return;
-    window.saveSlots = [null, null, null];  // 3个槽位
+    window.saveSlots = [null, null, null];  // 3slot
 
     const tx = db.transaction(['saveData'], 'readonly');
     const store = tx.objectStore('saveData');
@@ -180,7 +252,7 @@ const SaveSystem = {
             hasData: true
           };
         }
-        // 当所有槽位都检查完毕后，更新UI
+        // Update UI once every slot has been checked
         if (i === this.MAX_SLOTS) {
           this.updateStartScreenStatus();
         }
@@ -188,35 +260,35 @@ const SaveSystem = {
     }
   },
 
-  // 更新开始界面状态
+  // Update start screen status
   updateStartScreenStatus: function () {
     const statusEl = document.getElementById('save-status');
     const hasAnySave = window.saveSlots && window.saveSlots.some(s => s && s.hasData);
     if (hasAnySave) {
       const filledSlots = window.saveSlots.filter(s => s && s.hasData).length;
-      statusEl.innerHTML = I18N.tOr('save_status_found', `发现 ${filledSlots} 个存档`, { count: filledSlots });
+      statusEl.innerHTML = I18N.tOr('save_status_found', `Found ${filledSlots} save slot(s)`, { count: filledSlots });
     } else {
       statusEl.innerHTML = '';
     }
   },
 
-  // 保存到当前槽位
+  // Save into the current slot
   save: function (silent = false) {
     if (!db) return Promise.resolve(false);
     const clean = i => { if (!i) return null; const { el, ...r } = i; return r; };
     const eq = {}; for (let k in player.equipment) eq[k] = clean(player.equipment[k]);
 
-    // 更新在线时间（用于离线收益计算）
+    // Refresh online time (offline reward calc)
     player.lastOnlineTime = Date.now();
 
-    // 同时写入 localStorage（同步，可靠）作为备份
+    // Also write to localStorage (sync, reliable) as a backup
     try { localStorage.setItem(`lastOnlineTime_slot${this.currentSlot}`, player.lastOnlineTime.toString()); }
-    catch (error) { console.warn(I18N.tr('saveErrors', 'log_timestamp_backup_failed', '[存档系统] 时间戳备份失败:'), error); }
+    catch (error) { console.warn(I18N.tr('saveErrors', 'log_timestamp_backup_failed', '[Save System] Timestamp backup failed:'), error); }
 
     const data = {
       id: `slot_${this.currentSlot}`,
       slotId: this.currentSlot,
-      saveVersion: SAVE_DATA_VERSION,  // 存档版本号，用于数据迁移
+      saveVersion: SAVE_DATA_VERSION,  // saveversion number，fordata migrations
       ...player,
       inventory: player.inventory.map(clean),
       equipment: eq,
@@ -232,42 +304,42 @@ const SaveSystem = {
         const tx = db.transaction(['saveData'], 'readwrite');
         tx.objectStore('saveData').put(data);
         tx.oncomplete = () => {
-          // 自动同步到云端（静默、防抖），确保本地事务完成后再触发
+          // Auto-sync to cloud (silent, debounced) once the local transaction completesrre-trigger
           if (typeof CloudSync !== 'undefined' && CloudSync.isBound) {
             CloudSync.uploadSlotDebounced(this.currentSlot);
           }
           resolve(true);
         };
         tx.onerror = () => {
-          console.error(I18N.tr('saveErrors', 'log_save_failed', '[存档系统] 保存失败:'), tx.error);
+          console.error(I18N.tr('saveErrors', 'log_save_failed', '[Save System] Save failed:'), tx.error);
           if (!silent && typeof showNotification === 'function') {
-            showNotification(I18N.tr('saveErrors', 'toast_save_failed', '存档失败，请检查浏览器存储权限'));
+            showNotification(I18N.tr('saveErrors', 'toast_save_failed', 'Save failed: check your browser storage permissions'));
           }
           resolve(false);
         };
         tx.onabort = () => {
-          console.error(I18N.tr('saveErrors', 'log_save_aborted', '[存档系统] 保存中止:'), tx.error);
+          console.error(I18N.tr('saveErrors', 'log_save_aborted', '[Save System] Save aborted:'), tx.error);
           resolve(false);
         };
       } catch (e) {
-        console.error(I18N.tr('saveErrors', 'log_save_exception', '[存档系统] 保存异常:'), e);
+        console.error(I18N.tr('saveErrors', 'log_save_exception', '[Save System] Save exception:'), e);
         if (!silent && typeof showNotification === 'function') {
-          showNotification(I18N.tr('saveErrors', 'toast_save_failed', '存档失败，请检查浏览器存储权限'));
+          showNotification(I18N.tr('saveErrors', 'toast_save_failed', 'Save failed: check your browser storage permissions'));
         }
         resolve(false);
       }
     });
 
-    // 静默存档，不显示提示（原：if (!silent) showNotification("游戏已保存");）
+    // silent save，no toast（original:if (!silent) showNotification("gamealreadySave");）
   },
 
-  // 加载指定槽位
+  // Load a specific slot
   loadSlot: function (slotId) {
     return new Promise((resolve, reject) => {
-      if (!db) { reject(new Error(I18N.tr('saveErrors', 'error_db_not_ready', '存档数据库未就绪，请刷新后重试'))); return; }
+      if (!db) { reject(new Error(I18N.tr('saveErrors', 'error_db_not_ready', 'Save database is not ready, please reload the page'))); return; }
       const tx = db.transaction(['saveData']);
       const req = tx.objectStore('saveData').get(`slot_${slotId}`);
-      req.onerror = tx.onerror = tx.onabort = () => reject(new Error(I18N.tr('saveErrors', 'error_load_failed', '读取存档失败，请重试；原存档已保留')));
+      req.onerror = tx.onerror = tx.onabort = () => reject(new Error(I18N.tr('saveErrors', 'error_load_failed', 'Could not read the save, please retry; the previous one was kept')));
       req.onsuccess = e => {
         this.currentSlot = slotId;
         if (e.target.result) {
@@ -288,7 +360,7 @@ const SaveSystem = {
     });
   },
 
-  // 删除指定槽位
+  // Delete a specific slot
   deleteSlot: function (slotId) {
     return new Promise((resolve) => {
       if (!db) { resolve(); return; }
@@ -301,12 +373,12 @@ const SaveSystem = {
     });
   },
 
-  // 兼容旧代码的load方法
+  // Legacy load() kept for old callers
   load: function () {
     this.loadAllSlotsMeta();
   },
 
-  // 重置当前槽位
+  // Reset current slot
   reset: function () {
     if (db) {
       this.deleteSlot(this.currentSlot).then(() => {

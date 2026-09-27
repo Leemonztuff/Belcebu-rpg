@@ -1,5 +1,5 @@
 /**
- * share-card.js - 菠萝战纪 战报与英雄成就卡片生成系统
+ * share-card.js - Brawlore battle report and hero achievement card generator
  * Generador de Tarjeta de Hazañas y Build de Héroe para compartir en redes y portapapeles.
  */
 
@@ -28,7 +28,7 @@ const ShareCardSystem = {
                 <div class="share-card-header">
                     <div class="share-card-title">
                         <span class="share-icon">📜</span>
-                        <span data-i18n="share_card_title">英雄战报 & 构筑分享</span>
+                        <span data-i18n="share_card_title">Hero Report & Build Sharing</span>
                     </div>
                     <button class="share-close-btn" onclick="ShareCardSystem.close()">✕</button>
                 </div>
@@ -39,13 +39,13 @@ const ShareCardSystem = {
                 </div>
                 <div class="share-card-footer">
                     <button class="share-action-btn copy-text-btn" onclick="ShareCardSystem.copyTextSummary()">
-                        <span>📋</span> <span data-i18n="share_copy_text">复制文本战报</span>
+                        <span>📋</span> <span data-i18n="share_copy_text">Copy Text Report</span>
                     </button>
                     <button class="share-action-btn download-img-btn primary" onclick="ShareCardSystem.downloadImage()">
-                        <span>🖼️</span> <span data-i18n="share_download_img">保存战报图片</span>
+                        <span>🖼️</span> <span data-i18n="share_download_img">Save Report Image</span>
                     </button>
                     <button class="share-action-btn copy-img-btn" onclick="ShareCardSystem.copyImageToClipboard()">
-                        <span>✨</span> <span data-i18n="share_copy_img">复制图片</span>
+                        <span>✨</span> <span data-i18n="share_copy_img">Copy Image</span>
                     </button>
                 </div>
             </div>
@@ -75,25 +75,25 @@ const ShareCardSystem = {
     gatherPlayerData() {
         const nickname = (typeof pb !== 'undefined' && pb.authStore && pb.authStore.model && pb.authStore.model.name) ||
                          localStorage.getItem('pb_nickname') ||
-                         I18N.tr('shareCard', 'label_default_nickname', '暗黑冒险者');
+                         I18N.tr('shareCard', 'label_default_nickname', 'Valiant Warrior');
 
-        const currentTitle = player.currentTitle || I18N.tr('shareCard', 'label_default_title', '庇护所见习者');
+        const currentTitle = player.currentTitle || I18N.tr('shareCard', 'label_default_title', 'Sanctuary Novice');
         const floor = player.floor || 1;
         const maxFloor = player.highestFloor || player.maxFloor || floor;
         const lvl = player.lvl || 1;
         const kills = player.kills || 0;
         const gold = player.gold || 0;
-        const defaultTierName = I18N.tr('shareCard', 'title_bronze_trial', '🥉 青铜试炼');
+        const defaultTierName = I18N.tr('shareCard', 'title_bronze_trial', '🥉 Bronze Trial');
         const abyssTier = (typeof AbyssSystem !== 'undefined' && typeof AbyssSystem.getTier === 'function' && AbyssSystem.getTier(player.abyssScore || 0)) || { name: defaultTierName };
 
-        // 收集装备信息
+// Collect gear info
         const equipSlots = ['weapon', 'body', 'helm', 'gloves', 'boots', 'belt', 'amulet', 'ring1', 'ring2', 'offhand'];
         const gearList = [];
         if (player.equipment) {
             equipSlots.forEach(slot => {
                 const it = player.equipment[slot];
                 if (it) {
-                    let name = it.name || I18N.tr('shareCard', 'label_unknown_equipment', '未知装备');
+                    let name = it.name || I18N.tr('shareCard', 'label_unknown_equipment', 'Unknown Gear');
                     if (typeof I18N !== 'undefined' && I18N.getItemDisplayName) {
                         name = I18N.getItemDisplayName(it) || name;
                     }
@@ -110,7 +110,7 @@ const ShareCardSystem = {
             });
         }
 
-        // 收集激活词缀与强力属性
+// Collect active affixes and key stats
         const dmg = Math.round(player.damage || (player.str * 1.5 + 5));
         const def = Math.round(player.defense || (player.dex * 0.8 + 2));
         const maxHp = Math.round(player.maxHp || 100);
@@ -141,7 +141,7 @@ const ShareCardSystem = {
         const W = canvas.width;
         const H = canvas.height;
 
-        // 1. 背景绘制 (高暗黑魔幻渐变与古老石纹质感)
+// 1. Background (dark fantasy gradient with ancient stone texture)
         const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
         bgGrad.addColorStop(0, '#100b14');
         bgGrad.addColorStop(0.3, '#191122');
@@ -150,7 +150,7 @@ const ShareCardSystem = {
         ctx.fillStyle = bgGrad;
         ctx.fillRect(0, 0, W, H);
 
-        // 2. 金色魔幻双边框与四角铭文
+        // 2. Gold fantasy double border with corner inscriptions
         ctx.strokeStyle = '#c5a059';
         ctx.lineWidth = 3;
         ctx.strokeRect(16, 16, W - 32, H - 32);
@@ -159,7 +159,7 @@ const ShareCardSystem = {
         ctx.lineWidth = 1;
         ctx.strokeRect(22, 22, W - 44, H - 44);
 
-        // 四角装饰纹章
+// Corner ornamental crests
         const cornerSize = 14;
         const corners = [[16, 16], [W - 16, 16], [16, H - 16], [W - 16, H - 16]];
         ctx.fillStyle = '#e6c378';
@@ -169,33 +169,33 @@ const ShareCardSystem = {
             ctx.fill();
         });
 
-        // 3. 顶部 Header 标题
+        // 3. top Header markertopic
         ctx.textAlign = 'center';
         ctx.font = 'bold 26px "Cinzel", "Georgia", "Microsoft YaHei", serif';
         ctx.fillStyle = '#ffd700';
         ctx.shadowColor = '#ffaa00';
         ctx.shadowBlur = 10;
-        ctx.fillText(I18N.tr('shareCard', 'label_card_header', '⚔️  菠萝战纪 · 英雄战报  ⚔️'), W / 2, 60);
+        ctx.fillText(I18N.tr('shareCard', 'label_card_header', '⚔️  Brawlore · Hero Chronicle  ⚔️'), W / 2, 60);
         ctx.shadowBlur = 0;
 
         ctx.font = '12px sans-serif';
         ctx.fillStyle = '#a69279';
         ctx.fillText(I18N.tr('shareCard', 'label_card_subheader', 'BRAWLORE CHRONICLES  •  {date}', { date: data.dateStr }), W / 2, 82);
 
-        // 分隔线
+// Divider lines
         ctx.strokeStyle = '#3d2e1e';
         ctx.beginPath();
         ctx.moveTo(35, 95);
         ctx.lineTo(W - 35, 95);
         ctx.stroke();
 
-        // 4. 角色信息横幅 (头像徽章 + 昵称 + 称号 + 等级)
+// 4. Character banner (avatar emblem + nickname + title + level)
         ctx.fillStyle = 'rgba(255, 215, 0, 0.05)';
         ctx.fillRect(35, 105, W - 70, 75);
         ctx.strokeStyle = '#3d3020';
         ctx.strokeRect(35, 105, W - 70, 75);
 
-        // 职业/角色图章
+        // Class/character emblem
         ctx.fillStyle = '#ffd700';
         ctx.beginPath();
         ctx.arc(75, 142, 26, 0, Math.PI * 2);
@@ -209,7 +209,7 @@ const ShareCardSystem = {
         ctx.fillStyle = '#ffd700';
         ctx.fillText('🗡️', 75, 150);
 
-        // 昵称与称号
+// Nickname and title
         ctx.textAlign = 'left';
         ctx.font = 'bold 20px sans-serif';
         ctx.fillStyle = '#ffffff';
@@ -219,7 +219,7 @@ const ShareCardSystem = {
         ctx.fillStyle = '#ffb300';
         ctx.fillText(`👑 [${data.title}]`, 115, 156);
 
-        // 等级与天梯徽章
+// Level and ladder badge
         ctx.textAlign = 'right';
         ctx.font = 'bold 22px sans-serif';
         ctx.fillStyle = '#4ade80';
@@ -229,15 +229,15 @@ const ShareCardSystem = {
         ctx.fillStyle = '#94a3b8';
         ctx.fillText(`🏆 ${data.abyssTier}`, W - 50, 156);
 
-        // 5. 核心探险数据仪表盘 (4个方块: 最高层数 / 击杀数 / 综合战力DPS / 收集进度)
+// 5. Core exploration dashboard (4 tiles: max floor / kills / overall DPS / collection progress)
         const statsBoxY = 195;
         const boxW = (W - 70 - 15 * 3) / 4;
         const boxH = 68;
         const metrics = [
-            { icon: '🏰', label: I18N.tr('shareCard', 'label_max_floor', '探索层数'), val: `${data.maxFloor} F`, color: '#60a5fa' },
-            { icon: '💀', label: I18N.tr('shareCard', 'label_kills', '讨伐魔物'), val: `${data.kills}`, color: '#f87171' },
-            { icon: '⚔️', label: I18N.tr('shareCard', 'label_damage', '攻击力'), val: `${data.stats.dmg}`, color: '#fbbf24' },
-            { icon: '🛡️', label: I18N.tr('shareCard', 'label_defense', '护甲防御'), val: `${data.stats.def}`, color: '#34d399' }
+            { icon: '🏰', label: I18N.tr('shareCard', 'label_max_floor', 'Max Floor'), val: `${data.maxFloor} F`, color: '#60a5fa' },
+            { icon: '💀', label: I18N.tr('shareCard', 'label_kills', 'Kills'), val: `${data.kills}`, color: '#f87171' },
+            { icon: '⚔️', label: I18N.tr('shareCard', 'label_damage', 'Damage'), val: `${data.stats.dmg}`, color: '#fbbf24' },
+            { icon: '🛡️', label: I18N.tr('shareCard', 'label_defense', 'Defense'), val: `${data.stats.def}`, color: '#34d399' }
         ];
 
         metrics.forEach((m, idx) => {
@@ -257,12 +257,12 @@ const ShareCardSystem = {
             ctx.fillText(m.val, bx + boxW / 2, statsBoxY + 52);
         });
 
-        // 6. 装备与神兵构筑展示
+        // 6. Gear and build showcase
         const gearStartY = 280;
         ctx.textAlign = 'left';
         ctx.font = 'bold 15px sans-serif';
         ctx.fillStyle = '#e2d4be';
-        ctx.fillText(`📦 ${I18N.tr('shareCard', 'label_gear_section', '当前神兵与符文构筑')}`, 35, gearStartY);
+        ctx.fillText(`📦 ${I18N.tr('shareCard', 'label_gear_section', 'Gear & Runewords')}`, 35, gearStartY);
 
         ctx.strokeStyle = '#2f2338';
         ctx.beginPath();
@@ -287,14 +287,14 @@ const ShareCardSystem = {
             ctx.textAlign = 'center';
             ctx.font = '13px sans-serif';
             ctx.fillStyle = '#64748b';
-            ctx.fillText(I18N.tr('shareCard', 'label_gear_empty', '当前未穿戴任何装备'), W / 2, gearStartY + 60);
+            ctx.fillText(I18N.tr('shareCard', 'label_gear_empty', 'No equipment currently equipped'), W / 2, gearStartY + 60);
         } else {
             gearList.slice(0, maxItems).forEach((item, i) => {
                 const iy = gearStartY + 20 + i * itemRowH;
                 ctx.fillStyle = (i % 2 === 0) ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.2)';
                 ctx.fillRect(35, iy, W - 70, itemRowH - 4);
 
-                // 品质标识与名称
+// Quality mark and name
                 const color = item.runeword ? rarityColors.runeword : (rarityColors[item.rarity] || '#ffffff');
                 ctx.fillStyle = color;
                 ctx.font = 'bold 13px sans-serif';
@@ -303,7 +303,7 @@ const ShareCardSystem = {
                 const prefix = item.runeword ? '★ ' : '▪ ';
                 ctx.fillText(`${prefix}${item.name}`, 45, iy + 20);
 
-                // 孔位与符文 / 符文之语
+// Sockets and runes / runewords
                 ctx.textAlign = 'right';
                 if (item.runeword) {
                     ctx.fillStyle = '#ec4899';
@@ -312,7 +312,7 @@ const ShareCardSystem = {
                 } else if (item.sockets > 0) {
                     const runeText = item.runes && item.runes.length > 0
                         ? item.runes.map(r => r.name || r).join('-')
-                        : I18N.tr('shareCard', 'label_socket_count', '{count} 孔', { count: item.sockets });
+                        : I18N.tr('shareCard', 'label_socket_count', '{count} sockets', { count: item.sockets });
                     ctx.fillStyle = '#fbbf24';
                     ctx.font = '12px monospace';
                     ctx.fillText(`💎 ${runeText}`, W - 45, iy + 20);
@@ -324,7 +324,7 @@ const ShareCardSystem = {
             });
         }
 
-        // 7. 底部成就与印记
+// 7. Footer achievements and seals
         const footerY = H - 90;
         ctx.fillStyle = 'rgba(15, 10, 20, 0.9)';
         ctx.fillRect(35, footerY, W - 70, 56);
@@ -334,37 +334,37 @@ const ShareCardSystem = {
         ctx.textAlign = 'left';
         ctx.font = '12px sans-serif';
         ctx.fillStyle = '#cbd5e1';
-        ctx.fillText(`🏆 ${I18N.tr('shareCard', 'label_achievements', '已解锁成就:')} ${data.achievementsCount}`, 50, footerY + 24);
-        ctx.fillText(`📖 ${I18N.tr('shareCard', 'label_monsters_discovered', '图鉴魔物收录:')} ${data.discoveredMonstersCount}`, 50, footerY + 44);
+        ctx.fillText(`🏆 ${I18N.tr('shareCard', 'label_achievements', 'Achievements Unlocked:')} ${data.achievementsCount}`, 50, footerY + 24);
+        ctx.fillText(`📖 ${I18N.tr('shareCard', 'label_monsters_discovered', 'Monsters Discovered:')} ${data.discoveredMonstersCount}`, 50, footerY + 44);
 
         ctx.textAlign = 'right';
         ctx.fillStyle = '#ffd700';
         ctx.font = 'bold 13px sans-serif';
-        ctx.fillText(I18N.tr('shareCard', 'label_card_footer', '✨ 菠萝战纪 · 庇护所传说'), W - 50, footerY + 34);
+        ctx.fillText(I18N.tr('shareCard', 'label_card_footer', '✨ Brawlore · Sanctuary Legend'), W - 50, footerY + 34);
     },
 
     getTextSummary() {
         if (!this.currentCardData) this.currentCardData = this.gatherPlayerData();
         const d = this.currentCardData;
 
-        // 战报文本整块改用占位符拼接，装备列表分隔符按语言区分（中文用「、」）
+// The report text block now builds from placeholders; the gear list separator is per language (zh uses '、')
         const gearSep = I18N.currentLang === 'zh' ? '、' : ', ';
         const gear = d.gearList.slice(0, 4).map(g => g.name).join(gearSep);
 
-        return I18N.tr('shareCard', 'text_header', '📜【菠萝战纪 · 英雄冒险战报】') + '\n' +
-            I18N.tr('shareCard', 'text_hero', '👤 英雄：{nickname} · 👑 [{title}]', { nickname: d.nickname, title: d.title }) + '\n' +
-            I18N.tr('shareCard', 'text_level_floor', '⭐ 等级：Lv.{level} | 🏰 最高探索：第 {floor} 层', { level: d.level, floor: d.maxFloor }) + '\n' +
-            I18N.tr('shareCard', 'text_stats', '⚔️ 攻击：{dmg} | 🛡️ 防御：{def} | ❤️ 生命：{hp}', { dmg: d.stats.dmg, def: d.stats.def, hp: d.stats.maxHp }) + '\n' +
-            I18N.tr('shareCard', 'text_kills_tier', '💀 讨伐魔物：{kills} 只 | 🏆 深渊段位：{tier}', { kills: d.kills, tier: d.abyssTier }) + '\n' +
-            I18N.tr('shareCard', 'text_gear', '📦 核心神装：{gear}', { gear: gear || I18N.tr('shareCard', 'text_gear_empty', '暂无') }) + '\n' +
-            I18N.tr('shareCard', 'text_footer', '✨ 踏入庇护所，开启你的暗黑奇幻冒险！');
+        return I18N.tr('shareCard', 'text_header', '📜 [BRAWLORE · HERO CHRONICLE]') + '\n' +
+            I18N.tr('shareCard', 'text_hero', '👤 Hero: {nickname} ({title})', { nickname: d.nickname, title: d.title }) + '\n' +
+            I18N.tr('shareCard', 'text_level_floor', '⭐ Level: Lv.{level} | 🏰 Max Floor: {floor}', { level: d.level, floor: d.maxFloor }) + '\n' +
+            I18N.tr('shareCard', 'text_stats', '⚔️ Damage: {dmg} | 🛡️ Defense: {def} | ❤️ Max HP: {hp}', { dmg: d.stats.dmg, def: d.stats.def, hp: d.stats.maxHp }) + '\n' +
+            I18N.tr('shareCard', 'text_kills_tier', '💀 Total Kills: {kills} | 🏆 Abyss Tier: {tier}', { kills: d.kills, tier: d.abyssTier }) + '\n' +
+            I18N.tr('shareCard', 'text_gear', '📦 Notable Gear: {gear}', { gear: gear || I18N.tr('shareCard', 'text_gear_empty', 'None') }) + '\n' +
+            I18N.tr('shareCard', 'text_footer', '✨ Play it in your browser: Brawlore!');
     },
 
     copyTextSummary() {
         const text = this.getTextSummary();
         navigator.clipboard.writeText(text).then(() => {
             if (typeof showNotification === 'function') {
-                showNotification(I18N.tr('shareCard', 'text_copy_success', '📋 战报文本已复制到剪贴板！'));
+                showNotification(I18N.tr('shareCard', 'text_copy_success', '📋 Hero chronicle copied to clipboard!'));
             }
         }).catch(err => {
             console.error('Clipboard error:', err);
@@ -380,7 +380,7 @@ const ShareCardSystem = {
         link.click();
 
         if (typeof showNotification === 'function') {
-            showNotification(I18N.tr('shareCard', 'text_download_success', '🖼️ 战报图片已保存！'));
+            showNotification(I18N.tr('shareCard', 'text_download_success', '🖼️ Hero card image saved!'));
         }
     },
 
@@ -396,7 +396,7 @@ const ShareCardSystem = {
                         new ClipboardItem({ 'image/png': blob })
                     ]);
                     if (typeof showNotification === 'function') {
-                        showNotification(I18N.tr('shareCard', 'text_copy_image_success', '✨ 战报图片已直接复制到剪贴板！'));
+                        showNotification(I18N.tr('shareCard', 'text_copy_image_success', '✨ Hero card image copied to clipboard!'));
                     }
                 } else {
                     this.downloadImage();

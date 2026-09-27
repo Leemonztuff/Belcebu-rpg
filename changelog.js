@@ -1,743 +1,743 @@
-// 更新公告数据 - 面向玩家的简化版本
-// 倒序排列（最新版本在前）
+// Update announcement data - player-facing simplified version
+// Sort newest first (latest version on top)
 const CHANGELOG = [
     {
         version: "7.15",
         date: "2026-06-13",
-        title: "手机端界面修复",
+        title: 'Mobile UI Fixes',
         highlights: [
-            "修复手机端血球和法力球在窄屏下被中间技能栏挤扁的问题",
-            "手机端菜单入口现在会同步显示属性点、技能点、任务奖励和赐福待领取红点",
-            "手机端聊天入口现在会在世界频道有未读消息时显示红点"
+            'Fixed: health and mana orbs were squashed by the skill bar on narrow screens',
+            'Added: menu icons show a red dot for unspent attribute points, skill points, quest rewards and pending blessings',
+            'Added: the chat icon shows a red dot when the world channel has unread messages'
         ]
     },
     {
         version: "7.14",
         date: "2026-05-08",
-        title: "职业技能视觉成长",
+        title: 'Class Skill Visual Progression',
         highlights: [
-            "火球术在成长后追加爆裂火雨落点，命中区域有更强的火焰压迫感",
-            "雷电术成长后会把周围敌人连成链式电网，群怪场面更清晰",
-            "多重射击成长后飞行拖尾和命中反馈升级为箭幕线束",
-            "神圣护盾成长后增加圣壁柱线和反射镜面折线，护盾分支辨识度更高",
-            "物理普攻成长补齐半月、旋风和裂地斩视觉层级，沿用细弧刀锋标准",
-            "本次只强化视觉表现，不改变技能伤害、冷却、掉落或法力消耗"
+            'Fireball now adds bursting fire-rain impact points for a much heavier flame hit area',
+            'Lightning Strike now chains nearby enemies into a grid, so group fights read far better',
+            'Multishot trails and hit feedback upgrade to a volley of arrow beams',
+            'Holy Shield now adds holy pillar lines and reflective mirror shards, making the shield branch far clearer',
+            'The basic physical attack gained proper half-moon, whirlwind and earth-splitter tiers, following the thin-arc blade standard',
+            'Visuals only: skill damage, cooldowns, drops and mana costs are unchanged'
         ]
     },
     {
         version: "7.13",
         date: "2026-05-07",
-        title: "物理横扫刀锋",
+        title: 'Physical Sweep Blades',
         highlights: [
-            "物理普攻成长到一定等级或力量后，会在多人围攻时触发顺劈、半月斩和横扫刀锋",
-            "横扫会命中前方成片敌人，自动战斗近身刷怪时清怪更顺畅",
-            "新增多层半月刀光、横扫提示和额外命中反馈，强化战士系爽感",
-            "横扫只在附近敌人足够多时触发，并有额外目标上限和伤害倍率，避免无脑清屏"
+            'Once the basic physical attack grows enough in level or Strength, it unleashes cleave, half-moon and sweeping blades when surrounded',
+            'Sweeps hit whole groups ahead, so auto battle clears crowds smoothly in melee',
+            'Added layered half-moon slashes, a sweep tell and extra hit feedback for a punchier warrior feel',
+            'Sweeps only trigger with enough nearby enemies and carry a target cap and damage multiplier, so no screen wiping'
         ]
     },
     {
         version: "7.12",
         date: "2026-05-07",
-        title: "自动战斗刷怪密度优化",
+        title: 'Auto Battle Spawn Density',
         highlights: [
-            "提高每层初始怪物数量，低层也更适合刷怪刷宝",
-            "动态刷新改为批量补怪，怪物被清掉后会更快回补",
-            "自动战斗开启时维持更高怪物目标数量，减少空跑时间",
-            "刷新点增加多次重试，不再因为一次随机位置太近就整轮不刷"
+            'More monsters spawn per floor, so early floors are worth farming for loot too',
+            'Respawns are now batched, so cleared packs come back faster',
+            'Auto battle keeps a higher monster target, so you waste less time running around',
+            'Spawn points retry several times, so one bad random position no longer skips a whole round'
         ]
     },
     {
         version: "7.11",
         date: "2026-05-07",
-        title: "Boss战、地牢氛围与掉落视觉升级",
+        title: 'Boss Fights, Dungeon Atmosphere & Loot Visuals',
         highlights: [
-            "新增 Boss 顶部血条、阶段提示和更清晰的危险范围预警",
-            "Boss 层加入专属竞技场、地面符文、主题光源和场景装饰",
-            "强化地牢墙脚阴影、碎石和地面边缘过渡，空间层次更明显",
-            "蓝装以上掉落增加地面光环，黄装、暗金和套装拥有更清楚的稀有度演出",
-            "玩家主动技能、套装和高品质武器会影响脚底光环与近战斩击颜色"
+            'Added a top boss health bar, phase callouts and much clearer danger-zone warnings',
+            'Boss floors now have their own arena, floor runes, themed lighting and scenery',
+            'Stronger wall-base shadows, rubble and floor edge blending give the dungeon real depth',
+            'Magic loot and above now drop a ground halo; Rare, Unique and Set items get clearer rarity flair',
+            'Your active skills, sets and high-tier weapons tint the ground halo and melee slash color'
         ]
     },
     {
         version: "7.10",
         date: "2026-05-05",
-        title: "角色、怪物、特效与音效升级",
+        title: 'Character, Monster, VFX & Audio Upgrade',
         highlights: [
-            "重做技能命中、状态、精英词缀和 Boss 预警 VFX",
-            "接入真实闪电音效，并补齐施法、受击、死亡等关键战斗音效",
-            "补齐主角四向斜走帧，移动时不再复用正面或背面动作",
-            "强化普通怪攻击与受击动作，命中反馈和挨打反应更连贯"
+            'Redone VFX for skill hits, status effects, elite affixes and boss warnings',
+            'Real thunder SFX, plus casting, hit and death sounds for the whole combat loop',
+            'Added all diagonal walk frames for the hero, so movement no longer reuses front or back poses',
+            'Regular monsters now attack and flinch with real animation, making hits and damage reactions read better'
         ]
     },
     {
         version: "7.09",
         date: "2026-05-01",
-        title: "营地、战斗与界面体验优化",
+        title: 'Camp, Combat & UI Polish',
         highlights: [
-            "罗格营地和地牢细节继续优化，场景层次更丰富",
-            "修复摊位遮挡、选位错误和摆摊坐姿朝向异常",
-            "新增主角、NPC 和怪物脚底接触阴影，角色更贴地",
-            "强化技能命中爆点、怪物受击动作和战斗音效",
-            "升级技能栏、面板和技能树的暗黑金属质感"
+            'Rogue Encampment and the dungeon keep getting richer in detail and depth',
+            'Fixed stalls blocking the view, wrong spot selection and vendors facing the wrong way',
+            'Added contact shadows under heroes, NPCs and monsters, so everyone stands on the ground',
+            'Punchier skill impact bursts, monster flinch animations and combat sounds',
+            'The skill bar, panels and skill tree now have a dark metal look'
         ]
     },
     {
         version: "7.08",
         date: "2026-05-01",
-        title: "地图、角色、怪物与战斗升级",
+        title: 'Map, Character, Monster & Combat Upgrade',
         highlights: [
-            "重做地牢墙体、转角、地面结构和前景遮挡，探索画面更有层次",
-            "强化森林、冰窟和地狱主题，并加入火光、冷光等环境氛围",
-            "多种怪物贴图重新绘制，轮廓更清晰，辨识度更高",
-            "主角贴图与移动动画优化，左右和斜向移动更自然",
-            "优化物理攻击音效、精英词缀和怪物行为差异，战斗反馈更清晰"
+            'Redone dungeon walls, corners, floor structure and foreground occlusion give exploration real depth',
+            'Stronger forest, ice and hell themes with firelight and cold glow ambience',
+            'Many monster sprites redrawn with cleaner silhouettes and better readability',
+            'Hero sprites and movement animations polished; side and diagonal steps look natural',
+            'Physical attack sounds, elite affixes and monster behaviour differences tuned for clearer combat'
         ]
     },
     {
         version: "6.99",
         date: "2026-01-11",
-        title: "挂机平衡 & 套装缩放",
+        title: 'AFK Balance & Set Scaling',
         highlights: [
-            "私聊功能：点击玩家名或输入@玩家名发起私聊",
-            "世界频道：快捷表情面板，一键发送常用表情",
-            "聊天框宽高放大，适配手机竖屏",
-            "挂机模式：套装掉率20%，暗金掉率40%",
-            "套装属性随层数增强（攻速、伤害%、暴击伤害等）"
+            'Whispers: click a player name or type @name to start a private chat',
+            'World channel: quick emote panel to send your favourites in one click',
+            'Bigger chat box, sized for portrait phones',
+            'AFK mode: 20% set drop rate, 40% unique drop rate',
+            'Set bonuses scale with floor depth (attack speed, damage%, crit damage, and more)'
         ]
     },
     {
         version: "6.98",
         date: "2026-01-10",
-        title: "世界频道物品分享",
+        title: 'World Channel Item Sharing',
         highlights: [
-            "装备tooltip新增「分享到世界频道」按钮",
-            "聊天中的物品链接可点击查看详细属性",
-            "物品链接按稀有度显示对应颜色"
+            'Added a \"Share to world channel\" button to the equipment tooltip',
+            'Item links in chat are now clickable to inspect full stats',
+            'Item links are colored by rarity'
         ]
     },
     {
         version: "6.97",
         date: "2026-01-10",
-        title: "战斗系统大修",
+        title: 'Combat Overhaul',
         highlights: [
-            "修复护盾被部份怪物穿透",
-            "修复连锁闪电正确触发掉落、经验、成就",
-            "护甲公式改为百分比减伤(100护甲=50%减伤)",
-            "卖出套装、强化装备时需要二次确认"
+            'Fixed shields being ignored by some monsters',
+            'Fixed Chain Lightning so drops, XP and achievements now trigger correctly',
+            'Armor now reduces damage by a percentage (100 armor = 50% damage reduction)',
+            'Selling set or upgraded gear now asks for confirmation'
         ]
     },
     {
         version: "6.96",
         date: "2026-01-06",
-        title: "长时间挂机性能优化",
+        title: 'Long AFK Performance',
         highlights: [
-            "小地图缓存系统：只在探索新区域时重绘，挂机时 0 开销",
-            "物品标签优化：摄像机静止时跳过 DOM 更新",
-            "遮挡修复优化：复用 Set + 位运算编码，消除 GC 压力"
+            'Minimap caching: only redraws when you explore a new area, 0 cost while AFK',
+            'Item label optimization: DOM updates are skipped while the camera is still',
+            'Occlusion fix optimized: reused Set plus bitwise encoding removes GC pressure'
         ]
     },
     {
         version: "6.95",
         date: "2026-01-06",
-        title: "称号商店系统",
+        title: 'Title Shop',
         highlights: [
-            "神秘贤者新增称号商店，7种称号（1万~5亿金币）",
-            "购买仪式感：金币扣除动画 + 称号获得特效弹窗",
-            "100万以上称号购买时全服公告，称号显示在聊天/头顶"
+            'The Mystic Sage now has a title shop: 7 titles (10K~500M gold)',
+            'Purchase with ceremony: a gold deduction animation and a title unlock popup',
+            'Titles above 1M gold trigger a server-wide announcement and show in chat and above your head'
         ]
     },
     {
         version: "6.94",
         date: "2026-01-05",
-        title: "高等级经验优化",
+        title: 'High-Level Experience',
         highlights: [
-            "怪物经验改为指数增长，高层刷怪效率大幅提升",
-            "40级以上玩家升级速度提升2-4倍",
-            "修复护盾技能第3阶段无法点亮的问题，增加护盾音效"
+            'Monster XP now grows exponentially, making deep floors far more efficient',
+            'Level 40+ characters level 2-4x faster',
+            'Fixed the shield skill 3rd stage not unlocking, and added shield sounds'
         ]
     },
     {
         version: "6.93",
         date: "2026-01-03",
-        title: "自动战斗雇佣费",
+        title: 'Auto Battle Hiring Fee',
         highlights: [
-            "开启自动战斗时收取15%金币雇佣费",
-            "首次开启时弹出提醒面板（游戏暂停）"
+            'Turning on auto battle now costs a 15% gold hiring fee',
+            'A confirmation panel pops up the first time (the game pauses)'
         ]
     },
     {
         version: "6.92",
         date: "2026-01-03",
-        title: "死亡复活系统",
+        title: 'Death & Revival',
         highlights: [
-            "死亡弹窗：显示战绩统计（层数、击杀、等级、死因）",
-            "原地复活：消耗金币复活，费用随等级/层数增长",
-            "安全复活：远离敌人的安全位置+1.5秒无敌 + 满血满蓝"
+            'Death panel: shows your run stats (floor, kills, level, cause of death)',
+            'Revive in place: pay gold to come back, and the price grows with level/floor',
+            'Safe revive: a spot away from enemies, 1.5s invulnerable and full health and mana'
         ]
     },
     {
         version: "6.91",
         date: "2026-01-03",
-        title: "自动战斗拾取优化",
+        title: 'Auto Battle Looting',
         highlights: [
-            "自动战斗时装备远距离拾取：和金币药水一样",
-            "彻底解决装备在墙角导致的'无法到达'问题"
+            'Auto battle now picks up gear at range, just like gold and potions',
+            'Fully fixes the \"unreachable\" problem when gear spawns in a corner'
         ]
     },
     {
         version: "6.9",
         date: "2026-01-02",
-        title: "增加护盾技能",
+        title: 'Shield Skill Added',
         highlights: [
-            "增加护盾技能和技能树",
-            "护盾视觉效果：金色椭圆光环 + 血球金边",
-            "自动战斗支持：血量低于50%自动释放护盾",
-            "雷电术增强：阶段2/3多落雷(1→2→4根)，优先攻击群怪"
+            'Added the Shield skill and its skill tree',
+            'Shield visuals: a golden oval halo and a gold rim on your health orb',
+            'Auto battle support: casts Shield automatically below 50% health',
+            'Lightning Strike buffed: stages 2/3 call down more bolts (1→2→4) and prioritise groups'
         ]
     },
     {
         version: "6.8",
         date: "2026-01-02",
-        title: "技能树系统",
+        title: 'Skill Tree',
         highlights: [
-            "技能树重构：每个技能3个阶段，第2/3阶段可选择分叉路线",
-            "分叉选择：选择后锁定路线，需洗点才能重选",
-            "老存档迁移：自动转换技能等级，多余点数返还"
+            'Skill tree rebuilt: every skill has 3 stages, with branching paths at stages 2/3',
+            'Branch choice: once picked, the path is locked and you need a respec to change it',
+            'Old saves migrate automatically: skill levels convert and spare points are refunded'
         ]
     },
     {
         version: "6.7",
         date: "2026-01-01",
-        title: "图鉴系统",
+        title: 'Codex',
         highlights: [
-            "套装图鉴：收集套装装备，追踪套装完成度",
-            "怪物图鉴：记录击杀过的怪物和BOSS，统计击杀数"
+            'Set codex: collect set pieces and track your set progress',
+            'Monster codex: records every monster and boss you have killed, with kill counts'
         ]
     },
     {
         version: "6.6",
         date: "2025-12-30",
-        title: "深渊挑战系统",
+        title: 'Abyss Challenge',
         highlights: [
-            "开启深渊挑战：无限层级，每周重置榜单发放奖励",
-            "深渊专属奖励：深渊征服者6件套装及专属称号"
+            'Abyss challenge unlocked: endless floors plus a weekly leaderboard that resets and pays out rewards',
+            'Abyss-exclusive rewards: the 6-piece Abyss Conqueror set and its own title'
         ]
     },
     {
         version: "6.5",
         date: "2025-12-25",
-        title: "Boss技能系统 & 周榜系统",
+        title: 'Boss Skills & Weekly Leaderboard',
         highlights: [
-            "boss 增强技能：远距、毒箭、狂暴、召唤小怪、扇形、多方向等",
-            "新增周榜：每周一重置，新玩家也能冲榜！"
+            'Boss abilities upgraded: ranged, poison bolts, enrage, summons, cone and multi-direction attacks',
+            'New weekly leaderboard: resets every Monday, and new players can climb it too!'
         ]
     },
     {
         version: "6.4",
         date: "2025-12-24",
-        title: "多端云同步 & UI精修",
+        title: 'Cloud Sync & UI Polish',
         highlights: [
-            "上线多端云同步：同步码6位，支持多端登录",
-            "多设备互踢：跨浏览器/跨设备登录自动检测并接管会话",
-            "界面精修：引入 gsap 库，优化动画效果"
+            'Cloud sync is live: a 6-character sync code, and multiple devices at once',
+            'Cross-device session takeover: signing in on another browser or device is detected and your session moves over',
+            'UI polish: the gsap library is now in, and animations run smoother'
         ]
     },
     {
         version: "6.3.2",
         date: "2025-12-22",
-        title: "存档保护 & 装备需求平衡",
+        title: 'Save Protection & Gear Requirements',
         highlights: [
-            "🛡️存档保护：修复极端情况下快速点击可能导致存档丢失的问题",
-            "修复套装/暗金装备需求过高无法装备的问题"
+            '🛡️Save protection: fixed a save loss that very fast clicking could cause',
+            'Fixed set and unique gear that could not be equipped because of too-high requirements'
         ]
     },
     {
         version: "6.3.1",
         date: "2025-12-22",
-        title: "安全修复 & Boss难度升级",
+        title: 'Safety Fixes & Boss Difficulty',
         highlights: [
-            "技能交互改进：未学习的技能按钮灰色禁用，点击提示引导",
-            "注册流程优化：更新公告和昵称注册按顺序显示，避免重叠",
-            "昵称安全升级：集成聊天敏感词库，包含敏感词时阻止注册并提示",
-            "BOSS升级：全面提升血量和伤害，掉落升级数量"
+            'Skill UI improved: unlearned skills are greyed out and tapping them shows a hint',
+            'Sign-up flow: patch notes and nickname registration now appear in order, never overlapped',
+            'Nickname safety: chat filter word list added, registration is blocked with a warning',
+            'Bosses upgraded: much more health and damage, plus more upgrade drops'
         ]
     },
     {
         version: "6.3.0",
         date: "2025-12-21",
-        title: "成就系统 & 离线收益",
+        title: 'Achievements & Offline Earnings',
         highlights: [
-            "成就扩展：从6个增加到30个，涵盖击杀、探索、收集、战斗、经济、成长六大类别",
-            "成就面板优化：完美适配电脑和直屏手机",
-            "增加离线收益系统"
+            'Achievements expanded: from 6 to 30, across kills, exploration, collection, combat, economy and growth',
+            'The achievement panel now fits desktop and portrait phones perfectly',
+            'Added offline earnings while you are away'
         ]
     },
     {
         version: "6.2",
         date: "2025-12-21",
-        title: "打击感革命 & 场景破坏系统",
+        title: 'Game Feel Overhaul & Breakables',
         highlights: [
-            "场景破坏：地牢新增可破坏的木桶、木箱和陶罐",
-            "受击顿帧、实体缩放、屏幕震动反馈，可在通用设置开启",
-            "物理掉落系统：物品掉落现在拥有抛物线轨迹、落地弹跳",
-            "阶梯式音效：受击音效现在分为普通/暴击/击杀",
-            "掉落机制重塑：仅套装永久保留，其他分阶梯消失",
-            "视觉增强：物理血溅、物理击退"
+            'Breakables: barrels, crates and pots in the dungeon can now be smashed',
+            'Hit stop, entity scaling and screen shake, all toggleable in General settings',
+            'Physics drops: items now arc through the air and bounce when they land',
+            'Layered sounds: hit SFX now split into normal, crit and kill',
+            'Loot reworked: only set items stay forever, everything else fades in stages',
+            'Visual punch: physical blood splatter and knockback'
         ]
     },
     {
         version: "6.1.1",
         date: "2025-12-20",
-        title: "体验优化 & 拾取增强",
+        title: 'QoL & Looting',
         highlights: [
-            "自动战斗优化：视金钱如套装！金币拾取优先级提至最高，且支持隔墙侦测",
-            "视觉增强：大幅提升经验条百分比文字清晰度（白色+黑边阴影）",
-            "精度修补：修复击杀怪物时漂浮经验值出现多位小数的浮点误差问题",
-            "智能脱困：增加10秒位置位移监控，自动放弃并拉黑无法到达的掉落物，防止挂机卡死"
+            'Auto battle treats gold like sets: gold pickup is top priority and works through walls',
+            'Much clearer XP percentage text on the bar (white with a black outline)',
+            'Precision fix: floating XP values no longer show long decimals on kill',
+            'Smart unstuck: 10s movement monitoring, unreachable drops are skipped and blacklisted so AFK never hangs'
         ]
     },
     {
         version: "6.1",
         date: "2025-12-19",
-        title: "性能重构 & 视觉升级",
+        title: 'Performance Rebuild & Visual Upgrade',
         highlights: [
-            "深度性能优化：重构AI计算内核，CPU占用大幅降低",
-            "渲染优化：离屏Canvas绘制血迹，后期战斗帧率翻倍",
-            "元素视觉增强：冰冷/闪电伤害拥有专属受击光效和数字特效",
-            "物品栏优化：需求不足时保留稀有度边框，一眼辨识神器",
-            "关键修复：基格商人库存同步修复，AI距离计算修正"
+            'Deep performance work: the AI core was rebuilt, cutting CPU use sharply',
+            'Rendering: blood is drawn on an offscreen canvas, doubling late-fight frame rate',
+            'Elemental punch: cold and lightning damage get their own hit glow and numbers',
+            'Inventory: rarity borders stay even when requirements are unmet, so legendaries stand out at a glance',
+            'Key fixes: Gheed stock now syncs correctly and AI distance checks were corrected'
         ]
     },
     {
         version: "6.0",
         date: "2025-12-18",
-        title: "每日登录 & 商店扩展",
+        title: 'Daily Login & Shop Expansion',
         highlights: [
-            "每日登录重做：7天全是buff奖励",
-            "Day7：24小时三倍经验 + 套装装备",
-            "商店新增双倍经验卷轴（1000G/1小时）",
-            "地图放大：64×64 → 80×80（+56%探索空间）",
-            "走廊加宽：至少2格宽，自动战斗不再卡住",
-            "修复：每日任务Boss不计数"
+            'Daily login rebuilt: all 7 days now give buffs',
+            'Day7: 24h of triple XP and a set item',
+            'The shop now sells Double XP scrolls (1000G/1 hour)',
+            'Bigger maps: 64×64 → 80×80 (+56% exploration space)',
+            'Wider corridors: at least 2 tiles wide, so auto battle no longer jams',
+            'Fixed daily quest bosses not counting'
         ]
     },
     {
         version: "5.9",
         date: "2025-12-17",
-        title: "玩家摆摊系统",
+        title: 'Player Stalls',
         highlights: [
-            "玩家摆摊：在罗格营地可摆摊出售装备",
-            "摊位费：500G/小时，最多10小时",
-            "离线摆摊：关闭游戏也能卖货",
-            "实时交易：商品售出即时通知",
-            "修正：内嵌背包金币显示"
+            'Player stalls: set up a stall in the Rogue Encampment to sell gear',
+            'Stall fee: 500G/hour, up to 10 hours',
+            'Offline stalls: your goods keep selling after you log off',
+            'Live sales: instant notification when something sells',
+            'Fixed: the gold display inside the embedded backpack'
         ]
     },
     {
         version: "5.8",
         date: "2025-12-16",
-        title: "移动端适配",
+        title: 'Mobile Support',
         highlights: [
-            "适配移动端（含直屏）",
-            "商店/仓库/锻造面板内嵌背包",
-            "背包/仓库一键整理功能",
-            "取消入口提示和 Enter 键进入",
-            "自动战斗时物品丢弃 5 秒内不再拾取",
-            "装备属性对比改为双栏气泡更直观"
+            'Now playable on mobile, including portrait screens',
+            'Shop, stash and forge panels now embed the backpack',
+            'One-tap sorting for backpack and stash',
+            'Drop item hints and Enter to enter are gone',
+            'Dropped items are no longer picked up for 5 seconds during auto battle',
+            'Gear comparison now uses a two-column tooltip and reads much faster'
         ]
     },
     {
         version: "5.7",
         date: "2025-12-14",
-        title: "每日任务 & 仓库扩建",
+        title: 'Daily Quests & Stash Expansion',
         highlights: [
-            "每日任务系统重做：链式解锁（简单→中等→困难）",
-            "任务目标根据等级动态计算，困难任务奖励技能点",
-            "仓库扩建：花费金币扩容，最多3次（36→54格）",
-            "任务/公告/成就统一显示楼层名（如「枯木墓地」）"
+            'Daily quest system rebuilt: chained unlocks (easy→medium→hard)',
+            'Quest goals scale with your level, and hard quests reward skill points',
+            'Stash expansion: pay gold for more slots, up to 3 times (36→54)',
+            'Quests, announcements and achievements all show floor names (e.g. \"Deadwood Graveyard\")'
         ]
     },
     {
         version: "5.6",
         date: "2025-12-14",
-        title: "社交：世界聊天 & 优化",
+        title: 'Social: World Chat & Fixes',
         highlights: [
-            "新增世界聊天频道，实时畅聊",
-            "地牢每层都有独特名称（森林/冰原/熔岩三大群系）",
-            "传送门支持选择任意已到达层数",
-            "吸血鬼AI：突进吸血攻击",
-            "闪电幽魂AI：发射闪电球+穿墙移动",
-            "修复远程怪物隔墙攻击的问题",
+            'New world chat channel for real-time talk',
+            'Every dungeon floor now has its own name across three biomes: forest, ice and lava',
+            'Portals let you travel to any floor you have reached',
+            'Vampire AI: lunges in with a life-drain attack',
+            'Lightning wraith AI: fires lightning orbs and moves through walls',
+            'Fixed ranged monsters shooting through walls',
         ]
     },
     {
         version: "5.5",
         date: "2025-12-14",
-        title: "自动战斗优化 & 性能优化",
+        title: 'Auto Battle & Performance',
         highlights: [
-            "激烈战斗判定：改为任意敌人80内，不会忘记拣金币",
-            "地图离屏Canvas缓存绘制，性能提升 ~5800 倍",
-            "排行榜：增加富豪榜"
+            'Combat check: now triggers within 80 tiles of any enemy, so gold is never left behind',
+            'Maps are pre-rendered to an offscreen canvas, ~5800x faster',
+            'Leaderboard: added a richest-players ranking'
         ]
     },
     {
         version: "5.4",
         date: "2025-12-14",
-        title: "性能优化 & 画质设置",
+        title: 'Performance & Graphics Settings',
         highlights: [
-            "新增画质设置：华丽特效/性能优先 可选",
-            "移除高频震屏（普通攻击/暴击/被击中等）",
-            "粒子上限200个，优化低配电脑性能",
-            "自动战斗：打开面板不再暂停"
+            'New graphics setting: High FX or Performance',
+            'Removed constant screen shake on normal attacks, crits and taking hits',
+            'Particle cap set to 200 for smoother play on low-end PCs',
+            'Auto battle: opening a panel no longer pauses the game'
         ]
     },
     {
         version: "5.3",
         date: "2025-12-13",
-        title: "全服公告系统",
+        title: 'Server Announcements',
         highlights: [
-            "顶部滚动公告栏：实时显示全服玩家动态",
-            "击杀Boss全服通报（金色）",
-            "获得套装全服通报（绿色）"
+            'Scrolling announcement bar at the top, showing live server activity',
+            'Boss kills are announced server-wide in gold',
+            'Set drops are announced server-wide in green'
         ]
     },
     {
         version: "5.2",
         date: "2025-12-13",
-        title: "世界细节重塑",
+        title: 'World Detail Overhaul',
         highlights: [
-            "全新地图装饰系统：告别单调墙壁",
-            "三大群系专属装饰：森林古树、冰原水晶、地狱尖塔",
-            "混合渲染技术：程序化细节 + 像素风贴图完美融合"
+            'Brand-new map decoration system: no more plain walls',
+            'Biome-exclusive scenery: ancient forest trees, ice crystals and hell spires',
+            'Hybrid rendering: procedural detail blends seamlessly with pixel-art tiles'
         ]
     },
     {
         version: "5.1",
         date: "2025-12-13",
-        title: "视觉效果更新",
+        title: 'Visual Effects Update',
         highlights: [
-            "怪物死亡地面血迹效果，15-25秒渐隐消失",
-            "技能视觉优化：闪电链视觉增强、火球增加拖尾粒子、多重射击箭矢及拖尾",
-            "Boss和精英怪增加死亡特效",
-            "升级特效：金色闪光+光柱+粒子+震屏",
-            "物品吸入效果：贝塞尔曲线飞行拾取",
-            "回城卷轴增加仪式感",
-            "低血量和加点时增加音效",
-            "暴击反馈增强：慢动作+金色数字+更强打击感",
-            "连击系统：显示连击数（纯视觉爽感，无数值影响）"
+            'Bloodstains when monsters die, fading out after 15-25 seconds',
+            'Skill visuals upgraded: stronger Chain Lightning, Fireball trails and Multishot arrows',
+            'Bosses and elites got their own death effects',
+            'Level-up effect: golden flash, light pillar, particles and screen shake',
+            'Items fly into you: pickup along a Bézier curve',
+            'Town Portal Scroll got a more ceremonial feel',
+            'New sound cues for low health and for spending points',
+            'Crits hit harder: slow motion, golden numbers and heavier impact',
+            'Combo counter: your hit streak is on screen (visual only, no stat changes)'
         ]
     },
     {
         version: "5.0",
         date: "2025-12-13",
-        title: "多存档系统",
+        title: 'Multiple Save Slots',
         highlights: [
-            "支持3个独立存档，可同时培养多个角色",
-            "增加新手引导",
-            "每日登录奖励增加领取特效"
+            '3 independent save slots, so you can run several characters at once',
+            'Added a new-player guide',
+            'Daily login rewards now have a claim effect'
         ]
     },
     {
         version: "4.9",
         date: "2025-12-12",
-        title: "怪物系统大扩展",
+        title: 'Monster Roster Expansion',
         highlights: [
-            "新增6种怪物：僵尸、骷髅战士、幽灵鬼魂、闪电幽魂、木乃伊、吸血鬼",
-            "幽灵可穿墙+30%闪避，木乃伊中毒攻击，吸血鬼20%吸血",
-            "怪物按层数逐步解锁，权重池随机生成"
+            '6 new monsters: zombie, skeleton warrior, ghost, lightning wraith, mummy and vampire',
+            'Ghosts phase through walls and dodge 30% of hits, mummies poison and vampires drain 20% life',
+            'Monsters unlock gradually as you go deeper and spawn from weighted pools'
         ]
     },
     {
         version: "4.8",
         date: "2025-12-11",
-        title: "铁匠铺强化系统",
+        title: 'Blacksmith Upgrades',
         highlights: [
-            "新增NPC恰西，提供装备强化服务",
-            "消耗2件同部位同品质装备强化，最高+9",
-            "+6以上有失败风险，可能降级"
+            'New NPC Charsi offers gear upgrades',
+            'Upgrade with 2 items of the same slot and rarity, up to +9',
+            'Above +6 there is a failure risk and the level can drop'
         ]
     },
     {
         version: "4.7",
         date: "2025-12-11",
-        title: "游戏优化",
+        title: 'Game Optimization',
         highlights: [
-            "代码架构重构，性能提升",
-            "常量系统统一管理"
+            'Codebase reworked for better performance',
+            'Constants are now managed in one unified system'
         ]
     },
     {
         version: "4.6",
         date: "2025-12-10",
-        title: "数值平衡",
+        title: 'Balance Tuning',
         highlights: [
-            "天神赐福每种最多获得3次",
-            "天赋商店刷新价格递增",
-            "传奇天赋第5层后解锁",
-            "Day3登录奖励改为24小时双倍经验"
+            'Each Divine Blessing can now be gained up to 3 times',
+            'Talent shop rerolls cost more each time',
+            'Legendary talents unlock after the 5th tier',
+            'Day3 login reward is now 24h of double XP'
         ]
     },
     {
         version: "4.5",
         date: "2025-12-10",
-        title: "冰冻系统优化",
+        title: 'Freeze System Tuning',
         highlights: [
-            "冰冻硬控时间2秒→0.5秒",
-            "新增1.5秒减速期，可逃跑喝药",
-            "冰冻免疫时间3秒→5秒",
-            "冰冻精英怪头顶显示❄️图标"
+            'Freeze hard CC: 2s→0.5s',
+            'Added a 1.5s slow afterwards, so you can run and drink a potion',
+            'Freeze immunity: 3s→5s',
+            'Frozen elites show a ❄️ icon above their head'
         ]
     },
     {
         version: "4.4",
         date: "2025-12-10",
-        title: "死亡系统优化",
+        title: 'Death System Tuning',
         highlights: [
-            "死亡时画面变灰，5秒倒计时后回城",
-            "自动战斗：没有回城卷时不再重复尝试"
+            'The screen greys out on death, with a 5s countdown before you return to town',
+            'Auto battle no longer spams town portal attempts when you have no scroll'
         ]
     },
     {
         version: "4.3",
         date: "2025-12-08",
-        title: "掉落特效",
+        title: 'Loot Effects',
         highlights: [
-            "暗金装备掉落：金色光柱+震屏",
-            "套装装备掉落：绿色光柱+神秘音效"
+            'Unique drops: golden light pillar and screen shake',
+            'Set drops: green light pillar and a mysterious sound'
         ]
     },
     {
         version: "4.2",
         date: "2025-12-08",
-        title: "每日登录奖励",
+        title: 'Daily Login Rewards',
         highlights: [
-            "7天循环奖励，Day7送暗金装备",
-            "掉落率大幅下调，提升稀缺感"
+            '7-day reward cycle, Day7 hands out a unique item',
+            'Drop rates tuned way down, so loot feels rare again'
         ]
     },
     {
         version: "4.1",
         date: "2025-12-08",
-        title: "天神赐福优化",
+        title: 'Divine Blessing',
         highlights: [
-            "新增多种赐福类型",
-            "赐福面板可查看已获得列表"
+            'Added several new blessing types',
+            'The blessing panel now lists everything you have earned'
         ]
     },
     {
         version: "4.0",
         date: "2025-12-08",
-        title: "天赋商店 & 套装扩展",
+        title: 'Talent Shop & Set Expansion',
         highlights: [
-            "每层进入时可购买天赋强化角色",
-            "套装从3套扩展到9套（54件装备）"
+            'Talent shop available on entering each floor',
+            'Sets expanded from 3 to 9 (54 pieces)'
         ]
     },
     {
         version: "3.9",
         date: "2025-12-08",
-        title: "属性系统简化",
+        title: 'Simpler Stats',
         highlights: [
-            "装备属性直接显示效果（如+50%伤害）",
-            "地面物品名称移至图标上方"
+            'Gear now shows what it does, e.g. +50% damage',
+            'Ground item names moved above the icon'
         ]
     },
     {
         version: "3.8",
         date: "2025-12-08",
-        title: "性能优化 & 掉落重平衡",
+        title: 'Performance & Drop Rebalance',
         highlights: [
-            "敌人对象池系统，减少卡顿",
-            "层数加成、累积幸运机制",
-            "每8只怪必掉1个消耗品"
+            'Enemy object pooling to cut stutters',
+            'Floor depth bonus and a cumulative luck stat',
+            'Every 8th monster always drops a consumable'
         ]
     },
     {
         version: "3.7",
         date: "2025-12-08",
-        title: "排行榜 & 技能减负",
+        title: 'Leaderboard & Cheaper Skills',
         highlights: [
-            "排行榜实时更新",
-            "所有技能法力消耗降低",
-            "传送门支持层数选择"
+            'Leaderboard updates in real time',
+            'All skills cost less mana',
+            'Portals now let you pick a floor'
         ]
     },
     {
         version: "3.6",
         date: "2025-12-07",
-        title: "无限任务 & 技能图标",
+        title: 'Endless Quests & Skill Icons',
         highlights: [
-            "完成10个任务后任务系统重置循环",
-            "技能图标改为像素风格精灵图"
+            'After 10 quests the quest system loops back around',
+            'Skill icons are now pixel-art sprites'
         ]
     },
     {
         version: "3.5",
         date: "2025-12-07",
-        title: "自动战斗优化",
+        title: 'Auto Battle Tweaks',
         highlights: [
-            "低血量敌人优先击杀",
-            "近战不再误判为卡墙"
+            'Low-health enemies are prioritised',
+            'Melee no longer mistakes walls for stuck spots'
         ]
     },
     {
         version: "3.4",
         date: "2025-12-07",
-        title: "无限层级BOSS",
+        title: 'Endless Floor Boss',
         highlights: [
-            "11层开启二周目，BOSS无限循环",
-            "每周目BOSS血量+150%，伤害+60%"
+            'Floor 11 starts the second cycle with an endless boss run',
+            'Each cycle adds +150% boss health and +60% damage'
         ]
     },
     {
         version: "3.3",
         date: "2025-12-06",
-        title: "战斗体验优化",
+        title: 'Combat Feel',
         highlights: [
-            "普攻显示斩击弧特效",
-            "自动战斗：智能拾取、目标锁定"
+            'Basic attacks now show a slash arc',
+            'Auto battle: smarter looting and target locking'
         ]
     },
     {
         version: "3.2",
-        title: "自动战斗设置",
+        title: 'Auto Battle Settings',
         highlights: [
-            "设置自动保存",
-            "营地无法开启自动战斗"
+            'Settings now save automatically',
+            'Auto battle cannot be enabled in camp'
         ]
     },
     {
         version: "3.1",
-        title: "自动战斗系统",
+        title: 'Auto Battle',
         highlights: [
-            "按F键开启自动战斗",
-            "A*寻路、自动拾取、自动喝药",
-            "紧急回城、防卡死机制"
+            'Press F to toggle auto battle',
+            'A* pathfinding, auto pickup and auto potion drinking',
+            'Emergency town portal and anti-stuck safeguards'
         ]
     },
     {
         version: "3.0",
-        title: "套装系统",
+        title: 'Set System',
         highlights: [
-            "新增3套套装（法师/战士/刺客）",
-            "2/4/6件套提供阶段性加成",
-            "套装相关成就"
+            '3 new sets (mage, warrior, assassin)',
+            '2/4/6 piece bonuses',
+            'Set-related achievements'
         ]
     },
     {
         version: "2.9",
-        title: "火球术进化",
+        title: 'Fireball Evolution',
         highlights: [
-            "Lv5解锁爆炸效果",
-            "爆炸范围和伤害随等级提升"
+            'Lv5 unlocks the explosion',
+            'Explosion radius and damage scale with level'
         ]
     },
     {
         version: "2.8",
-        title: "地狱模式修复",
+        title: 'Hell Mode Fixes',
         highlights: [
-            "修复地狱层数管理和传送逻辑"
+            'Fixed Hell floor tracking and travel logic'
         ]
     },
     {
         version: "2.7",
-        title: "洗点系统",
+        title: 'Respec System',
         highlights: [
-            "新增神秘贤者NPC",
-            "可重置属性点和技能点"
+            'New NPC: the Mystic Sage',
+            'He resets your attribute and skill points'
         ]
     },
     {
         version: "2.6",
-        title: "技能体系简化",
+        title: 'Simplified Skills',
         highlights: [
-            "移除玩家冰霜伤害，保留抗性"
+            'Player frost damage removed, resistances kept'
         ]
     },
     {
         version: "2.5",
-        title: "雷电术闪电链",
+        title: 'Chain Lightning',
         highlights: [
-            "Lv2+解锁闪电链，可跳跃多个目标"
+            'Lv2+ unlocks Chain Lightning, which jumps between targets'
         ]
     },
     {
         version: "2.3",
-        title: "新技能：雷电术",
+        title: 'New Skill: Lightning Strike',
         highlights: [
-            "替换冰霜新星，召唤闪电打击敌人"
+            'Replaces Frost Nova: calls down lightning on enemies'
         ]
     },
     {
         version: "2.1",
-        title: "地狱模式",
+        title: 'Hell Mode',
         highlights: [
-            "击败巴尔解锁地狱模式",
-            "怪物血量×6，伤害×4，经验×5"
+            'Beat Baal to unlock Hell Mode',
+            'Monsters: health×6, damage×4, XP×5'
         ]
     },
     {
         version: "2.0",
-        title: "核心玩法大更新",
+        title: 'Core Gameplay Update',
         highlights: [
-            "抗性系统（火/冰/雷/毒）",
-            "40+种装备词缀",
-            "12种精英怪词缀",
-            "装备等级需求系统"
+            'Resistance system (fire/cold/lightning/poison)',
+            '40+ gear affixes',
+            '12 elite affixes',
+            'Item level requirement system'
         ]
     },
     {
         version: "1.8",
-        title: "游戏机制优化",
+        title: 'Mechanics Tuning',
         highlights: [
-            "点击远处物品自动走过去拾取",
-            "BOSS血量和伤害大幅增强",
-            "修复隔墙攻击问题"
+            'Click a distant item and your hero walks over to pick it up',
+            'Boss health and damage are way up',
+            'Fixed attacks through walls'
         ]
     },
     {
         version: "1.7",
-        title: "成就系统",
+        title: 'Achievements',
         highlights: [
-            "6个精心设计的成就",
-            "实时进度追踪"
+            '6 hand-crafted achievements',
+            'Live progress tracking'
         ]
     },
     {
         version: "1.6",
-        title: "音效与平衡",
+        title: 'Audio & Balance',
         highlights: [
-            "药剂音效、箭矢音效",
-            "技能射程限制",
-            "怪物名称血条优化"
+            'Potion and arrow sounds',
+            'Skill range limits',
+            'Monster nameplates and health bars improved'
         ]
     },
     {
         version: "1.5",
         date: "2025-11-26",
-        title: "仓库系统",
+        title: 'Stash',
         highlights: [
-            "找瓦瑞夫存取物品",
-            "任务扩展至10个",
-            "背包物品可丢弃",
-            "少量贴图"
+            'Visit Warriv to store and withdraw items',
+            'Quests expanded to 10',
+            'Backpack items can be dropped',
+            'A first batch of art'
         ]
     },
     {
         version: "1.0",
         date: "2025-11-25",
-        title: "基本功能开发",
+        title: 'Core Features',
         highlights: [
-            "城镇、NPC、随机地牢、回程卷轴、物品栏",
-            "点数、装备、攻击、技能、传送门、boss、自动拾取金币"
+            'Town, NPCs, random dungeons, town portal scroll and inventory',
+            'Points, gear, attacks, skills, portals, bosses and auto gold pickup'
         ]
     }
 ];
 
-// 获取当前版本号
+// Get the current version
 const CURRENT_VERSION = CHANGELOG[0].version;
 
-// 初始化版本号显示
+// InitversionNo.Show
 document.addEventListener('DOMContentLoaded', () => {
     const versionEl = document.getElementById('game-version');
     if (versionEl) versionEl.textContent = 'v' + CURRENT_VERSION;

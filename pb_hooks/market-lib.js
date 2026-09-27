@@ -33,14 +33,14 @@ function normalizeAmount(value) {
 function handleMarketError(e, err, fallbackCode) {
   var status = err.status || 500;
   var code = err.code || fallbackCode || "market_error";
-  var message = err.message || "市场操作失败";
+  var message = err.message || "Market operation failed";
   return e.json(status, { ok: false, code: code, message: message });
 }
 
-// 收据仅允许 Hook 在事务内读写。request_id 必须有 UNIQUE 索引。
+// Receipts are read/written only by hooks inside transactions. request_id must have a UNIQUE index.
 function receiptKey(body) {
   var key = String(body.requestId || "");
-  if (key.length < 12 || key.length > 200) abortMarket(400, "invalid_request", "缺少交易请求编号");
+  if (key.length < 12 || key.length > 200) abortMarket(400, "invalid_request", "Missing trade request id");
   return key;
 }
 
@@ -48,7 +48,7 @@ function receiptBody(body, kind) {
   if (kind === 'close-stall') return JSON.stringify([kind, body.sellerId, body.stallId]);
   if (kind === 'open-stall') return JSON.stringify([kind, body.sellerId, body.nickname, body.stallName,
     body.stallIndex, body.hours, body.items.map(function (s) { return [s.item.id, s.price]; })]);
-  // Go map 转入 JS 的属性顺序不稳定，使用固定字段顺序绑定业务参数。
+  // Go map key order into JS is unstable; bind business params in a fixed field order.
   return JSON.stringify(kind === "purchase" ? [kind, body.buyerId, body.buyerName,
     body.stallId, body.itemId, body.itemIndex, body.expectedPrice, body.expectedTotal] :
     [kind, body.sellerId, body.saleIds]);
@@ -59,7 +59,7 @@ function readReceipt(app, body, kind) {
   if (!records.length) return null;
   var receipt = records[0];
   if (receipt.get("kind") !== kind || receipt.get("request_body") !== receiptBody(body, kind)) {
-    abortMarket(409, "receipt_mismatch", "请求编号与原交易不一致");
+    abortMarket(409, "receipt_mismatch", "Request id does not match the original trade");
   }
   return JSON.parse(receipt.getString("response"));
 }
@@ -87,14 +87,14 @@ function purchase(e) {
     receiptKey(body);
     var stallId = String(body.stallId || "");
     var buyerId = String(body.buyerId || "");
-    var buyerName = String(body.buyerName || "匿名玩家").slice(0, 24);
+    var buyerName = String(body.buyerName || "Anonymous Player").slice(0, 24);
     var expectedItemId = String(body.itemId || "");
     var expectedPrice = normalizeAmount(body.expectedPrice);
     var expectedTotal = normalizeAmount(body.expectedTotal);
     var itemIndex = parseInt(body.itemIndex, 10);
 
     if (!stallId || !buyerId || isNaN(itemIndex)) {
-      abortMarket(400, "invalid_request", "购买请求不完整");
+      abortMarket(400, "invalid_request", "Incomplete purchase request");
     }
 
     var result = null;
@@ -103,27 +103,27 @@ function purchase(e) {
       result = readReceipt(txApp, body, "purchase");
       if (result) return;
       var stalls = txApp.findRecordsByFilter("market_stalls", "id = {:id}", "", 1, 0, { id: stallId });
-      if (!stalls.length) abortMarket(409, "sold_out", "商品已售出或摊位已关闭");
+      if (!stalls.length) abortMarket(409, "sold_out", "Item already sold or stall closed");
       var stall = stalls[0];
       var sellerId = String(stall.get("user_id") || "");
-      if (!sellerId) abortMarket(409, "invalid_stall", "摊位数据异常");
-      if (sellerId === buyerId) abortMarket(400, "own_stall", "不能购买自己的商品");
+      if (!sellerId) abortMarket(409, "invalid_stall", "Invalid stall data");
+      if (sellerId === buyerId) abortMarket(400, "own_stall", "You cannot buy your own item");
 
-      // PocketBase JSON 字段的 get 返回 JSONRaw 字节，需显式转字符串再解析。
+// PocketBase JSON field get returns JSONRaw bytes; convert to string explicitly before parsing.
       var items = readJsonArray(stall.getString("items"));
       var slot = items[itemIndex];
-      if (!slot || !slot.item) abortMarket(409, "sold_out", "商品已售出");
+      if (!slot || !slot.item) abortMarket(409, "sold_out", "Item already sold");
 
       var item = slot.item;
       var itemId = String(item.id || "");
       if (expectedItemId && itemId !== expectedItemId) {
-        abortMarket(409, "sold_out", "商品已售出");
+        abortMarket(409, "sold_out", "Item already sold");
       }
 
       var price = normalizeAmount(slot.price);
       var totalPrice = price + Math.ceil(price * MARKET_TAX_RATE);
       if (price !== expectedPrice || totalPrice !== expectedTotal) {
-        abortMarket(409, "price_changed", "商品价格已变化，请重新确认");
+        abortMarket(409, "price_changed", "Item price changed, please confirm again");
       }
 
       var finalItems = [];
@@ -143,7 +143,7 @@ function purchase(e) {
       sale.set("seller_id", sellerId);
       sale.set("buyer_id", buyerId);
       sale.set("buyer_name", buyerName);
-      sale.set("item_name", String(item.name || "商品"));
+      sale.set("item_name", String(item.name || "Item"));
       sale.set("price", price);
       sale.set("claimed", false);
       txApp.save(sale);
@@ -172,7 +172,7 @@ function claimSales(e) {
     var saleIds = Array.isArray(body.saleIds) ? body.saleIds : [];
 
     if (!sellerId || saleIds.length === 0) {
-      abortMarket(400, "invalid_request", "领取请求不完整");
+      abortMarket(400, "invalid_request", "Incomplete claim request");
     }
 
     var result = { ok: true, totalGold: 0, claimedCount: 0 };
@@ -183,7 +183,7 @@ function claimSales(e) {
       for (var i = 0; i < saleIds.length; i++) {
         var sale = txApp.findRecordById("market_sales", String(saleIds[i]));
         if (String(sale.get("seller_id") || "") !== sellerId) {
-          abortMarket(403, "forbidden", "只能领取自己的摊位收益");
+          abortMarket(403, "forbidden", "You can only claim your own stall earnings");
         }
         if (sale.get("claimed") === true) continue;
 
@@ -204,7 +204,7 @@ function claimSales(e) {
 function closeStall(e) {
   try {
     var body = e.requestInfo().body || {};
-    if (!body.sellerId || !body.stallId) abortMarket(400, 'invalid_request', '收摊参数不完整');
+    if (!body.sellerId || !body.stallId) abortMarket(400, 'invalid_request', 'Incomplete stall-close parameters');
     var result;
     $app.runInTransaction(function (app) {
       result = readReceipt(app, body, 'close-stall');
@@ -213,7 +213,7 @@ function closeStall(e) {
       result = { ok: true, items: [] };
       if (stalls.length) {
         var stall = stalls[0];
-        if (stall.get('user_id') !== body.sellerId) abortMarket(403, 'forbidden', '只能收回自己的摊位');
+        if (stall.get('user_id') !== body.sellerId) abortMarket(403, 'forbidden', 'You can only close your own stall');
         result.items = readJsonArray(stall.getString('items')).filter(function (s) { return s && s.item; }).map(function (s) { return s.item; });
         app.delete(stall);
       }
@@ -229,12 +229,12 @@ function openStall(e) {
     if (!body.sellerId || !Array.isArray(body.items) || !body.items.length || body.items.length > 10 ||
         !Number.isInteger(body.hours) || body.hours < 1 || body.hours > 10 ||
         !Number.isInteger(body.stallIndex) || body.stallIndex < 0 || body.stallIndex > 4) {
-      abortMarket(400, 'invalid_request', '上架参数无效');
+      abortMarket(400, 'invalid_request', 'Invalid listing parameters');
     }
     var ids = {};
     body.items.forEach(function (s) {
       if (!s.item || !s.item.id || ids[s.item.id] || !Number.isSafeInteger(s.price) || s.price < 1 || s.price > 999999999)
-        abortMarket(400, 'invalid_request', '商品参数无效');
+        abortMarket(400, 'invalid_request', 'Invalid item parameters');
       ids[s.item.id] = true;
     });
     var result;
@@ -243,11 +243,11 @@ function openStall(e) {
       if (result) return;
       var occupied = app.findRecordsByFilter('market_stalls', '(stall_index = {:index} && expires_at > {:now}) || user_id = {:owner}', '', 1, 0,
         { index: body.stallIndex, owner: body.sellerId, now: new Date().toISOString().replace('T', ' ') });
-      if (occupied.length) abortMarket(409, 'invalid_stall', '摊位已占用或已有营业中的摊位');
+      if (occupied.length) abortMarket(409, 'invalid_stall', 'Slot occupied or you already run an active stall');
       var stall = new Record(app.findCollectionByNameOrId('market_stalls'));
       stall.set('user_id', body.sellerId);
-      stall.set('nickname', String(body.nickname || '匿名').slice(0, 24));
-      stall.set('stall_name', String(body.stallName || '摊位').slice(0, 10));
+      stall.set('nickname', String(body.nickname || 'Anonymous').slice(0, 24));
+      stall.set('stall_name', String(body.stallName || 'Stall').slice(0, 10));
       stall.set('stall_index', body.stallIndex);
       stall.set('items', body.items);
       stall.set('expires_at', new Date(Date.now() + body.hours * 3600000).toISOString().replace('T', ' '));

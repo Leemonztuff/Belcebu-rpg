@@ -1,4 +1,4 @@
-// 每个路由在独立 JSVM 上下文执行，公共逻辑通过模块显式加载。
+// Each route runs in its own JSVM context; shared logic is loaded explicitly as modules.
 routerAdd("GET", "/api/market/protocol", function (e) {
   return require(__hooks + "/market-lib.js").protocol(e);
 });

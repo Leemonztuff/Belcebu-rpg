@@ -1,15 +1,15 @@
 /**
- * GSAPAnims - 游戏动画管理引擎 (GSAP 核心驱动)
- * 专门用于处理 UI 数值翻滚、面板进出、战斗视觉增强等
+ * GSAPAnims - game animation engine (GSAP powered)
+ * Dedicated to UI number roll-ups, panel transitions and combat visual enhancements
  */
 const GSAPAnims = {
   /**
-   * 数字增长翻滚效果
-   * @param {HTMLElement} element 目标 DOM 元素
-   * @param {number} from 起始值
-   * @param {number} to 目标值
-   * @param {number} duration 持续时间
-   * @param {object} options 额外配置
+   * Number growth roll-up effect
+   * @param {HTMLElement} element target DOM element
+   * @param {number} from start value
+   * @param {number} to target value
+   * @param {number} duration duration
+   * @param {object} options extra config
    */
   countUp(element, from, to, duration = 1, options = {}) {
     if (!element || typeof gsap === 'undefined') return null;
@@ -20,7 +20,7 @@ const GSAPAnims = {
       onComplete
     } = options;
 
-    // 如果已经在运动，杀掉之前的动画
+    // If already animating, kill the previous animation
     gsap.killTweensOf(element);
 
     const obj = { value: from };
@@ -36,14 +36,14 @@ const GSAPAnims = {
   },
 
   /**
-   * 面板弹入动画
+   * Panel pop-in animation
    */
   panelIn(element, direction = 'bottom') {
     if (!element || typeof gsap === 'undefined') return;
 
     gsap.killTweensOf(element);
 
-    // 智能检测：如果面板是居中定位（50/50），则由 GSAP 自动接管百分比位移，防止动画结束后位置跳变
+    // Smart detection: for centered panels (50/50), GSAP takes over percentage movement to prevent position jumps after the animation
     const isCentered = element.style.top === '50%' && element.style.left === '50%' ||
       window.getComputedStyle(element).top === '50%';
 
@@ -53,7 +53,7 @@ const GSAPAnims = {
       y: 0,
       duration: 0.35,
       ease: "back.out(1.5)",
-      clearProps: "opacity" // 绝对不要清除 transform 相关属性，防止居中失效
+      clearProps: "opacity" // never clear transform properties; it breaks centering
     };
 
     const fromProps = { opacity: 0, scale: 0.95 };
@@ -73,7 +73,7 @@ const GSAPAnims = {
   },
 
   /**
-   * 面板弹出销毁动画
+   * Panel pop-out destroy animation
    */
   panelOut(element, onComplete) {
     if (!element || typeof gsap === 'undefined') {
@@ -94,7 +94,7 @@ const GSAPAnims = {
   },
 
   /**
-   * 暴击弹出动画
+   * Crit popup animation
    */
   critPop(element) {
     if (!element || typeof gsap === 'undefined') return;
@@ -116,21 +116,21 @@ const GSAPAnims = {
   },
 
   /**
-   * 高级拾取物飞行效果 (支持动态追踪玩家)
-   * @param {object} fp 拾取物对象 (需包含 x, y, startX, startY 等)
-   * @param {object} player 玩家对象 (用于实时获取位置)
-   * @param {function} onComplete 飞行完成后的回调 (执行实际拾取逻辑)
+   * Advanced pickup fly-to effect (supports dynamic tracking of the player)
+   * @param {object} fp pickup object (needs x, y, startX, startY, etc.)
+   * @param {object} player player object (for real-time position)
+   * @param {function} onComplete callback when flight finishes (runs actual pickup logic)
    */
   lootFly(fp, player, onComplete) {
     if (!fp || !player || typeof gsap === 'undefined') return;
 
-    // 核心动画：驱动一个虚拟进度值 t (0 -> 1)
+    // Core animation: drive a virtual progress value t (0 -> 1)
     const progress = { t: 0 };
 
     return gsap.to(progress, {
       t: 1,
-      duration: 0.45 + Math.random() * 0.15, // 略微加长飞行时间，展示优美轨迹
-      ease: "power2.in", // 吸入时的加速感
+      duration: 0.45 + Math.random() * 0.15, // Slightly longer flight time shows a graceful arc
+      ease: "power2.in", // accelerating feel while being sucked in
       onUpdate: () => {
         const t = progress.t;
         const t2 = t * t;
@@ -139,8 +139,8 @@ const GSAPAnims = {
         const mt2 = mt * mt;
         const mt3 = mt2 * mt;
 
-        // 三次贝塞尔曲线实时插值
-        // 终点始终指向 player 的当前位置，实现“磁吸”效果
+        // Real-time cubic Bezier interpolation
+        // End point always follows the player's current position, creating a magnet effect
         fp.x = mt3 * fp.startX +
           3 * mt2 * t * fp.controlX1 +
           3 * mt * t2 * fp.controlX2 +
@@ -151,7 +151,7 @@ const GSAPAnims = {
           3 * mt * t2 * fp.controlY2 +
           t3 * (player.y - 20);
 
-        // 记录当前的 progress 用于渲染层使用 (例如缩放或透明度)
+        // Record current progress for the render layer (e.g. scale or opacity)
         fp.progress = t;
       },
       onComplete: onComplete
@@ -159,7 +159,7 @@ const GSAPAnims = {
   },
 
   /**
-   * 强力震动效果 (用于受击或法力不足)
+   * Strong shake effect (for taking damage or not enough mana)
    */
   shake(element, intensity = 5) {
     if (!element || typeof gsap === 'undefined') return;
@@ -175,7 +175,7 @@ const GSAPAnims = {
   },
 
   /**
-   * UI 脉冲反馈 (例如点击按钮或获得物品)
+   * UI pulse feedback (e.g. button click or item gain)
    */
   pulse(element, scale = 1.1) {
     if (!element || typeof gsap === 'undefined') return;

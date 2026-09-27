@@ -1,9 +1,9 @@
-// i18n-content-bestiary.js - 图鉴类内容表（怪物 / 词缀 / Boss 技能 / 群系 / 战斗提示 / 图鉴界面）
+// i18n-content-bestiary.js - codexclasscontentexpress（monster / affix / Boss skill / crowdfaction / combattoast / codexUI）
 (function () {
     'use strict';
     if (typeof window.I18N === 'undefined' || typeof window.I18N.registerTable !== 'function') return;
 
-    // 怪物与首领图鉴：键为游戏内中文名称
+    // Monster and boss codex: keyed by legacy in-game zh names (kept for old saves)
     window.I18N.registerTable('bestiary', {
         '沉沦魔': {
             name: { es: 'Corruptor', en: 'Fallen', zh: '沉沦魔' },
@@ -156,10 +156,64 @@
         '小恶魔': {
             name: { es: 'Diablillo', en: 'Imp', zh: '小恶魔' },
             desc: { es: 'Nombre heredado de un diablillo rápido y agresivo.', en: 'Legacy name for a small, fast and aggressive devil.', zh: '旧版名称：迅捷而凶悍的小恶魔。' }
-        }
+        },
+
+        // EN alias keys (canonical runtime names)
+        'Blood Raven': {
+            name: { es: 'Cuervo Sangriento', en: 'Blood Raven', zh: '血鸟' },
+            desc: { es: 'Cazadora caída experta en flechas de veneno.', en: 'Fallen hunter, expert with poison arrows.', zh: '擅长毒箭的堕落猎手，一次射出多支箭矢。' }
+        },
+        'The Countess': {
+            name: { es: 'La Condesa', en: 'The Countess', zh: '女伯爵' },
+            desc: { es: 'Se teletransporta e invoca novás de fuego.', en: 'Teleports and summons fire novas.', zh: '会瞬移接近你，并在现身时引爆火焰新星。' }
+        },
+        'The Butcher': {
+            name: { es: 'El Carnicero', en: 'The Butcher', zh: '屠夫' },
+            desc: { es: 'Demonio feroz con robo de vida y embestidas.', en: 'Fierce demon with life leech and charges.', zh: '凶猛的恶魔，攻击吸血并会蓄力突进。' }
+        },
+        'Treehead WoodFist': {
+            name: { es: 'Puño de Madera', en: 'Treehead WoodFist', zh: '树头木拳' },
+            desc: { es: 'Gigante capaz de convocar ejércitos óseos.', en: 'Giant able to muster armies of bone.', zh: '能召唤骨之军队的巨兽，重击会掀起地震波。' }
+        },
+        'Fallen': {
+            name: { es: 'Corruptor', en: 'Fallen', zh: '沉沦魔' },
+            desc: { es: 'La criatura demoníaca más común del inframundo.', en: 'The most common demon creature of the underworld.', zh: '地狱中最常见的恶魔生物，总是一窝蜂地涌来。' }
+        },
+        'Zombie': {
+            name: { es: 'Zombi', en: 'Zombie', zh: '僵尸' },
+            desc: { es: 'Lento pero con gran resistencia vital.', en: 'Slow, but with tremendous vitality.', zh: '动作迟缓，却有着惊人的生命力。' }
+        },
+        'Skeleton Archer': {
+            name: { es: 'Esqueleto Arquero', en: 'Skeleton Archer', zh: '骷髅弓箭手' },
+            desc: { es: 'Tirador no-muerto de ataques a distancia.', en: 'Undead shooter that attacks at range.', zh: '在远处射击的不死射手。' }
+        },
+        'Skeleton Warrior': {
+            name: { es: 'Esqueleto Guerrero', en: 'Skeleton Warrior', zh: '骷髅战士' },
+            desc: { es: 'Agresivo espadachín óseo.', en: 'Aggressive skeletal swordsman.', zh: '凶悍的骨剑士，面前的伤害会被格挡。' }
+        },
+        'Fallen Shaman': {
+            name: { es: 'Hechicero Corruptor', en: 'Fallen Shaman', zh: '沉沦魔巫师' },
+            desc: { es: 'Chamán capaz de resucitar a sus aliados.', en: 'Shaman able to resurrect his allies.', zh: '能复活附近同伴的萨满。' }
+        },
+        'Ghost': {
+            name: { es: 'Fantasma', en: 'Ghost', zh: '幽灵鬼魂' },
+            desc: { es: 'Atraviesa paredes y esquiva ataques físicos.', en: 'Phases through walls and dodges physical attacks.', zh: '能够穿墙并闪避物理攻击。' }
+        },
+        'Shock Spirit': {
+            name: { es: 'Alma Eléctrica', en: 'Shock Spirit', zh: '闪电幽魂' },
+            desc: { es: 'Espectro etéreo que dispara rayos a distancia.', en: 'Ethereal specter that hurls lightning at range.', zh: '在远程发射闪电的幽魂。' }
+        },
+        'Mummy': {
+            name: { es: 'Momia', en: 'Mummy', zh: '木乃伊' },
+            desc: { es: 'Sus ataques infligen daño por veneno.', en: 'Its attacks inflict poison damage.', zh: '攻击附带毒素伤害。' }
+        },
+        'Vampire': {
+            name: { es: 'Vampiro', en: 'Vampire', zh: '吸血鬼' },
+            desc: { es: 'Criatura de las sombras que roba vida al atacar.', en: 'Creature of the shadows that steals life on hit.', zh: '潜行于暗处的高手，攻击时吸取生命。' }
+        },
     });
 
-    // 精英怪词缀
+    // eliteaffix
     window.I18N.registerTable('eliteAffixes', {
         '额外快速': {
             name: { es: 'Extra Rápido', en: 'Extra Fast', zh: '额外快速' },
@@ -211,7 +265,7 @@
         }
     });
 
-    // Boss 与敌人技能
+    // Boss andenemyskill
     window.I18N.registerTable('bossAbilities', {
         '新星': {
             name: { es: 'Nova', en: 'Nova', zh: '新星' },
@@ -275,7 +329,7 @@
         }
     });
 
-    // 群系与地牢主题
+// Combat telegraphs and opening hints
     window.I18N.registerTable('biomes', {
         'town': {
             name: { es: 'Campamento de las Arpías', en: 'Rogue Encampment', zh: '罗格营地' },
@@ -335,7 +389,7 @@
         }
     });
 
-    // 战斗预警与破绽提示
+// Codex interface
     window.I18N.registerTable('tactics', {
         'heavy_strike': {
             name: { es: 'Golpe Pesado · Sal del círculo', en: 'Heavy Strike · Leave the red circle', zh: '重击 · 离开红圈' },
@@ -387,7 +441,7 @@
         }
     });
 
-    // 图鉴界面
+    // codexUI
     window.I18N.registerTable('codex', {
         'title': {
             label: { es: 'Codex', en: 'Codex', zh: '图鉴' }

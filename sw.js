@@ -1,12 +1,12 @@
-// Service Worker - JS/CSS 强制最新，其他资源网络优先
+// Service worker - JS/CSS always fresh; other assets network-first
 const CACHE_NAME = 'diablo-web-v7.09';
 
-// 安装时立即激活
+// Activate immediately on install
 self.addEventListener('install', event => {
     self.skipWaiting();
 });
 
-// 激活时立即接管页面
+// Take over the page immediately on activation
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys()
@@ -19,11 +19,11 @@ self.addEventListener('activate', event => {
     );
 });
 
-// fetch 策略
+// fetch strategy
 self.addEventListener('fetch', event => {
     const request = event.request;
 
-    // 只处理 GET 请求
+    // onlyhandle GET request
     if (request.method !== 'GET') {
         return;
     }
@@ -31,12 +31,12 @@ self.addEventListener('fetch', event => {
     const url = new URL(request.url);
     const path = url.pathname;
 
-    // JS、CSS、HTML 强制从服务器拿最新，不用缓存
+// JS, CSS and HTML always fetch fresh from the server, no cache
     if (path.endsWith('.js') || path.endsWith('.css') || path.endsWith('.html') || path.endsWith('/')) {
         event.respondWith(fetch(request, { cache: 'no-store' }));
         return;
     }
 
-    // 其他资源按默认方式
+// Other assets use the default behavior
     event.respondWith(fetch(request));
 });

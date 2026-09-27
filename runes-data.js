@@ -1,12 +1,12 @@
-// ========== 符文与符文之语系统数据库 (Runes & Runewords System) ==========
-// 灵感源自经典暗黑破坏神2：为普通、魔法与稀有装备赋予孔位与深度定制能力。
+// ========== Runes & runewords system database ==========
+// Inspired by classic Diablo II: gives normal, magic and rare gear sockets and deep customization.
 
-// 符文定义表 (El 至 Shael 共13种核心符文)
+// Rune definition table (13 core runes from El to Shael)
 const RUNES = {
     el: {
         id: 1,
         runeKey: 'el',
-        name: '艾尔',
+        name: 'El',
         enName: 'El',
         esName: 'El',
         number: 1,
@@ -18,7 +18,7 @@ const RUNES = {
         helm: { def: 15 },
         shield: { def: 15 },
         desc: {
-            zh: '武器：命中+25 | 防具/头盔/盾牌：防御+15',
+            zh: 'Weapon: +25 Attack Rating | Armor/Helm/Shield: +15 Defense',
             en: 'Weapon: +25 Attack Rating | Armor/Helm/Shield: +15 Defense',
             es: 'Arma: +25 Puntería | Armadura/Casco/Escudo: +15 Defensa'
         }
@@ -26,7 +26,7 @@ const RUNES = {
     eld: {
         id: 2,
         runeKey: 'eld',
-        name: '艾尔德',
+        name: 'Eld',
         enName: 'Eld',
         esName: 'Eld',
         number: 2,
@@ -38,7 +38,7 @@ const RUNES = {
         helm: { hpRegen: 3 },
         shield: { blockChance: 15 },
         desc: {
-            zh: '武器：伤害+15% | 防具：生命恢复+3 | 盾牌：格挡率+15%',
+            zh: 'Weapon: +15% Damage | Armor: +3 HP Regen | Shield: +15% Block',
             en: 'Weapon: +15% Damage | Armor: +3 HP Regen | Shield: +15% Block',
             es: 'Arma: +15% Daño | Armadura: +3 Regen Vida | Escudo: +15% Bloqueo'
         }
@@ -46,7 +46,7 @@ const RUNES = {
     tir: {
         id: 3,
         runeKey: 'tir',
-        name: '特尔',
+        name: 'Tir',
         enName: 'Tir',
         esName: 'Tir',
         number: 3,
@@ -58,7 +58,7 @@ const RUNES = {
         helm: { maxMp: 25 },
         shield: { maxMp: 25 },
         desc: {
-            zh: '武器：法力恢复+5% | 防具/头盔/盾牌：最大法力+25',
+            zh: 'Weapon: +5% Mana Regen | Armor/Helm/Shield: +25 Max Mana',
             en: 'Weapon: +5% Mana Regen | Armor/Helm/Shield: +25 Max Mana',
             es: 'Arma: +5% Regen Maná | Armadura/Casco/Escudo: +25 Maná Máx'
         }
@@ -66,7 +66,7 @@ const RUNES = {
     nef: {
         id: 4,
         runeKey: 'nef',
-        name: '那夫',
+        name: 'Nef',
         enName: 'Nef',
         esName: 'Nef',
         number: 4,
@@ -78,7 +78,7 @@ const RUNES = {
         helm: { def: 30 },
         shield: { def: 30 },
         desc: {
-            zh: '武器：命中+30，击退效果 | 防具/头盔/盾牌：防御+30',
+            zh: 'Weapon: +30 Attack Rating, Knockback | Armor/Helm/Shield: +30 Defense',
             en: 'Weapon: +30 Attack Rating, Knockback | Armor/Helm/Shield: +30 Defense',
             es: 'Arma: +30 Puntería, Empuje | Armadura/Casco/Escudo: +30 Defensa'
         }
@@ -86,7 +86,7 @@ const RUNES = {
     eth: {
         id: 5,
         runeKey: 'eth',
-        name: '爱斯',
+        name: 'Eth',
         enName: 'Eth',
         esName: 'Eth',
         number: 5,
@@ -98,7 +98,7 @@ const RUNES = {
         helm: { hpRegen: 4, mpRegen: 5 },
         shield: { def: 20, mpRegen: 5 },
         desc: {
-            zh: '武器：伤害+20% | 防具/头盔/盾牌：生命恢复+4，法力恢复+5%',
+            zh: 'Weapon: +20% Damage | Armor/Helm/Shield: +4 HP Regen, +5% Mana Regen',
             en: 'Weapon: +20% Damage | Armor/Helm/Shield: +4 HP Regen, +5% Mana Regen',
             es: 'Arma: +20% Daño | Armadura/Casco/Escudo: +4 Regen Vida, +5% Regen Maná'
         }
@@ -106,7 +106,7 @@ const RUNES = {
     ith: {
         id: 6,
         runeKey: 'ith',
-        name: '伊司',
+        name: 'Ith',
         enName: 'Ith',
         esName: 'Ith',
         number: 6,
@@ -118,7 +118,7 @@ const RUNES = {
         helm: { damageReduction: 5 },
         shield: { damageReduction: 5 },
         desc: {
-            zh: '武器：最大伤害+9 | 防具/头盔/盾牌：物理伤害减免+5',
+            zh: 'Weapon: +9 Max Damage | Armor/Helm/Shield: +5 Damage Reduction',
             en: 'Weapon: +9 Max Damage | Armor/Helm/Shield: +5 Damage Reduction',
             es: 'Arma: +9 Daño Máx | Armadura/Casco/Escudo: +5 Reducción de Daño'
         }
@@ -126,7 +126,7 @@ const RUNES = {
     tal: {
         id: 7,
         runeKey: 'tal',
-        name: '塔尔',
+        name: 'Tal',
         enName: 'Tal',
         esName: 'Tal',
         number: 7,
@@ -138,7 +138,7 @@ const RUNES = {
         helm: { poisonRes: 30 },
         shield: { poisonRes: 35 },
         desc: {
-            zh: '武器：毒素伤害+45 | 防具/头盔/盾牌：毒素抗性+30%~35%',
+            zh: 'Weapon: +45 Poison Damage | Armor/Helm/Shield: +30%~35% Poison Resist',
             en: 'Weapon: +45 Poison Damage | Armor/Helm/Shield: +30%~35% Poison Resist',
             es: 'Arma: +45 Daño Veneno | Armadura/Casco/Escudo: +30%~35% Resist Veneno'
         }
@@ -146,7 +146,7 @@ const RUNES = {
     ral: {
         id: 8,
         runeKey: 'ral',
-        name: '拉尔',
+        name: 'Ral',
         enName: 'Ral',
         esName: 'Ral',
         number: 8,
@@ -158,7 +158,7 @@ const RUNES = {
         helm: { fireRes: 30 },
         shield: { fireRes: 35 },
         desc: {
-            zh: '武器：火焰伤害+35 | 防具/头盔/盾牌：火焰抗性+30%~35%',
+            zh: 'Weapon: +35 Fire Damage | Armor/Helm/Shield: +30%~35% Fire Resist',
             en: 'Weapon: +35 Fire Damage | Armor/Helm/Shield: +30%~35% Fire Resist',
             es: 'Arma: +35 Daño Fuego | Armadura/Casco/Escudo: +30%~35% Resist Fuego'
         }
@@ -166,7 +166,7 @@ const RUNES = {
     ort: {
         id: 9,
         runeKey: 'ort',
-        name: '欧特',
+        name: 'Ort',
         enName: 'Ort',
         esName: 'Ort',
         number: 9,
@@ -178,7 +178,7 @@ const RUNES = {
         helm: { lightningRes: 30 },
         shield: { lightningRes: 35 },
         desc: {
-            zh: '武器：闪电伤害+45 | 防具/头盔/盾牌：闪电抗性+30%~35%',
+            zh: 'Weapon: +45 Lightning Damage | Armor/Helm/Shield: +30%~35% Lightning Resist',
             en: 'Weapon: +45 Lightning Damage | Armor/Helm/Shield: +30%~35% Lightning Resist',
             es: 'Arma: +45 Daño Rayo | Armadura/Casco/Escudo: +30%~35% Resist Rayo'
         }
@@ -186,7 +186,7 @@ const RUNES = {
     thul: {
         id: 10,
         runeKey: 'thul',
-        name: '书尔',
+        name: 'Thul',
         enName: 'Thul',
         esName: 'Thul',
         number: 10,
@@ -198,7 +198,7 @@ const RUNES = {
         helm: { coldRes: 30 },
         shield: { coldRes: 35 },
         desc: {
-            zh: '武器：冰霜伤害+25 | 防具/头盔/盾牌：冰霜抗性+30%~35%',
+            zh: 'Weapon: +25 Cold Damage | Armor/Helm/Shield: +30%~35% Cold Resist',
             en: 'Weapon: +25 Cold Damage | Armor/Helm/Shield: +30%~35% Cold Resist',
             es: 'Arma: +25 Daño Hielo | Armadura/Casco/Escudo: +30%~35% Resist Hielo'
         }
@@ -206,7 +206,7 @@ const RUNES = {
     amn: {
         id: 11,
         runeKey: 'amn',
-        name: '安姆',
+        name: 'Amn',
         enName: 'Amn',
         esName: 'Amn',
         number: 11,
@@ -218,7 +218,7 @@ const RUNES = {
         helm: { reflectDamage: 14 },
         shield: { reflectDamage: 18 },
         desc: {
-            zh: '武器：生命偷取+7% | 防具/头盔/盾牌：荆棘反弹+14~18',
+            zh: 'Weapon: +7% Life Steal | Armor/Helm/Shield: +14~18 Thorns Damage',
             en: 'Weapon: +7% Life Steal | Armor/Helm/Shield: +14~18 Thorns Damage',
             es: 'Arma: +7% Robo de Vida | Armadura/Casco/Escudo: +14~18 Daño de Espinas'
         }
@@ -226,7 +226,7 @@ const RUNES = {
     sol: {
         id: 12,
         runeKey: 'sol',
-        name: '索尔',
+        name: 'Sol',
         enName: 'Sol',
         esName: 'Sol',
         number: 12,
@@ -238,7 +238,7 @@ const RUNES = {
         helm: { damageReduction: 7 },
         shield: { damageReduction: 7 },
         desc: {
-            zh: '武器：最小伤害+9，伤害+15% | 防具/头盔/盾牌：物理伤害减免+7',
+            zh: 'Weapon: +9 Min Damage, +15% Damage | Armor/Helm/Shield: +7 Damage Reduction',
             en: 'Weapon: +9 Min Damage, +15% Damage | Armor/Helm/Shield: +7 Damage Reduction',
             es: 'Arma: +9 Daño Mín, +15% Daño | Armadura/Casco/Escudo: +7 Reducción de Daño'
         }
@@ -246,7 +246,7 @@ const RUNES = {
     shael: {
         id: 13,
         runeKey: 'shael',
-        name: '夏勒',
+        name: 'Shael',
         enName: 'Shael',
         esName: 'Shael',
         number: 13,
@@ -258,25 +258,25 @@ const RUNES = {
         helm: { hpRegen: 6 },
         shield: { blockChance: 20 },
         desc: {
-            zh: '武器：攻击速度+20% | 盾牌：格挡率+20% | 防具/头盔：生命恢复+6',
+            zh: 'Weapon: +20% Attack Speed | Shield: +20% Block Chance | Armor/Helm: +6 HP Regen',
             en: 'Weapon: +20% Attack Speed | Shield: +20% Block Chance | Armor/Helm: +6 HP Regen',
             es: 'Arma: +20% Vel. Ataque | Escudo: +20% Bloqueo | Armadura/Casco: +6 Regen Vida'
         }
     }
 };
 
-// 符文之语配方表 (Runewords Recipes)
+// Runeword recipe table
 const RUNEWORDS = {
     steel: {
         id: 'steel',
-        name: '钢铁',
+        name: 'Steel',
         enName: 'Steel',
         esName: 'Acero',
         itemTypes: ['weapon'],
         sockets: 2,
         runes: ['tir', 'el'],
         desc: {
-            zh: '入门级近战神兵，攻速与伤害兼备',
+            zh: 'Classic early melee weapon with high attack speed and damage',
             en: 'Classic early melee weapon with high attack speed and damage',
             es: 'Clásica arma cuerpo a cuerpo con velocidad de ataque y daño letal'
         },
@@ -291,14 +291,14 @@ const RUNEWORDS = {
     },
     stealth: {
         id: 'stealth',
-        name: '隐秘',
+        name: 'Stealth',
         enName: 'Stealth',
         esName: 'Sigilo',
         itemTypes: ['armor', 'body'],
         sockets: 2,
         runes: ['tal', 'eth'],
         desc: {
-            zh: '极佳的机动与法系护甲，提供全面恢复与抗毒',
+            zh: 'Outstanding mobility and caster armor with recovery and poison resist',
             en: 'Outstanding mobility and caster armor with recovery and poison resist',
             es: 'Extraordinaria armadura para lanzadores con recuperación y resistencia'
         },
@@ -312,14 +312,14 @@ const RUNEWORDS = {
     },
     spirit: {
         id: 'spirit',
-        name: '精神',
+        name: 'Spirit',
         enName: 'Spirit',
         esName: 'Espíritu',
         itemTypes: ['weapon'],
         sockets: 4,
         runes: ['tal', 'thul', 'ort', 'amn'],
         desc: {
-            zh: '终极法师与多重抗性神符之语，全技能+2',
+            zh: 'Legendary caster runeword granting +2 to all skills and multi-resistances',
             en: 'Legendary caster runeword granting +2 to all skills and multi-resistances',
             es: 'Palabra rúnica legendaria con +2 a todas las habilidades y multirresistencias'
         },
@@ -335,14 +335,14 @@ const RUNEWORDS = {
     },
     lore: {
         id: 'lore',
-        name: '知识',
+        name: 'Lore',
         enName: 'Lore',
         esName: 'Saber',
         itemTypes: ['helm'],
         sockets: 2,
         runes: ['ort', 'sol'],
         desc: {
-            zh: '博学者头盔，全技能+1与闪电防护',
+            zh: 'Scholar helm granting +1 all skills and lightning protection',
             en: 'Scholar helm granting +1 all skills and lightning protection',
             es: 'Yelmo del erudito con +1 a todas las habilidades y protección eléctrica'
         },
@@ -356,14 +356,14 @@ const RUNEWORDS = {
     },
     leaf: {
         id: 'leaf',
-        name: '叶子',
+        name: 'Leaf',
         enName: 'Leaf',
         esName: 'Hoja',
         itemTypes: ['weapon'],
         sockets: 2,
         runes: ['tir', 'ral'],
         desc: {
-            zh: '狂热火焰使者之杖，大幅强化火焰伤害与火抗',
+            zh: 'Pyromancer staff greatly boosting fire damage and resistance',
             en: 'Pyromancer staff greatly boosting fire damage and resistance',
             es: 'Bastón piromante que potencia el daño de fuego y la resistencia ígnea'
         },
@@ -377,14 +377,14 @@ const RUNEWORDS = {
     },
     smoke: {
         id: 'smoke',
-        name: '烟雾',
+        name: 'Smoke',
         enName: 'Smoke',
         esName: 'Humo',
         itemTypes: ['armor', 'body'],
         sockets: 2,
         runes: ['nef', 'sol'],
         desc: {
-            zh: '隐匿与厚实全抗重甲，全抗性+45与高额减伤',
+            zh: 'Heavy stealth armor with +45 all resistances and high damage reduction',
             en: 'Heavy protective armor with +45 all resistances and damage mitigation',
             es: 'Armadura pesada de protección con +45 todas las resistencias y mitigación'
         },
@@ -396,14 +396,14 @@ const RUNEWORDS = {
     },
     ancients_pledge: {
         id: 'ancients_pledge',
-        name: '古代人的誓约',
+        name: "Ancient's Pledge",
         enName: "Ancient's Pledge",
         esName: 'Voto Ancestral',
         itemTypes: ['helm', 'armor', 'body'],
         sockets: 3,
         runes: ['ral', 'ort', 'tal'],
         desc: {
-            zh: '古代先祖守护，全元素抗性极大幅度提升',
+            zh: 'Ancient guardian ward granting massive elemental resistances',
             en: 'Ancient guardian ward granting massive elemental resistances',
             es: 'Voto de los ancestros que otorga una colosal resistencia elemental'
         },
@@ -417,17 +417,17 @@ const RUNEWORDS = {
     }
 };
 
-// ========== 辅助与核心逻辑函数 ==========
+// ========== Helper and core logic functions ==========
 
-// 获取符文定义
+// Get the rune definition
 function getRuneData(runeKey) {
     if (!runeKey) return null;
     return RUNES[runeKey.toLowerCase()] || null;
 }
 
-// ========== 符文与符文之语本地化辅助（渲染层专用） ==========
-// RUNES/RUNEWORDS 保留中文原值与 enName/esName 字段供逻辑使用，
-// 界面文案统一在渲染时按当前语言查表。
+// ========== Rune & runeword localization helpers (render layer only) ==========
+// RUNES/RUNEWORDS keep zh originals plus enName/esName fields for logic;
+// UI copy resolves through tables at render time by current language.
 
 function getRuneName(runeKey) {
     const r = getRuneData(runeKey);
@@ -459,7 +459,7 @@ function getRunewordDesc(runewordId) {
     return I18N.trPath('runewords', rw.id, 'desc', zhDesc);
 }
 
-// 检查物品类型是否契合符文之语受体
+// Check whether the item type fits the runeword base
 function isItemTypeCompatibleForRuneword(item, supportedTypes) {
     if (!item || !supportedTypes) return false;
     const itemType = (item.type || '').toLowerCase();
@@ -475,14 +475,14 @@ function isItemTypeCompatibleForRuneword(item, supportedTypes) {
     return false;
 }
 
-// 创建符文掉落物/背包物品
+// Create the rune drop/inventory item
 function createRuneItem(runeKey) {
     const r = getRuneData(runeKey);
     if (!r) return null;
 
     const lang = (typeof I18N !== 'undefined' && I18N.currentLang) ? I18N.currentLang : 'zh';
     const runeName = getRuneName(r.runeKey);
-    let displayName = runeName + ' 符文';
+    let displayName = runeName + ' Rune';
     if (lang === 'es') displayName = 'Runa ' + runeName;
     else if (lang === 'en') displayName = runeName + ' Rune';
 
@@ -493,7 +493,7 @@ function createRuneItem(runeKey) {
         type: 'rune',
         runeKey: r.runeKey,
         runeNumber: r.number,
-        rarity: RARITY.RARE, // 符文使用金色/亮色标识
+        rarity: RARITY.RARE, // Runes use gold/bright coloring
         icon: '💎',
         runeSymbol: r.icon,
         color: r.color,
@@ -504,13 +504,13 @@ function createRuneItem(runeKey) {
     };
 }
 
-// 检查已镶嵌符文是否触发符文之语
+// Check whether socketed runes complete a runeword
 function checkRuneword(item) {
     if (!item || !item.sockets || !item.socketedRunes || item.socketedRunes.length !== item.sockets) {
         return null;
     }
 
-    // 只有白装、蓝装、黄装等常规非暗金非套装装备才能组成符文之语
+// Only normal gear (white, blue, rare - not unique or set) can form runewords
     if (item.rarity === RARITY.SET || item.rarity === RARITY.UNIQUE) {
         return null;
     }
@@ -539,12 +539,12 @@ function checkRuneword(item) {
     return null;
 }
 
-// 检查装备是否能够镶嵌指定符文
+// Check whether the gear can socket the given rune
 function canItemAcceptRune(item, runeItem) {
     if (!item || !runeItem) return false;
     if (runeItem.type !== 'rune' || !runeItem.runeKey) return false;
     
-    // 只有武器、胸甲、头盔支持孔位镶嵌
+// Only weapons, chest armor and helms support socketing
     const validTypes = ['weapon', 'armor', 'body', 'helm'];
     const isEquip = validTypes.includes(item.type) || validTypes.includes(item.slot);
     if (!isEquip) return false;
@@ -555,7 +555,7 @@ function canItemAcceptRune(item, runeItem) {
     return totalSockets > 0 && socketedCount < totalSockets;
 }
 
-// 执行镶嵌动作
+// Execute the socketing action
 function socketRuneIntoItem(targetItem, runeItem) {
     if (!canItemAcceptRune(targetItem, runeItem)) {
         return { success: false, reason: 'invalid_target' };
@@ -568,7 +568,7 @@ function socketRuneIntoItem(targetItem, runeItem) {
     const runeKey = runeItem.runeKey;
     targetItem.socketedRunes.push(runeKey);
 
-    // 检查是否激活符文之语
+// Check whether a runeword activates
     const completedRuneword = checkRuneword(targetItem);
 
     return {
@@ -578,7 +578,7 @@ function socketRuneIntoItem(targetItem, runeItem) {
     };
 }
 
-// 获取装备由孔位符文及符文之语带来的所有属性加成
+// Get all stat bonuses the gear gains from socketed runes and runewords
 function getSocketAndRunewordStats(item) {
     const stats = {};
     if (!item) return stats;
@@ -588,11 +588,11 @@ function getSocketAndRunewordStats(item) {
         stats[k] = (stats[k] || 0) + v;
     };
 
-    // 1. 各单颗符文加成
+    // 1. Bonuses from each individual rune
     if (item.socketedRunes && item.socketedRunes.length > 0) {
         const isWeapon = item.type === 'weapon' || item.slot === 'mainhand';
         const isHelm = item.type === 'helm' || item.slot === 'helm';
-        // 防具包含 body/armor
+// Armor covers body/armor
         const runeCategory = isWeapon ? 'weapon' : (isHelm ? 'helm' : 'armor');
 
         for (let rKey of item.socketedRunes) {
@@ -609,7 +609,7 @@ function getSocketAndRunewordStats(item) {
         }
     }
 
-    // 2. 符文之语整体加成
+// 2. Whole-runeword bonuses
     if (item.isRuneword && item.runewordId && RUNEWORDS[item.runewordId]) {
         const rw = RUNEWORDS[item.runewordId];
         if (rw.stats) {
@@ -626,7 +626,7 @@ function getSocketAndRunewordStats(item) {
     return stats;
 }
 
-// 导出全局
+// Export globals
 if (typeof window !== 'undefined') {
     window.RUNES = RUNES;
     window.RUNEWORDS = RUNEWORDS;

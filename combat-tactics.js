@@ -1,9 +1,9 @@
-// 战斗决策反馈：共享蓄力几何、打断、破绽与敌人应对提示。
+// Combat decision feedback: shared wind-up geometry, interrupts, openings and enemy response hints.
 const CombatTactics = (() => {
     const rules={bossBreak:.04,bossRecovery:1.1,interruptRecovery:1.2,bonus:.25,suppress:.55,suppressCooldown:2.5};
-    // 预警标签的中文原文与 tactics 查表键：只在模块加载与语言切换时解析一次，
-    // 绘制循环内仅读取已缓存的 labels，避免每帧查表和字符串拼接。
-    const TACTIC_ZH={groundSlam:'重击 · 离开红圈',fireNova:'新星 · 离开红圈',breathAttack:'吐息 · 侧向躲避',tentacleAttack:'触手 · 避开红线',summonMinions:'召唤 · 技能打断',charge:'突进 · 侧向躲避',revive:'复活 · 技能打断',heavy:'重击 · 拉开距离',breakTag:'破绽 +25%',interruptTag:'打断 · 破绽 +25%',suppressTag:'压制 · 破绽 +25%'};
+// Warning label zh originals double as tactics lookup keys: resolved once per module load and language switch.
+// The draw loop only reads cached labels, avoiding per-frame lookups and string building.
+    const TACTIC_ZH={groundSlam:'Heavy Strike · Leave the red circle',fireNova:'Nova · Leave the red circle',breathAttack:'Breath · Dodge sideways',tentacleAttack:'Tentacle · Avoid the red lines',summonMinions:'Summon · Interrupt with a skill',charge:'Charge · Dodge sideways',revive:'Revive · Interrupt with a skill',heavy:'Heavy Strike · Keep your distance',breakTag:'Opening +25%',interruptTag:'Interrupted · Opening +25%',suppressTag:'Suppressed · Opening +25%'};
     const TACTIC_KEYS={groundSlam:'heavy_strike',fireNova:'nova',breathAttack:'breath',tentacleAttack:'tentacle',summonMinions:'summon',charge:'charge',revive:'revive',heavy:'heavy_strike_melee',breakTag:'break',interruptTag:'interrupt',suppressTag:'suppress'};
     const labels={};
     function refreshTacticLabels(){
@@ -15,12 +15,12 @@ const CombatTactics = (() => {
     function recover(e,time,label=labels.breakTag){
         e.combatCue=null;e.recoveryTimer=time;e.recoveryDuration=time;e.recoveryLabel=label;
         e.cooldown=Math.max(e.cooldown || 0,time);e.wasMoving=false;
-        // 破绽标签已持续显示，避免再叠一条同义飘字。
+// The opening label is already persistent; don't stack another synonymous floating text.
     }
     function bossStarted(e,pending){
         const d=pending.data;pending.damageTaken=0;
         pending.label=labels[pending.id];pending.originX=e.x;pending.originY=e.y;
-        // 蓄力期间停步，提前锁定方向；普通攻击不能与大招叠加。
+// Stop and lock facing during wind-up; basic attacks can't stack with the ultimate.
         e.cooldown=Math.max(e.cooldown || 0,pending.duration+.3);
     }
     function attackStarted(e,options,attack){
@@ -104,7 +104,7 @@ const CombatTactics = (() => {
                 else {ctx.arc(e.x,e.y,p.tactic==='revive'?30:48,0,Math.PI*2);}
                 ctx.fillStyle='rgba(235,50,30,.10)';ctx.fill();ctx.strokeStyle='#281511';ctx.lineWidth=6;ctx.stroke();ctx.strokeStyle='#ff815c';ctx.lineWidth=2.5;ctx.stroke();
                 label(ctx,e,p.label || (p.tactic==='charge'?labels.charge:p.tactic==='revive'?labels.revive:labels.heavy),'#ffbe91',progress);
-                if(e.pendingSkill && p.damageTaken > 0)label(ctx,{x:e.x,y:e.y-27},I18N.tr('tactics','interrupt_progress','打断 {value}%',{value:Math.min(100,Math.floor(p.damageTaken/(e.maxHp*rules.bossBreak)*100))}),'#b1d7ff');
+                if(e.pendingSkill && p.damageTaken > 0)label(ctx,{x:e.x,y:e.y-27},I18N.tr('tactics','interrupt_progress','Interrupt {value}%',{value:Math.min(100,Math.floor(p.damageTaken/(e.maxHp*rules.bossBreak)*100))}),'#b1d7ff');
             }else if(e.recoveryTimer>0)label(ctx,e,labels.breakTag,'#78ebcd',e.recoveryTimer/e.recoveryDuration);
             else if(e.monsterType==='skeleton' && e === (typeof AutoBattle !== 'undefined' ? AutoBattle.currentTarget : null)){
                 ctx.beginPath();ctx.arc(e.x,e.y,25,facingAngle(e)-Math.PI/3,facingAngle(e)+Math.PI/3);ctx.strokeStyle='#c5d5e1';ctx.lineWidth=3;ctx.stroke();

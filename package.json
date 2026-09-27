@@ -1,14 +1,14 @@
 {
   "name": "brawlore-diablo-web",
   "version": "1.0.0",
-  "description": "菠萝战纪 (Brawlore) - 基于 HTML5 Canvas 和原生 JavaScript 开发的暗黑2致敬动作角色扮演游戏 (ARPG)",
+  "description": "Brawlore - Diablo II homage action RPG built with HTML5 Canvas and vanilla JavaScript",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
     "build": "echo 'Static app ready'",
-    "lint": "node -c *.js"
+    "lint": "node --check game.js && node --check server.js"
   },
   "author": "Hardcore Travel <brunolucas.bar@gmail.com>",
   "dependencies": {

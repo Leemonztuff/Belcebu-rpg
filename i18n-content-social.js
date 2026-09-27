@@ -1,9 +1,9 @@
-// ========== i18n-content-social.js - 社交与外围面板本地化内容表（云同步 / 昵称 / 排行榜 / 全服公告 / 世界聊天 / 摆摊市场 / 战报卡片 / 存档错误 / 天赋抽选 / 回归礼包） ==========
+// ========== i18n-content-social.js - social & peripheral panel localization (cloud sync / nickname / leaderboard / server announce / world chat / market stalls / share card / save errors / talent draft / return bundle) ==========
 (function () {
     'use strict';
     if (typeof window.I18N === 'undefined' || typeof window.I18N.registerTable !== 'function') return;
 
-    // 云同步、昵称、排行榜、全服公告与世界聊天：online.js
+// Cloud sync, nickname, leaderboard, server announcements and world chat: online.js
     window.I18N.registerTable('online', {
         sync_manage_title: { es: 'Gestión de Sincronización', en: 'Cloud Sync Manager', zh: '云同步管理' },
         sync_manage_desc: { es: 'Puedes crear una cuenta nueva o vincular una existente', en: 'Create a new account or link an existing one', zh: '您可以创建新账号或绑定已有账号' },
@@ -142,7 +142,7 @@
     'use strict';
     if (typeof window.I18N === 'undefined' || typeof window.I18N.registerTable !== 'function') return;
 
-    // 玩家摆摊与交易市场界面：market.js
+// Player stalls and the trading market UI: market.js
     window.I18N.registerTable('market', {
         stall_setup_title: { es: '🛒 Puesto de Venta', en: '🛒 Player Stall', zh: '🛒 摆摊' },
         stall_view_title: { es: '🛒 Puesto', en: '🛒 Stall', zh: '🛒 摊位' },
@@ -228,7 +228,7 @@
     'use strict';
     if (typeof window.I18N === 'undefined' || typeof window.I18N.registerTable !== 'function') return;
 
-    // 英雄战报与构筑分享卡片（含剪贴板文本块）：share-card.js
+// Hero battle report and build share cards (including the clipboard text block): share-card.js
     window.I18N.registerTable('shareCard', {
         title_bronze_trial: { es: '🥉 Prueba de Bronce', en: '🥉 Bronze Trial', zh: '🥉 青铜试炼' },
 
@@ -255,7 +255,7 @@
         text_kills_tier: { es: '💀 Bajas Totales: {kills} | 🏆 Rango de Abismo: {tier}', en: '💀 Total Kills: {kills} | 🏆 Abyss Tier: {tier}', zh: '💀 讨伐魔物：{kills} 只 | 🏆 深渊段位：{tier}' },
         text_gear: { es: '📦 Equipo Notorio: {gear}', en: '📦 Notable Gear: {gear}', zh: '📦 核心神装：{gear}' },
         text_gear_empty: { es: 'Ninguno', en: 'None', zh: '暂无' },
-        text_footer: { es: '✨ ¡Juégalo en tu navegador: 菠萝战纪 Brawlore!', en: '✨ Play in your browser: 菠萝战纪 Brawlore!', zh: '✨ 踏入庇护所，开启你的暗黑奇幻冒险！' },
+        text_footer: { es: '✨ ¡Juégalo en tu navegador: Brawlore!', en: '✨ Play it in your browser: Brawlore!', zh: '✨ 踏入庇护所，开启你的暗黑奇幻冒险！' },
         text_copy_success: { es: '📋 ¡Resumen de combate copiado al portapapeles!', en: '📋 Hero chronicle copied to clipboard!', zh: '📋 战报文本已复制到剪贴板！' },
         text_download_success: { es: '🖼️ ¡Imagen de hazaña descargada!', en: '🖼️ Hero card image saved!', zh: '🖼️ 战报图片已保存！' },
         text_copy_image_success: { es: '✨ ¡Imagen copiada al portapapeles!', en: '✨ Hero card image copied to clipboard!', zh: '✨ 战报图片已直接复制到剪贴板！' }
@@ -266,13 +266,14 @@
     'use strict';
     if (typeof window.I18N === 'undefined' || typeof window.I18N.registerTable !== 'function') return;
 
-    // 存档读写失败提示与存档系统控制台日志：save-system.js
+// Save read/write failure toasts and save system console logs: save-system.js
     window.I18N.registerTable('saveErrors', {
         toast_stat_migrated: { es: 'Se actualizaron automáticamente los atributos de {count} piezas', en: 'Auto-upgraded the stats of {count} items', zh: '已自动升级 {count} 件装备属性' },
         toast_save_failed: { es: 'No se pudo guardar: revisa los permisos de almacenamiento del navegador', en: 'Save failed: check your browser storage permissions', zh: '存档失败，请检查浏览器存储权限' },
         error_db_not_ready: { es: 'La base de datos de partidas no está lista, recarga la página', en: 'Save database is not ready, please reload the page', zh: '存档数据库未就绪，请刷新后重试' },
         error_load_failed: { es: 'No se pudo leer la partida, reinténtalo; la anterior se ha conservado', en: 'Could not read the save, please retry; the previous one was kept', zh: '读取存档失败，请重试；原存档已保留' },
         log_stat_migration: { es: '[Migración de Atributos] {count} artículos con atributos antiguos convertidos', en: '[Stat Migration] Converted legacy stats on {count} items', zh: '[属性迁移] 已转换 {count} 件物品的旧属性' },
+        log_name_migration: { es: '[Migración de Nombres] {count} artículos con nombres antiguos convertidos', en: '[Name Migration] Converted legacy names on {count} items', zh: '[名称迁移] 已转换 {count} 件物品的旧名称' },
         log_slot_migration: { es: '[Migración de Partidas] La partida antigua se migró a la ranura 1', en: '[Save Migration] Legacy save migrated to slot 1', zh: '[存档迁移] 已将旧存档迁移到槽位1' },
         log_timestamp_backup_failed: { es: '[Sistema de Partidas] Falló la copia de respaldo de la marca de tiempo:', en: '[Save System] Timestamp backup failed:', zh: '[存档系统] 时间戳备份失败:' },
         log_save_failed: { es: '[Sistema de Partidas] Error al guardar:', en: '[Save System] Save failed:', zh: '[存档系统] 保存失败:' },

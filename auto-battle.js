@@ -1,41 +1,41 @@
-// ========== 自动战斗系统 ==========
-// 依赖: constants.js, audio.js, game.js (全局变量)
+// ========== auto battlesystem ==========
+// Depends on: constants.js, audio.js, game.js (globals)
 
 const AutoBattle = {
     enabled: false,
     settings: {
-        useSkill: true,                                     // 优先使用技能
-        keepDistance: GAME_CONFIG.AUTO_KEEP_DISTANCE,       // 保持距离（远程战术）
-        hpThreshold: GAME_CONFIG.AUTO_POTION_HP_THRESHOLD,  // 喝红药阈值
-        mpThreshold: GAME_CONFIG.AUTO_POTION_MP_THRESHOLD,  // 喝蓝药阈值
-        emergencyHp: GAME_CONFIG.AUTO_EMERGENCY_HP,         // 紧急回城阈值
-        pickupUnique: true,                                 // 自动拾取暗金
-        pickupSet: true                                     // 自动拾取套装
+        useSkill: true,                                     // prefer using skills
+        keepDistance: GAME_CONFIG.AUTO_KEEP_DISTANCE,       // keep distance (ranged tactics)
+        hpThreshold: GAME_CONFIG.AUTO_POTION_HP_THRESHOLD,  // red potion threshold
+        mpThreshold: GAME_CONFIG.AUTO_POTION_MP_THRESHOLD,  // blue potion threshold
+        emergencyHp: GAME_CONFIG.AUTO_EMERGENCY_HP,         // emergency town-portal threshold
+        pickupUnique: true,                                 // auto-pickup Unique
+        pickupSet: true                                     // auto-pickup Set
     },
-    // 雇佣费系统
-    sessionGold: 0,          // 本次自动战斗获得的总金币
-    sessionFee: 0,           // 本次累计扣除的雇佣费
+    // hire costsystem
+    sessionGold: 0,          // total gold earned this auto battle
+    sessionFee: 0,           // total hire cost deducted this run
     currentTarget: null,
-    stuckTimer: 0,               // 无目标时的卡死检测计时器
-    stuckPosTimer: 0,            // 位置位移卡死检测计时器
+    stuckTimer: 0,               // stall detection timer when no target
+    stuckPosTimer: 0,            // position drift stall detection timer
     lastPos: { x: 0, y: 0 },
-    oscillationDetector: { positions: [], lastCheck: 0 },  // 摇摆检测器
-    lastDamagedBy: null,         // 记录最后攻击我的敌人
-    lastDamagedTime: 0,          // 最后被攻击时间
-    lastTargetDamageDecisionTime: 0, // 上次因受击触发目标重选的时间
-    moveDecisionTimer: 0,        // 移动决策计时器
-    lastMoveDecision: null,      // 上次的移动决策
-    failedPaths: [],             // 记录失败的寻路尝试
-    pathCleanupTimer: 0,         // 失败路径清理计时器
-    targetFailCount: 0,          // 当前目标的连续失败次数
-    lastTargetId: null,          // 上次追击的目标（用于检测目标切换）
-    blacklistedTargets: [],      // 被放弃的目标黑名单 [{target, until}]
-    targetDecisionTimer: 0,      // 目标选择降频计时器
-    pickupDecisionTimer: 0,      // 拾取扫描降频计时器
-    targetDecisionInterval: 0.12, // 目标选择约8Hz
-    pickupDecisionInterval: 0.18, // 拾取候选约5.5Hz
-    losCache: new Map(),         // LOS缓存：对象+双方瓦片+区域
-    losObjectIds: new WeakMap(), // 对象引用稳定编号
+    oscillationDetector: { positions: [], lastCheck: 0 },  // oscillation detector
+    lastDamagedBy: null,         // record the last enemy that attacked me
+    lastDamagedTime: 0,          // last attacked time
+    lastTargetDamageDecisionTime: 0, // last retarget caused by taking damage
+    moveDecisionTimer: 0,        // movement decision timer
+    lastMoveDecision: null,      // last movement decision
+    failedPaths: [],             // record failed pathfinding attempts
+    pathCleanupTimer: 0,         // failed-path cleanup timer
+    targetFailCount: 0,          // consecutive failures for the current target
+    lastTargetId: null,          // last chased target (to detect target switching)
+    blacklistedTargets: [],      // abandoned target blacklist [{target, until}]
+    targetDecisionTimer: 0,      // target selection throttle timer
+    pickupDecisionTimer: 0,      // pickup scan throttle timer
+    targetDecisionInterval: 0.12, // target selection ~8Hz
+    pickupDecisionInterval: 0.18, // pickup candidates ~5.5Hz
+    losCache: new Map(),         // LOS cache: object + both tiles + area
+    losObjectIds: new WeakMap(), // stable id for object references
     losNextObjectId: 1,
     losCacheAreaKey: null,
     losCacheMaxEntries: 600,
@@ -166,20 +166,20 @@ const AutoBattle = {
         player.targetY = null;
     },
 
-    // ====== A*寻路系统 ======
+    // ====== A*pathingsystem ======
     astarCache: {
-        path: null,              // 当前缓存的路径 [{x, y}, ...]
-        targetX: null,           // 路径目标X
-        targetY: null,           // 路径目标Y
-        currentIndex: 0,         // 当前路径点索引
-        lastUpdateTime: 0        // 上次更新时间
+        path: null,              // currently cached path [{x, y},...]
+        targetX: null,           // path target X
+        targetY: null,           // path target Y
+        currentIndex: 0,         // current waypoint index
+        lastUpdateTime: 0        // last update time
     },
 
-    // 最小二叉堆实现（用于A*寻路优化）
+// Minimal binary heap implementation (for A* pathing optimization)
     MinHeap: class {
         constructor() {
             this.heap = [];
-            this.nodeMap = new Map(); // key -> index 快速查找
+            this.nodeMap = new Map(); // key -> index quick lookup
         }
 
         size() { return this.heap.length; }
@@ -204,7 +204,7 @@ const AutoBattle = {
             return min;
         }
 
-        // 更新节点（用于发现更优路径时）
+// Update node (when a better path is found)
         updateNode(key, newNode) {
             const idx = this.nodeMap.get(key);
             if (idx === undefined) {
@@ -262,26 +262,26 @@ const AutoBattle = {
         }
     },
 
-    // A*寻路算法实现（使用二叉堆优化）
+// A* pathfinding implementation (binary-heap optimized)
     astarFindPath(startX, startY, goalX, goalY) {
-        // 转换为瓦片坐标
+        // convert totilecoords
         const startCol = Math.floor(startX / TILE_SIZE);
         const startRow = Math.floor(startY / TILE_SIZE);
         let goalCol = Math.floor(goalX / TILE_SIZE);
         let goalRow = Math.floor(goalY / TILE_SIZE);
 
-        // 边界检查
+        // bounds check
         if (startCol < 0 || startCol >= MAP_WIDTH || startRow < 0 || startRow >= MAP_HEIGHT) return null;
         if (goalCol < 0 || goalCol >= MAP_WIDTH || goalRow < 0 || goalRow >= MAP_HEIGHT) return null;
 
-        // 目标是墙则尝试找附近最近的可行走瓦片
+// If the goal is a wall, find the nearest walkable tile nearby
         if (mapData[goalRow][goalCol] === 0) {
             let found = false;
-            // 搜索半径逐渐扩大
+// Search radius expands gradually
             for (let radius = 1; radius <= 3 && !found; radius++) {
                 for (let dr = -radius; dr <= radius && !found; dr++) {
                     for (let dc = -radius; dc <= radius && !found; dc++) {
-                        if (Math.abs(dr) !== radius && Math.abs(dc) !== radius) continue; // 只检查外圈
+                        if (Math.abs(dr) !== radius && Math.abs(dc) !== radius) continue; // check the outer ring only
                         const nr = goalRow + dr;
                         const nc = goalCol + dc;
                         if (nr >= 0 && nr < MAP_HEIGHT && nc >= 0 && nc < MAP_WIDTH && mapData[nr][nc] !== 0) {
@@ -292,17 +292,17 @@ const AutoBattle = {
                     }
                 }
             }
-            if (!found) return null; // 附近没有可行走的瓦片
+            if (!found) return null; // no walkable tile nearby
         }
 
-        // 节点类
+// Node class
         class AStarNode {
             constructor(col, row, g, h, parent) {
                 this.col = col;
                 this.row = row;
-                this.g = g;       // 起点到当前节点的实际代价
-                this.h = h;       // 当前节点到目标的估计代价(启发式)
-                this.f = g + h;   // 总代价
+                this.g = g;       // actual cost from start to this node
+                this.h = h;       // estimated cost from this node to the goal (heuristic)
+                this.f = g + h;   // total cost
                 this.parent = parent;
             }
 
@@ -315,38 +315,38 @@ const AutoBattle = {
             }
         }
 
-        // 启发函数：欧几里得距离
+// Heuristic: Euclidean distance
         const heuristic = (col, row) => {
             const dx = goalCol - col;
             const dy = goalRow - row;
             return Math.sqrt(dx * dx + dy * dy);
         };
 
-        // 获取邻居节点（8方向）
+// Get neighbor nodes (8 directions)
         const getNeighbors = (node) => {
             const neighbors = [];
             const directions = [
-                { dc: -1, dr: 0, cost: 1 },      // 左
-                { dc: 1, dr: 0, cost: 1 },       // 右
-                { dc: 0, dr: -1, cost: 1 },      // 上
-                { dc: 0, dr: 1, cost: 1 },       // 下
-                { dc: -1, dr: -1, cost: 1.414 }, // 左上
-                { dc: 1, dr: -1, cost: 1.414 },  // 右上
-                { dc: -1, dr: 1, cost: 1.414 },  // 左下
-                { dc: 1, dr: 1, cost: 1.414 }    // 右下
+                { dc: -1, dr: 0, cost: 1 },      // left
+                { dc: 1, dr: 0, cost: 1 },       // right
+                { dc: 0, dr: -1, cost: 1 },      // up
+                { dc: 0, dr: 1, cost: 1 },       // down
+                { dc: -1, dr: -1, cost: 1.414 }, // top-left
+                { dc: 1, dr: -1, cost: 1.414 },  // top-right
+                { dc: -1, dr: 1, cost: 1.414 },  // bottom-left
+                { dc: 1, dr: 1, cost: 1.414 }    // bottom-right
             ];
 
             for (let dir of directions) {
                 const newCol = node.col + dir.dc;
                 const newRow = node.row + dir.dr;
 
-                // 边界检查
+                // bounds check
                 if (newCol < 0 || newCol >= MAP_WIDTH || newRow < 0 || newRow >= MAP_HEIGHT) continue;
 
-                // 墙壁检查
+// Wall check
                 if (mapData[newRow][newCol] === 0) continue;
 
-                // 对角线移动需要检查两边是否都能通过（防止穿墙）
+// Diagonal moves must check both sides are passable (prevents wall clipping)
                 if (dir.dc !== 0 && dir.dr !== 0) {
                     if (mapData[node.row][newCol] === 0 || mapData[newRow][node.col] === 0) {
                         continue;
@@ -363,33 +363,33 @@ const AutoBattle = {
             return neighbors;
         };
 
-        // 开放列表（二叉堆）和关闭列表
+// Open list (binary heap) and closed list
         const openHeap = new this.MinHeap();
         const closedSet = new Set();
-        const gScores = {}; // 记录每个节点的最优g值
+        const gScores = {}; // record the best g value per node
 
-        // 起始节点
+// Start node
         const startNode = new AStarNode(startCol, startRow, 0, heuristic(startCol, startRow), null);
         openHeap.push(startNode);
         gScores[startNode.key()] = 0;
 
-        // 主循环
+        // main loop
         let iterations = 0;
-        const maxIterations = 2000; // 防止死循环
+        const maxIterations = 2000; // prevent infinite loops
 
         while (openHeap.size() > 0 && iterations < maxIterations) {
             iterations++;
 
-            // 取出f值最小的节点 - O(log n)
+            // Pop node with lowest f - O(log n)
             const current = openHeap.pop();
 
-            // 到达目标
+            // toreachtarget
             if (current.col === goalCol && current.row === goalRow) {
-                // 重建路径
+// Rebuild the path
                 const path = [];
                 let node = current;
                 while (node !== null) {
-                    // 转换回像素坐标（瓦片中心）
+// Convert back to pixel coords (tile center)
                     path.unshift({
                         x: node.col * TILE_SIZE + TILE_SIZE / 2,
                         y: node.row * TILE_SIZE + TILE_SIZE / 2
@@ -397,7 +397,7 @@ const AutoBattle = {
                     node = node.parent;
                 }
 
-                // 路径简化：移除多余的中间点（保持直线段）
+// Path simplification: drop redundant midpoints (keep straight segments)
                 if (path.length > 2) {
                     const simplified = [path[0]];
                     for (let i = 1; i < path.length - 1; i++) {
@@ -405,20 +405,20 @@ const AutoBattle = {
                         const curr = path[i];
                         const next = path[i + 1];
 
-                        // 检查是否需要转向（方向改变）
+// Check whether a turn is needed (direction change)
                         const dx1 = curr.x - prev.x;
                         const dy1 = curr.y - prev.y;
                         const dx2 = next.x - curr.x;
                         const dy2 = next.y - curr.y;
 
-                        // 方向向量归一化后比较
+// Compare after normalizing direction vectors
                         const len1 = Math.sqrt(dx1 * dx1 + dy1 * dy1);
                         const len2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
 
                         if (len1 > 0 && len2 > 0) {
                             const dot = (dx1 / len1) * (dx2 / len2) + (dy1 / len1) * (dy2 / len2);
-                            // dot接近1表示方向相同，可以跳过中间点
-                            if (dot < 0.99) { // 允许2度内的偏差
+// dot near 1 means same direction; skip the midpoint
+                            if (dot < 0.99) { // allow up to 2 degrees of deviation
                                 simplified.push(curr);
                             }
                         }
@@ -430,35 +430,35 @@ const AutoBattle = {
                 return path;
             }
 
-            // 加入关闭列表
+// Add to the closed list
             closedSet.add(current.key());
 
-            // 检查邻居
+            // Checkneighbor
             const neighbors = getNeighbors(current);
             for (let neighbor of neighbors) {
                 const neighborKey = `${neighbor.col},${neighbor.row}`;
 
-                // 已在关闭列表中则跳过
+// Skip if already in the closed list
                 if (closedSet.has(neighborKey)) continue;
 
-                // 计算新的g值
+                // Calcnewgvalue
                 const tentativeG = current.g + neighbor.cost;
 
-                // 检查是否找到更优路径
+// Check whether a better path was found
                 if (gScores[neighborKey] === undefined || tentativeG < gScores[neighborKey]) {
                     gScores[neighborKey] = tentativeG;
 
-                    // 创建新节点
+// Create a new node
                     const h = heuristic(neighbor.col, neighbor.row);
                     const newNode = new AStarNode(neighbor.col, neighbor.row, tentativeG, h, current);
 
-                    // 使用二叉堆的 updateNode 方法（自动处理插入或更新）- O(log n)
+                    // Uses binary-heap updateNode (handles insert or update) - O(log n)
                     openHeap.updateNode(neighborKey, newNode);
                 }
             }
         }
 
-        // 未找到路径
+        // not yetfindtopath
         return null;
     },
 
@@ -508,27 +508,27 @@ const AutoBattle = {
         return result;
     },
 
-    // 寻找目标 - 优先近的能看到的，其次远的任意怪
-    // 优化：使用 EnemyCache.aliveList 避免遍历死亡敌人
+// Find target - prefer near visible ones, then any far monster
+// Optimization: use EnemyCache.aliveList to skip dead enemies
     findTarget() {
         if (!this.enabled || isInTown()) return null;
 
-        let nearestVisible = null;   // 能看到的最近的怪
+        let nearestVisible = null;   // nearest monster in sight
         let minVisibleDistSq = Infinity;
-        let nearestCloseMelee = null; // 已可普攻的近距离怪
+        let nearestCloseMelee = null; // nearby monster already in basic-attack range
         let minCloseMeleeDistSq = Infinity;
-        let nearestCloseBlocked = null; // 近但需要继续贴近/绕位的怪
+        let nearestCloseBlocked = null; // near monster that still needs closing in or repositioning
         let minCloseBlockedDistSq = Infinity;
-        let nearestAny = null;       // 任意最近的怪（用于绕路）
+        let nearestAny = null;       // Any nearest monster (for detours)
         let minAnyDistSq = Infinity;
 
-        // 使用缓存的活敌人列表（已过滤死亡敌人）
+// Use the cached alive list (dead enemies filtered)
         const aliveList = typeof EnemyCache !== 'undefined' ? EnemyCache.aliveList : enemies;
         const px = player.x, py = player.y;
 
         for (let i = 0, len = aliveList.length; i < len; i++) {
             const e = aliveList[i];
-            if (e.dead) continue; // 兼容未使用缓存的情况
+            if (e.dead) continue; // Handle the uncached case
             if (this.isTargetBlacklisted(e)) continue;
 
             const dx = e.x - px, dy = e.y - py;
@@ -537,13 +537,13 @@ const AutoBattle = {
             const inVisibleScanRange = distSq < 360000;
             const hasLOS = inVisibleScanRange && this.hasCachedLineOfSightTo(e);
 
-            // 能看到的怪：优先选，范围600
+// Visible monsters: preferred, range 600
             if (hasLOS && distSq < minVisibleDistSq) {
                 nearestVisible = e;
                 minVisibleDistSq = distSq;
             }
 
-            // 近距离怪拆成可普攻和被墙角/障碍挡住两类，避免墙内目标压过可见威胁。
+// Split near monsters into basic-attackable and blocked-by-wall/obstacle, so wall-hugging targets don't outrank visible threats.
             if (distSq < 10000) {
                 const dist = Math.sqrt(distSq);
                 if (this.canMeleeTarget(e, dist, hasLOS)) {
@@ -557,18 +557,18 @@ const AutoBattle = {
                 }
             }
 
-            // 任意怪：范围扩大到1500（整个屏幕），用于绕路追击
+// Any monster: range widened to 1500 (whole screen) for chase detours
             if (distSq < 2250000 && distSq < minAnyDistSq) { // 1500^2 = 2250000
                 nearestAny = e;
                 minAnyDistSq = distSq;
             }
         }
 
-        // 优先级：可普攻近怪 > 可见威胁 > 近距离受阻怪 > 任意怪
+// Priority: attackable near > visible threat > blocked near > any
         return nearestCloseMelee || nearestVisible || nearestCloseBlocked || nearestAny;
     },
 
-    // 记录被攻击
+// Record being attacked
     onPlayerDamaged(attacker) {
         if (this.enabled && attacker) {
             this.lastDamagedBy = attacker;
@@ -576,21 +576,21 @@ const AutoBattle = {
         }
     },
 
-    // 决策行动 - 极简版
+// Decision action - minimal version
     decideAction(dt) {
         if (!this.enabled || isInTown()) return;
 
-        // 0. 物理位置卡死检测
+// 0. Physical position stall detection
         const moveDist = Math.hypot(player.x - this.lastPos.x, player.y - this.lastPos.y);
 
-        // 如果有拾取目标，检测是否在接近目标
+// With a pickup target, check whether we're closing in
         if (player.targetItem) {
             const distToItem = Math.hypot(player.x - player.targetItem.x, player.y - player.targetItem.y);
-            // 如果距离物品很近但拾取不了，或者长时间没接近物品，放弃
+// Very close but can't pick up, or no progress for a long time: give up
             if (distToItem < 50 && moveDist < 5) {
                 this.stuckPosTimer += dt;
             } else if (moveDist < 10) {
-                // 在移动但移动很慢（可能在绕路或卡住）
+// Moving but slowly (detouring or stuck)
                 this.stuckPosTimer += dt * 0.5;
             } else {
                 this.stuckPosTimer = Math.max(0, this.stuckPosTimer - dt);
@@ -598,7 +598,7 @@ const AutoBattle = {
 
             if (this.stuckPosTimer > 2) {
                 this.blacklistedTargets.push({ target: player.targetItem, until: Date.now() + 30000 });
-                // 静默放弃，不显示提示
+                // silentabandon，no toast
                 player.targetItem = null;
                 player.targetX = null;
                 player.targetY = null;
@@ -615,7 +615,7 @@ const AutoBattle = {
         }
         this.lastPos = { x: player.x, y: player.y };
 
-        // 1. 生存：紧急回城
+// 1. Survival: emergency town portal
         const hpPercent = player.hp / player.maxHp;
         if (hpPercent < this.settings.emergencyHp) {
             const hasScroll = player.inventory.some(it => it && it.type === 'scroll');
@@ -625,7 +625,7 @@ const AutoBattle = {
             }
         }
 
-        // 2. 生存：喝药
+        // 2. spawnkeep:drink potion
         if (hpPercent < this.settings.hpThreshold) {
             this.drinkPotion('health');
         }
@@ -633,20 +633,20 @@ const AutoBattle = {
             this.drinkPotion('mana');
         }
 
-        // 2.5 生存：使用护盾技能（血量低于50%且没有护盾时自动释放）
+// 2.5 Survival: cast shield skill (auto when below 50% HP with no shield)
         if (this.settings.useSkill && hpPercent < 0.5) {
             const shieldLevel = player.skillTree?.holy_shield?.stage1 || 0;
             const shieldCooldown = player.shield?.cooldown || 0;
             const shieldActive = player.shield?.active || false;
             const manaCost = SKILL_TREE?.holy_shield?.stage1?.manaCost || 15;
 
-            // 护盾已学习、不在冷却中、当前没有激活的护盾、法力充足
+// Shield learned, not on cooldown, no active shield, enough mana
             if (shieldLevel > 0 && shieldCooldown <= 0 && !shieldActive && player.mp >= manaCost) {
                 castSkill('holy_shield');
             }
         }
 
-        // 3. 拾取物品：候选扫描降到约5.5Hz，避免每帧遍历地面物品
+// 3. Pick up items: candidate scan throttled to ~5.5Hz to avoid per-frame ground scans
         this.pickupDecisionTimer += dt;
         const pickupDecisionDue = this.pickupDecisionTimer >= this.pickupDecisionInterval;
         if (pickupDecisionDue) {
@@ -654,7 +654,7 @@ const AutoBattle = {
             this.pickupDecisionTimer = 0;
         }
 
-        // 4. 选目标：扫描降到约8Hz；目标死亡/消失/刚受击时立即重选
+// 4. Choose target: scan throttled to ~8Hz; retarget immediately on death/disappearance/fresh hit
         this.targetDecisionTimer += dt;
         const targetDecisionDue = this.targetDecisionTimer >= this.targetDecisionInterval;
         const currentTargetInvalid = this.currentTarget && !this.isTargetStillValid(this.currentTarget);
@@ -683,7 +683,7 @@ const AutoBattle = {
         }
 
         if (!this.currentTarget) {
-            // 没敌人，随机走走探索
+// No enemies: wander and explore
             this.stuckTimer += dt;
             if (this.stuckTimer > 1) {
                 this.moveToCenter();
@@ -693,7 +693,7 @@ const AutoBattle = {
         }
         this.stuckTimer = 0;
 
-        // 5. 移动：没在拾取东西就走向目标
+// 5. Move: walk to the target when not picking up
         if (player.targetItem === null) {
             const tdx = this.currentTarget.x - player.x;
             const tdy = this.currentTarget.y - player.y;
@@ -711,18 +711,18 @@ const AutoBattle = {
             }
         }
 
-        // 6. 攻击
+        // 6. attack
         this.attackTarget(this.currentTarget);
     },
 
-    // 紧急回城
+    // tighthurriedreturn to town
     emergencyTownPortal() {
-        // 紧急回城（调用前已确保有卷轴）
+// Emergency town portal (scroll already ensured before the call)
         useQuickItem('scroll');
-        createFloatingText(player.x, player.y - 60, '⚠️ 紧急回城！', COLORS.error, 2);
+        createFloatingText(player.x, player.y - 60, '⚠️ Emergency town portal!', COLORS.error, 2);
     },
 
-    // 喝药
+    // drink potion
     drinkPotion(type) {
         let itemName = '';
         if (type === 'health') itemName = CONSUMABLE_NAME.HEALTH_POTION;
@@ -734,7 +734,7 @@ const AutoBattle = {
         }
     },
 
-    // 行走通道必须容纳角色身体，并遵守实际移动先横后纵的碰撞顺序。
+// The walk corridor must fit the character body and honor the real X-then-Y collision order.
     canWalkSegment(startX, startY, endX, endY) {
         const dx = endX - startX, dy = endY - startY;
         const stepSize = Math.min(player.radius / 2, TILE_SIZE / 4);
@@ -748,87 +748,87 @@ const AutoBattle = {
         return true;
     },
 
-    // A*寻路：使用缓存提高性能
+// A* pathing: use the cache for performance
     findPathToTarget(targetX, targetY, target = null) {
-        // 1. 检查是否有视线，有的话直接走过去
+// 1. Check line of sight; walk straight if visible
         const hasDirectLOS = target ? this.hasCachedLineOfSightTo(target) : hasLineOfSight(player.x, player.y, targetX, targetY);
         if (hasDirectLOS && this.canWalkSegment(player.x, player.y, targetX, targetY)) {
-            // 清空缓存
+            // clean outaircache
             this.astarCache.path = null;
             this.astarCache.currentIndex = 0;
             return { x: targetX, y: targetY };
         }
 
-        // 2. 检查缓存是否有效
+// 2. Check whether the cache is valid
         const now = Date.now();
         const targetChanged = this.astarCache.targetX !== null &&
             (Math.floor(this.astarCache.targetX / TILE_SIZE) !== Math.floor(targetX / TILE_SIZE) ||
                 Math.floor(this.astarCache.targetY / TILE_SIZE) !== Math.floor(targetY / TILE_SIZE));
 
-        const cacheExpired = now - this.astarCache.lastUpdateTime > 2000; // 2秒过期
+        const cacheExpired = now - this.astarCache.lastUpdateTime > 2000; // 2secondexpired
         const needNewPath = !this.astarCache.path || targetChanged || cacheExpired;
 
-        // 3. 如果需要新路径，运行A*
+        // 3. ifneednewpath，runrowA*
         if (needNewPath) {
             const newPath = this.astarFindPath(player.x, player.y, targetX, targetY);
 
             if (newPath && newPath.length > 0) {
-                // 缓存新路径
+                // cachenewpath
                 this.astarCache.path = newPath;
                 this.astarCache.targetX = targetX;
                 this.astarCache.targetY = targetY;
                 this.astarCache.currentIndex = 0;
                 this.astarCache.lastUpdateTime = now;
 
-                // 重算后可以略过起点中心，但只有通道安全时才允许，避免定时折返。
+// After recompute the start center may be skipped, but only when the corridor is safe, to avoid timed back-and-forth.
                 if (newPath.length > 1 && this.canWalkSegment(player.x, player.y, newPath[1].x, newPath[1].y)) {
                     this.astarCache.currentIndex = 1;
                 }
 
-                // 显示调试信息（可选）
+                // Showdebuginfo（optional）
                 if (window.DEBUG_ASTAR) {
-                    console.log(`A* 找到路径: ${newPath.length}个路径点`);
+                    console.log(`A* path found: ${newPath.length} waypoints`);
                 }
             } else {
-                // A*失败，清空缓存，返回null让贪心算法处理
+// A* failed: clear the cache and return null for the greedy fallback
                 this.astarCache.path = null;
                 this.astarCache.currentIndex = 0;
 
-                // 回退到简单的贪心寻路
+// Fall back to simple greedy pathing
                 return this.fallbackGreedyPath(targetX, targetY);
             }
         }
 
-        // 4. 使用缓存的路径
+        // 4. usecachepath
         if (this.astarCache.path && this.astarCache.path.length > 0) {
-            // 跳过已经到达的路径点
+// Skip waypoints already reached
             while (this.astarCache.currentIndex < this.astarCache.path.length) {
                 const waypoint = this.astarCache.path[this.astarCache.currentIndex];
                 const distToWaypoint = Math.hypot(waypoint.x - player.x, waypoint.y - player.y);
 
-                // 与实际移动的5像素停止阈值一致；提前切角必须确认下一段能容纳身体。
+// Matches the real 5px move stop threshold; early corner-cutting must confirm the next segment fits the body.
                 const next = this.astarCache.path[this.astarCache.currentIndex + 1];
                 if (distToWaypoint <= 5 || (next && distToWaypoint < TILE_SIZE * 0.6 &&
                     this.canWalkSegment(player.x, player.y, next.x, next.y))) {
                     this.astarCache.currentIndex++;
                 } else {
-                    // 返回当前路径点
+// Return the current waypoint
                     return { x: waypoint.x, y: waypoint.y };
                 }
             }
 
-            // 所有路径点都走完了，清空缓存
+// All waypoints walked: clear the cache
             this.astarCache.path = null;
             this.astarCache.currentIndex = 0;
             return this.canWalkSegment(player.x, player.y, targetX, targetY)
                 ? { x: targetX, y: targetY } : null;
         }
 
-        // 5. 缓存为空，返回null（让外层决定）
+// 5. Empty cache: return null (let the caller decide)
         return null;
     },
 
-    // 回退的贪心寻路（当A*失败时使用）
+// Greedy fallback pathing (used when A* fails)
     fallbackGreedyPath(targetX, targetY) {
         const toTargetAngle = Math.atan2(targetY - player.y, targetX - player.x);
         const stepDist = 80;
@@ -841,7 +841,7 @@ const AutoBattle = {
             toTargetAngle + Math.PI / 2,
             toTargetAngle - Math.PI * 3 / 4,
             toTargetAngle + Math.PI * 3 / 4,
-            toTargetAngle + Math.PI  // 反向
+            toTargetAngle + Math.PI  // counter-toward
         ];
 
         for (let a of angles) {
@@ -853,19 +853,19 @@ const AutoBattle = {
             }
         }
 
-        // 完全被困，返回当前位置
+// Fully trapped: return the current position
         return { x: player.x, y: player.y };
     },
 
-    // 向目标移动（使用寻路）
+// Move toward the target (using pathing)
     moveTowards(target) {
         const pathPos = this.findPathToTarget(target.x, target.y, target);
 
         if (pathPos) {
-            // 检查是否寻路成功（不是返回原地）
+// Check whether pathing succeeded (not the starting spot)
             const pathDist = Math.hypot(pathPos.x - player.x, pathPos.y - player.y);
             if (pathDist > 5) {
-                // 寻路成功，移动到新位置
+// Pathing succeeded: move to the new position
                 this.targetFailCount = 0;
                 this.lastTargetId = target;
                 player.targetX = pathPos.x;
@@ -874,12 +874,12 @@ const AutoBattle = {
                 player.targetX = null;
                 player.targetY = null;
             } else {
-                // 寻路失败，返回原地，尝试强制脱困
+// Pathing failed: stay put and try force-unstuck
                 if (this.recordTargetPathFailure(target)) return;
                 this.escapeFromStuck();
             }
         } else {
-            // 无法寻路，清除目标
+// No path possible: clear the target
             if (this.recordTargetPathFailure(target)) return;
             player.targetX = null;
             player.targetY = null;
@@ -888,27 +888,27 @@ const AutoBattle = {
         player.targetItem = null;
     },
 
-    // 从目标后退（智能绕墙）
+// Back away from the target (smart wall routing)
     retreatFrom(target) {
         const angle = Math.atan2(player.y - target.y, player.x - target.x);
         const retreatDist = 100;
 
-        // 尝试多个后退方向
+// Try several retreat directions
         const retreatAngles = [
-            angle,                    // 正后方
-            angle + Math.PI / 6,      // 右后15度
-            angle - Math.PI / 6,      // 左后15度
-            angle + Math.PI / 3,      // 右后30度
-            angle - Math.PI / 3,      // 左后30度
-            angle + Math.PI / 2,      // 右侧
-            angle - Math.PI / 2,      // 左侧
+            angle,                    // justafterjust
+            angle + Math.PI / 6,      // rightafter15ratio
+            angle - Math.PI / 6,      // leftafter15ratio
+            angle + Math.PI / 3,      // rightafter30ratio
+            angle - Math.PI / 3,      // leftafter30ratio
+            angle + Math.PI / 2,      // rightside
+            angle - Math.PI / 2,      // leftside
         ];
 
         for (let a of retreatAngles) {
             const testX = player.x + Math.cos(a) * retreatDist;
             const testY = player.y + Math.sin(a) * retreatDist;
 
-            // 找到第一个可行走的后退位置
+// Take the first walkable retreat spot
             if (!isWall(testX, testY)) {
                 player.targetX = testX;
                 player.targetY = testY;
@@ -917,7 +917,7 @@ const AutoBattle = {
             }
         }
 
-        // 如果所有方向都被墙挡住，尝试向侧面小距离移动
+// If walls block every direction, try a short sideways move
         const sideAngles = [angle + Math.PI / 2, angle - Math.PI / 2];
         for (let a of sideAngles) {
             const testX = player.x + Math.cos(a) * 60;
@@ -931,15 +931,15 @@ const AutoBattle = {
             }
         }
 
-        // 实在没办法，原地不动
+// As a last resort, stay still
         player.targetX = null;
         player.targetY = null;
         player.targetItem = null;
     },
 
-    // 向地图中心移动（防卡死）
+// Move toward the map center (anti-stall)
     moveToCenter() {
-        // 随机选择一个不是墙的位置
+// Pick a random non-wall spot
         let attempts = 0;
         let foundPos = false;
 
@@ -956,7 +956,7 @@ const AutoBattle = {
         }
 
         if (!foundPos) {
-            // 实在找不到就用地图中心
+// Fall back to the map center if nothing is found
             player.targetX = MAP_WIDTH * TILE_SIZE / 2;
             player.targetY = MAP_HEIGHT * TILE_SIZE / 2;
         }
@@ -964,39 +964,39 @@ const AutoBattle = {
         player.targetItem = null;
     },
 
-    // 脱困函数：卡墙时尝试脱身（智能版）
+// Unstuck routine: escape when wedged against a wall (smart version)
     escapeFromStuck() {
-        // 记录失败位置，避免再次尝试
+// Record failed positions to avoid retrying them
         this.failedPaths.push({ x: player.x, y: player.y, time: Date.now() });
         if (this.failedPaths.length > 20) {
             this.failedPaths.shift();
         }
 
-        // 重置移动决策计时器，立即重新决策
+// Reset the movement decision timer to decide again now
         this.moveDecisionTimer = 999;
 
-        // 智能脱困：增大脱困距离，避开目标方向
-        const escapeDistances = [150, 250];  // 增大距离，跳出困境
+// Smart unstuck: bigger escape distance, avoid the target direction
+        const escapeDistances = [150, 250];  // increase distance to escape the corner
 
-        // 计算应避免的角度（如果有目标，避开目标方向）
+// Compute the angle to avoid (avoid the target direction if any)
         let avoidAngle = null;
         if (this.currentTarget) {
             avoidAngle = Math.atan2(this.currentTarget.y - player.y, this.currentTarget.x - player.x);
         }
 
-        // 尝试16个方向
+        // try to16direction
         for (let dist of escapeDistances) {
             const angles = [];
             for (let i = 0; i < 16; i++) {
                 angles.push((Math.PI * 2 / 16) * i);
             }
 
-            // 如果有避免角度，排序角度（优先远离目标）
+// With an avoid-angle, sort angles (farthest from the target first)
             if (avoidAngle !== null) {
                 angles.sort((a, b) => {
                     const distA = Math.abs(((a - avoidAngle + Math.PI) % (2 * Math.PI)) - Math.PI);
                     const distB = Math.abs(((b - avoidAngle + Math.PI) % (2 * Math.PI)) - Math.PI);
-                    return distB - distA;  // 距离目标方向越远越优先
+                    return distB - distA;  // The farther from the target direction, the higher the priority
                 });
             }
 
@@ -1005,7 +1005,7 @@ const AutoBattle = {
                 const testY = player.y + Math.sin(angle) * dist;
 
                 if (!isWall(testX, testY)) {
-                    // 检查是否在失败路径黑名单中
+// Check whether it's on the failed-path blacklist
                     const isInBlacklist = this.failedPaths.some(p =>
                         Math.hypot(p.x - testX, p.y - testY) < 80
                     );
@@ -1020,19 +1020,19 @@ const AutoBattle = {
             }
         }
 
-        // 所有方向都失败，移动到地图随机位置
+// All directions failed: move to a random map spot
         this.moveToCenter();
     },
 
-    // 攻击目标
+    // attacktarget
     attackTarget(target) {
         const dist = Math.hypot(target.x - player.x, target.y - player.y);
 
-        // 设置鼠标位置指向目标（技能需要这个）
+// Point the mouse position at the target (skills need it)
         mouse.worldX = target.x;
         mouse.worldY = target.y;
 
-        // 检查视线
+        // Checkline of sight
         const hasLOS = this.hasCachedLineOfSightTo(target);
         const canMelee = this.canMeleeTarget(target, dist, hasLOS);
 
@@ -1043,9 +1043,9 @@ const AutoBattle = {
             }
         }
 
-        // 使用技能
+        // useskill
         if (this.settings.useSkill && player && player.skills && player.skillCooldowns) {
-            // 有视线：火球/多重优先
+            // there isline of sight:firesphere/plentyre-priority
             if (hasLOS) {
                 const fireballCost = getSkillManaCost('fireball', player.skills.fireball || 0);
                 if ((player.skills.fireball || 0) > 0 && (player.skillCooldowns.fireball || 0) <= 0 && dist <= 450 && player.mp >= fireballCost) {
@@ -1060,7 +1060,7 @@ const AutoBattle = {
                 }
             }
 
-            // 雷电术：可以隔墙，射程190
+// Lightning: goes through walls, range 190
             const thunderCost = getSkillManaCost('thunder', player.skills.thunder || 0);
             if ((player.skills.thunder || 0) > 0 && (player.skillCooldowns.thunder || 0) <= 0 && dist <= 190 && player.mp >= thunderCost) {
                 castSkill('thunder');
@@ -1068,35 +1068,35 @@ const AutoBattle = {
             }
         }
 
-        // 普攻统一走 performAttack，避免自动战斗和手动攻击出现两套伤害/动作事实源。
+// Basic attacks route through performAttack so auto battle and manual attacks share one damage/animation source of truth.
     },
 
-    // 自动拾取物品（带优先级）
+// Auto-pickup items (priority-driven)
     autoPickupItems() {
         const inventoryFull = player.inventory.filter(it => it !== null).length >= player.inventory.length;
 
-        // 检查能否为物品腾出空间（只要背包里有比目标稀有度低的物品就可以腾位）
+// Check whether space can be made (any item below the target rarity can be dropped)
         const canMakeRoom = (targetRarity) => {
-            // 只有装备（稀有度>=2）才考虑腾位
+// Only gear (rarity >= 2) considers making space
             if (targetRarity < 2) return false;
             for (let i = 0; i < player.inventory.length; i++) {
                 const it = player.inventory[i];
                 if (!it) continue;
-                // 药水、卷轴不丢
+                // potions and scrolls are not dropped
                 if (it.type === 'potion' || it.type === 'scroll') continue;
-                // 如果背包里的物品稀有度低于目标，就可以腾位
+// An inventory item below the target rarity means space can be made
                 if (it.rarity < targetRarity) return true;
             }
             return false;
         };
 
-        // 候选物品列表
-        let setItems = [];      // 套装：最高优先级
-        let urgentPotions = []; // 紧急药水
-        let uniqueItems = [];   // 暗金/稀有
-        let goldItems = [];     // 金币
-        let consumables = [];   // 药水/卷轴
-        let normalItems = [];   // 蓝/黄
+// Candidate item list
+        let setItems = [];      // Set: highest priority
+        let urgentPotions = []; // Emergency potion
+        let uniqueItems = [];   // Unique/rare
+        let goldItems = [];     // gold
+        let consumables = [];   // potion/scroll
+        let normalItems = [];   // blue/yellow
 
         const hasHealPotion = player.inventory.some(it => it && it.name === CONSUMABLE_NAME.HEALTH_POTION);
         const hasManaPotion = player.inventory.some(it => it && it.name === CONSUMABLE_NAME.MANA_POTION);
@@ -1105,21 +1105,21 @@ const AutoBattle = {
             const it = groundItems[i];
             if (!it) continue;
 
-            // 过滤黑名单物品
+// Filter blacklisted items
             if (this.blacklistedTargets.some(b => b.target === it && Date.now() < b.until)) continue;
 
             const dist = Math.hypot(it.x - player.x, it.y - player.y);
-            if (it.dropTime && Date.now() - it.dropTime < 3000) continue; // 刚丢弃的物品不捡
+            if (it.dropTime && Date.now() - it.dropTime < 3000) continue; // Don't pick up just-dropped items
 
-            // 视线检查：普通物品需要视线；极品物品（套装/暗金/金币）如果距离近即便没视线也要捡（可能在拐角）
+// LOS check: normal items need sight; top items (set/unique/gold) get picked nearby even without sight (may be around a corner)
             const isSuperRare = it.rarity >= 4 || it.type === 'gold';
             if (!isSuperRare && !this.hasCachedLineOfSightTo(it)) continue;
-            // 即便没视线，极品物品距离也有限制（防止全图跑）
+// Even without sight, top items have a distance cap (prevents cross-map runs)
             if (isSuperRare && dist > 800) continue;
 
-            // 分类
+            // minuteclass
             if (it.type === 'gold' && player.autoPickup.gold && dist < 600) {
-                goldItems.push({ item: it, dist, priority: 1 }); // 金币优先级提升至与套装相同
+                goldItems.push({ item: it, dist, priority: 1 }); // Gold priority raised to match set items
             } else if (it.rarity === 5 && dist < 500) {
                 if (!inventoryFull || canMakeRoom(5)) setItems.push({ item: it, dist, priority: 1 });
             } else if (it.rarity === 4 && dist < 500) {
@@ -1139,7 +1139,7 @@ const AutoBattle = {
             }
         }
 
-        // 优先级决断逻辑
+// Priority decision logic
         let bestCandidate = null;
         const candidates = [...setItems, ...urgentPotions, ...uniqueItems, ...goldItems, ...consumables, ...normalItems];
         if (candidates.length > 0) {
@@ -1148,7 +1148,7 @@ const AutoBattle = {
             bestCandidate.prioValue = candidates[0].priority;
         }
 
-        // 激烈战斗判定
+// Intense-combat detection
         const pX = player.x, pY = player.y;
         const inHeavyCombat = enemies.some(e => {
             if (e.dead) return false;
@@ -1156,26 +1156,26 @@ const AutoBattle = {
             return dx * dx + dy * dy < 6400; // 80^2 = 6400
         });
 
-        // 如果当前已有目标，检查是否需要切换
+// With a current target, check whether switching is needed
         if (player.targetItem) {
             const oldExists = groundItems.includes(player.targetItem);
             const oldPrio = player.targetItem.prioValue || 99;
             const oldDist = Math.hypot(player.targetItem.x - player.x, player.targetItem.y - player.y);
 
-            // 切换条件：旧目标消失，或新目标优先级更高，或同优先级但距离近50%以上
+// Switch when: old target gone, new priority higher, or same priority and 50%+ closer
             const shouldSwitch = !oldExists ||
                 (bestCandidate && bestCandidate.prioValue < oldPrio) ||
                 (bestCandidate && bestCandidate.prioValue === oldPrio && bestCandidate.dist < oldDist * 0.5);
 
             if (shouldSwitch) {
-                // 切换到新目标
+// Switch to the new target
                 player.targetItem = null;
             } else {
-                // 保持旧目标，除非旧目标在激烈战斗中且不够重要
+// Keep the old target unless it's in intense combat and unimportant
                 if (inHeavyCombat && oldPrio > 3 && Math.hypot(player.targetItem.x - player.x, player.targetItem.y - player.y) > 100) {
-                    player.targetItem = null; // 战斗中暂缓低优先级拾取
+                    player.targetItem = null; // Defer low-priority pickups during combat
                 } else {
-                    // 保持旧目标，但需要持续更新路径点（用于 A* 寻路）
+// Keep the old target but keep refreshing waypoints (for A*)
                     const item = player.targetItem;
                     if (this.hasCachedLineOfSightTo(item) && this.canWalkSegment(player.x, player.y, item.x, item.y)) {
                         player.targetX = item.x;
@@ -1186,7 +1186,7 @@ const AutoBattle = {
                             player.targetX = pathPoint.x;
                             player.targetY = pathPoint.y;
                         } else {
-                            // 找不到路，放弃
+                            // findnotarrive atroad，abandon
                             this.blacklistedTargets.push({ target: item, until: Date.now() + 30000 });
                             player.targetItem = null;
                             player.targetX = null;
@@ -1198,10 +1198,10 @@ const AutoBattle = {
             }
         }
 
-        // 选择最合适的捡取目标
+// Choose the best pickup target
         let selected = bestCandidate;
         if (selected && inHeavyCombat) {
-            // 激烈战斗中，只允许捡套装(1)、紧急药水(2)或已经在脚下的东西
+// In intense combat, only set(1), emergency potions(2) or items already underfoot
             if (selected.prioValue > 2 && Math.hypot(selected.x - player.x, selected.y - player.y) > 150) {
                 selected = null;
             }
@@ -1212,40 +1212,40 @@ const AutoBattle = {
                 this.dropLowestValueItem(selected.rarity);
             }
 
-            // 检查是否有视线，决定移动方式
+// Check line of sight to pick the movement style
             if (this.hasCachedLineOfSightTo(selected) && this.canWalkSegment(player.x, player.y, selected.x, selected.y)) {
-                // 有视线，直接走过去
+// With sight, walk straight over
                 player.targetItem = selected;
                 player.targetX = selected.x;
                 player.targetY = selected.y;
             } else {
-                // 没有视线，使用 A* 寻路
+                // noline of sight，use A* pathing
                 const pathPoint = this.findPathToTarget(selected.x, selected.y, selected);
                 if (pathPoint) {
                     player.targetItem = selected;
                     player.targetX = pathPoint.x;
                     player.targetY = pathPoint.y;
                 } else {
-                    // A* 找不到路，放弃这个物品，加入黑名单 30 秒
+// A* found no path: give up on this item, blacklist for 30s
                     this.blacklistedTargets.push({ target: selected, until: Date.now() + 30000 });
                     player.targetItem = null;
                     player.targetX = null;
                     player.targetY = null;
                 }
             }
-            selected.prioValue = selected.prioValue; // 记录优先级用于下次对比
+            selected.prioValue = selected.prioValue; // Record the priority for the next comparison
         }
     },
 
-    // 丢弃背包中最低价值物品（用于给更高稀有度的物品腾位）
+// Drop the lowest-value inventory item (to make room for a higher rarity)
     dropLowestValueItem(targetRarity) {
         let lowestIdx = -1, lowestVal = Infinity;
         for (let i = 0; i < player.inventory.length; i++) {
             const it = player.inventory[i];
             if (!it) continue;
-            // 药水、卷轴不丢
+            // potions and scrolls are not dropped
             if (it.type === 'potion' || it.type === 'scroll') continue;
-            // 只有比目标稀有度低的物品才会被丢弃
+// Only items below the target rarity get dropped
             if (it.rarity < targetRarity) {
                 const val = (it.rarity || 0) * 1000 + (it.def || 0) + (it.minDmg || 0);
                 if (val < lowestVal) { lowestVal = val; lowestIdx = i; }
@@ -1255,14 +1255,14 @@ const AutoBattle = {
             const item = player.inventory[lowestIdx];
             player.inventory[lowestIdx] = null;
             groundItems.push({ ...item, x: player.x, y: player.y, dropTime: Date.now() });
-            createFloatingText(player.x, player.y - 40, `丢弃 ${item.name}`, '#888', 1.5);
+            createFloatingText(player.x, player.y - 40, `Dropped ${item.name}`, '#888', 1.5);
             return true;
         }
         return false;
     },
 };
 
-// 自动拾取设置切换
+// Auto-pickup settings toggle
 function toggleAutoPickup(itemType) {
     let checkbox = null;
     if (itemType === 'gold') checkbox = cachedUI.chkAutoGold;
@@ -1272,5 +1272,5 @@ function toggleAutoPickup(itemType) {
     if (!checkbox) return;
     player.autoPickup[itemType] = checkbox.checked;
     SaveSystem.save();
-    showNotification(`自动拾取${itemType === 'gold' ? '金币' : itemType === 'potion' ? '药水' : '卷轴'}：${checkbox.checked ? '开启' : '关闭'}`);
+    showNotification(`Auto-pickup ${itemType === 'gold' ? 'gold' : itemType === 'potion' ? 'potions' : 'scrolls'}: ${checkbox.checked ? 'on' : 'off'}`);
 }

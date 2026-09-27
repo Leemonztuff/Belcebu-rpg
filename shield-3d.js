@@ -1,4 +1,4 @@
-// 正交投影球面：同一次 GPU 绘制输出前后半球，沿用角色原有遮挡顺序。
+// Orthographic sphere: one GPU draw outputs both hemispheres, keeping the character's original occlusion order.
 const Shield3D = (() => {
     const size = 160;
     let enabled = true, canvas, gl, program, uniforms, failed = false;
@@ -44,7 +44,7 @@ void main(){
             if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(shader));
             return shader;
         };
-        // GPU 初始化是边界：不可用时保持既有2D护盾，并明确记录原因。
+// GPU init is the boundary: when unavailable the existing 2D shield stays, with the reason clearly logged.
         try {
             program = gl.createProgram();
             const shaders = [compile(gl.VERTEX_SHADER, vertex), compile(gl.FRAGMENT_SHADER, fragment)];
@@ -56,7 +56,7 @@ void main(){
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1,1,-1,-1,1,-1,1,1,-1,1,1]), gl.STATIC_DRAW);
             const position = gl.getAttribLocation(program, 'position'); gl.enableVertexAttribArray(position); gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
             uniforms = Object.fromEntries(['time','health','impactAge','impact','tint'].map(key => [key,gl.getUniformLocation(program,key)]));
-        } catch (error) { console.warn('立体护盾初始化失败，使用原有护盾', error); gl = null; failed = true; return false; }
+        } catch (error) { console.warn('3D shield init failed, using legacy shield', error); gl = null; failed = true; return false; }
         return true;
     }
     function draw(ctx, x, y, shield, front, now = performance.now()) {

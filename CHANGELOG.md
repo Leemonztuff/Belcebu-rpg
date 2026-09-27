@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Full English Codebase Migration (Migración completa del código a inglés)
+- Migrated every remaining Chinese code comment to English across all JS, CSS and HTML files (0 Han characters left in comments).
+- Promoted English to the canonical i18n key language for items and affixes: `i18n.js` tables now key by EN names with `{es,en,zh}` values, keeping zh aliases for legacy saves.
+- `getItemDisplayName` and affix rendering now resolve both EN and legacy zh keys, so old saves display correctly in any language.
+- Added save-load migration: legacy zh item names, display names and affixes are translated to EN on load without resetting player data.
+- Boss difficulty prefixes now handle EN ("Hell") alongside legacy ES/zh in `stripBossDifficultyPrefix`, `item-system.js` name parsing and legacy discovery regexes.
+- `index.html` static defaults, meta tags and manifest fully in EN; HTML comments translated.
+- Bumped `?v=` cache versions for all changed JS/CSS assets.
+
 ### 精灵角色尺寸与标签位置归一化 (Actor Sprite Scale & Label Alignment)
 - 统一玩家、NPC 与普通怪物的精灵绘制高度，保留精英和首领的尺寸层级，不改变碰撞体。
 - 将玩家称号、NPC 名称与任务标记移到角色头顶，并按归一化尺寸重新定位。

@@ -1,6 +1,6 @@
-// ========== pixi-effects.js - PixiJS 增强特效系统 ==========
-// 版本: 1.0 | 依赖: pixi.min.js (v7.4)
-// 用途: 提供 WebGL 加速的粒子特效，叠加在 Canvas 2D 渲染之上
+// ========== pixi-effects.js - PixiJS enhanced VFX system ==========
+// Version: 1.0 | Depends on: pixi.min.js (v7.4)
+// Purpose: WebGL-accelerated particle VFX layered on top of Canvas 2D rendering
 
 const PixiEffects = {
   app: null,
@@ -11,7 +11,7 @@ const PixiEffects = {
   cameraY: 0,
   initialized: false,
 
-  // 初始化 PixiJS 应用
+  // Init the PixiJS application
   init(gameContainer, width, height) {
     if (typeof PIXI === 'undefined') {
       console.warn('PixiJS not loaded, effects disabled');
@@ -19,7 +19,7 @@ const PixiEffects = {
     }
 
     try {
-      // 创建 PixiJS 应用
+      // Create the PixiJS application
       this.app = new PIXI.Application({
         width: width,
         height: height,
@@ -29,7 +29,7 @@ const PixiEffects = {
         autoDensity: true
       });
 
-      // 设置 canvas 样式
+      // Set canvas style
       this.app.view.style.cssText = `
                 position: absolute;
                 top: 0;
@@ -40,17 +40,17 @@ const PixiEffects = {
                 z-index: 10;
             `;
 
-      // 添加到游戏容器
+      // Add to game container
       gameContainer.appendChild(this.app.view);
 
-      // 创建粒子容器
+      // Create particle container
       this.container = new PIXI.Container();
       this.app.stage.addChild(this.container);
 
-      // 预生成纹理
+      // Pre-generate textures
       this.createTextures();
 
-      // 设置更新循环
+      // Set update loop
       this.app.ticker.add(() => this._update());
 
       this.initialized = true;
@@ -62,17 +62,17 @@ const PixiEffects = {
     }
   },
 
-  // 预生成纹理
+  // Pre-generate textures
   createTextures() {
     const g = new PIXI.Graphics();
 
-    // 圆形粒子
+    // Circular particle
     g.beginFill(0xffffff);
     g.drawCircle(16, 16, 16);
     g.endFill();
     this.textures.circle = this.app.renderer.generateTexture(g);
 
-    // 光晕纹理
+    // Glow texture
     g.clear();
     const gradientRadius = 32;
     for (let i = gradientRadius; i > 0; i--) {
@@ -83,7 +83,7 @@ const PixiEffects = {
     }
     this.textures.glow = this.app.renderer.generateTexture(g);
 
-    // 火焰纹理
+    // Flame texture
     g.clear();
     g.beginFill(0xffffff);
     g.moveTo(8, 0);
@@ -94,14 +94,14 @@ const PixiEffects = {
     g.endFill();
     this.textures.flame = this.app.renderer.generateTexture(g);
 
-    // 火花纹理
+    // Spark texture
     g.clear();
     g.beginFill(0xffffff);
     g.drawRect(0, 0, 4, 4);
     g.endFill();
     this.textures.spark = this.app.renderer.generateTexture(g);
 
-    // 斩击弧纹理
+    // Slash arc texture
     g.clear();
     g.lineStyle(4, 0xffffff);
     g.arc(16, 16, 14, -0.8, 0.8);
@@ -110,27 +110,27 @@ const PixiEffects = {
     g.destroy();
   },
 
-  // 同步相机
+  // Sync camera
   syncCamera(x, y) {
     this.cameraX = x;
     this.cameraY = y;
   },
 
-  // 调整大小
+  // Resize
   resize(width, height) {
     if (this.app && this.app.renderer) {
       this.app.renderer.resize(width, height);
     }
   },
 
-  // 更新循环
+  // Update loop
   _update() {
     const dt = this.app.ticker.deltaMS / 1000;
 
     for (let i = this.particles.length - 1; i >= 0; i--) {
       const p = this.particles[i];
 
-      // 更新生命周期
+      // Update lifecycle
       p.life -= dt;
       if (p.life <= 0) {
         this.container.removeChild(p.sprite);
@@ -139,37 +139,37 @@ const PixiEffects = {
         continue;
       }
 
-      // 执行自定义更新逻辑
+      // Run custom update logic
       if (p.onUpdate) {
         p.onUpdate(p, dt);
       } else {
-        // 默认物理
+        // Default physics
         if (p.vx !== undefined) p.x += p.vx * dt;
         if (p.vy !== undefined) p.y += p.vy * dt;
         if (p.gravity) p.vy += p.gravity * dt;
       }
 
-      // 更新精灵位置（世界坐标转屏幕坐标）
+      // Update sprite positions (world coords to screen coords)
       p.sprite.x = p.x - this.cameraX;
       p.sprite.y = p.y - this.cameraY;
 
-      // 更新透明度
+      // Update opacity
       const lifeRatio = p.life / p.maxLife;
       p.sprite.alpha = p.fadeOut ? (p.targetAlpha || 1) * lifeRatio : (p.targetAlpha || 1);
 
-      // 更新缩放
+      // Update scale
       if (p.scaleDecay) {
         p.sprite.scale.set(p.sprite.scale.x * (1 - p.scaleDecay * dt));
       }
     }
   },
 
-  // 获取粒子数量
+  // Get particle count
   getParticleCount() {
     return this.particles.length;
   },
 
-  // 创建粒子
+  // Create particle
   _createParticle(options) {
     const texture = this.textures[options.texture] || this.textures.circle;
     const sprite = new PIXI.Sprite(texture);
@@ -204,14 +204,14 @@ const PixiEffects = {
     return particle;
   },
 
-  // 斩击弧
+  // Slash arc
   slashEffect(x, y, angle, radius, isCrit) {
     if (!this.initialized) return;
 
     this._createParticle({
       x, y, texture: 'slash',
       color: isCrit ? 0xffdd00 : 0xffffff,
-      scale: radius / 16, // 根据半径缩放（原纹理大小约32px）
+      scale: radius / 16, // Scale by radius (original texture ~32px)
       rotation: angle,
       life: 0.15,
       fadeOut: true,
@@ -229,7 +229,7 @@ const PixiEffects = {
     }
   },
 
-  // 飞行拾取粒子
+  // Flying pickup particle
   flyingPickup(startX, startY, type, item, targetPlayer) {
     if (!this.initialized) return;
 
@@ -253,17 +253,17 @@ const PixiEffects = {
         p.elapsed = (p.elapsed || 0) + dt;
         const t = Math.min(1, p.elapsed / p.maxLife);
 
-        // 贝塞尔曲线
+        // Bezier curve
         const it = 1 - t;
         p.x = it ** 3 * startX + 3 * it ** 2 * t * controlX1 + 3 * it * t ** 2 * controlX2 + t ** 3 * targetPlayer.x;
         p.y = it ** 3 * startY + 3 * it ** 2 * t * controlY1 + 3 * it * t ** 2 * controlY2 + t ** 3 * (targetPlayer.y - 30);
 
-        // 逐渐缩小并飞向目标
+        // Shrink gradually and fly to the target
         p.sprite.scale.set(p.sprite.scale.x * (1 - 0.5 * dt));
       }
     });
 
-    // 核心高光
+    // Core highlight
     this._createParticle({
       x: startX, y: startY,
       texture: 'circle',
@@ -281,23 +281,23 @@ const PixiEffects = {
     });
   },
 
-  // ========== 特效函数 ==========
+  // ========== VFX functions ==========
 
-  // 火球爆炸
+  // Fireball explosion
   fireballExplosion(x, y, level) {
     if (!this.initialized) return;
 
     const count = 15 + level * 2;
     const radius = 50 + (level - 5) * 10;
 
-    // 核心闪光
+    // Core flash
     this._createParticle({
       x, y, texture: 'glow',
       color: 0xffff00, scale: 1.5,
       life: 0.3, scaleDecay: 3
     });
 
-    // 火焰粒子
+    // Flame particles
     for (let i = 0; i < count; i++) {
       const angle = (Math.PI * 2 / count) * i + Math.random() * 0.3;
       const speed = radius * (0.8 + Math.random() * 0.4);
@@ -314,7 +314,7 @@ const PixiEffects = {
       });
     }
 
-    // 火星
+    // Sparks
     for (let i = 0; i < 10; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 100 + Math.random() * 150;
@@ -331,18 +331,18 @@ const PixiEffects = {
     }
   },
 
-  // 闪电冲击
+  // Lightning impact
   lightningImpact(x, y) {
     if (!this.initialized) return;
 
-    // 中心闪光
+    // Center flash
     this._createParticle({
       x, y, texture: 'glow',
       color: 0xffffff, scale: 1.2,
       life: 0.2, scaleDecay: 5
     });
 
-    // 电弧粒子
+    // Arc particles
     for (let i = 0; i < 12; i++) {
       const angle = (Math.PI * 2 / 12) * i;
       const speed = 150 + Math.random() * 100;
@@ -358,18 +358,18 @@ const PixiEffects = {
     }
   },
 
-  // 暴击
+  // Crit
   criticalHit(x, y) {
     if (!this.initialized) return;
 
-    // 金色爆发
+    // Gold burst
     this._createParticle({
       x, y, texture: 'glow',
       color: 0xffd700, scale: 0.8,
       life: 0.25, scaleDecay: 4
     });
 
-    // 放射光点
+    // Radiating light dots
     for (let i = 0; i < 8; i++) {
       const angle = (Math.PI * 2 / 8) * i;
       const speed = 120;
@@ -385,11 +385,11 @@ const PixiEffects = {
     }
   },
 
-  // 击杀效果
+  // Kill effect
   killEffect(x, y, color = 0xff4444) {
     if (!this.initialized) return;
 
-    // 血雾爆发
+    // Blood mist burst
     for (let i = 0; i < 15; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 50 + Math.random() * 80;
@@ -406,11 +406,11 @@ const PixiEffects = {
     }
   },
 
-  // 治疗效果
+  // Healing effect
   healEffect(x, y) {
     if (!this.initialized) return;
 
-    // 绿色上升光点
+    // Green rising light dots
     for (let i = 0; i < 12; i++) {
       this._createParticle({
         x: x + (Math.random() - 0.5) * 40,
@@ -424,11 +424,11 @@ const PixiEffects = {
     }
   },
 
-  // 金币拾取
+  // Gold pickup
   goldPickup(x, y) {
     if (!this.initialized) return;
 
-    // 金色火花
+    // Gold sparks
     for (let i = 0; i < 8; i++) {
       const angle = Math.random() * Math.PI * 2;
       const speed = 60 + Math.random() * 40;
@@ -445,18 +445,18 @@ const PixiEffects = {
     }
   },
 
-  // 升级效果
+  // Level-up effect
   levelUpEffect(x, y) {
     if (!this.initialized) return;
 
-    // 金色光柱
+    // Gold light pillar
     this._createParticle({
       x, y: y - 100, texture: 'glow',
       color: 0xffd700, scale: 2,
       life: 1, scaleDecay: 0.5
     });
 
-    // 底部光环
+    // Bottom aura
     for (let i = 0; i < 20; i++) {
       const angle = (Math.PI * 2 / 20) * i;
       const radius = 60;
@@ -474,9 +474,9 @@ const PixiEffects = {
     }
   },
 
-  // ========== 通用粒子函数（用于迁移 Canvas 粒子） ==========
+  // ========== Generic particle functions (for migrating Canvas particles) ==========
 
-  // 通用击中粒子（替代 createImpactParticles）
+// Generic hit particles (replaces createImpactParticles)
   impactParticles(x, y, color, count = 5) {
     if (!this.initialized) return;
 
@@ -498,7 +498,7 @@ const PixiEffects = {
     }
   },
 
-  // 通用单粒子
+  // Generic single particle
   simpleParticle(x, y, color, vx, vy, life = 0.5, size = 3, gravity = 0) {
     if (!this.initialized) return;
 
@@ -511,7 +511,7 @@ const PixiEffects = {
     });
   },
 
-  // 通用 Nova 效果（替代 createNovaEffect）
+// Generic Nova effect (replaces createNovaEffect)
   novaEffect(x, y, color, count = 12) {
     if (!this.initialized) return;
 
@@ -532,7 +532,7 @@ const PixiEffects = {
     }
   },
 
-  // 火球拖尾粒子
+  // Fireball trail particles
   fireballTrail(x, y) {
     if (!this.initialized) return;
 
@@ -551,7 +551,7 @@ const PixiEffects = {
     });
   },
 
-  // 冰霜粒子
+  // Frost particles
   frostParticles(x, y, count = 8) {
     if (!this.initialized) return;
 
@@ -571,7 +571,7 @@ const PixiEffects = {
     }
   },
 
-  // 毒雾粒子
+  // Poison cloud particles
   poisonParticles(x, y, count = 6) {
     if (!this.initialized) return;
 
@@ -590,7 +590,7 @@ const PixiEffects = {
     }
   },
 
-  // 闪电链粒子
+  // Lightning chain particles
   lightningChain(x1, y1, x2, y2) {
     if (!this.initialized) return;
 
@@ -611,7 +611,7 @@ const PixiEffects = {
     }
   },
 
-  // 血迹飞溅
+  // Blood splatter
   bloodSplash(x, y, count = 10) {
     if (!this.initialized) return;
 
@@ -631,7 +631,7 @@ const PixiEffects = {
     }
   },
 
-  // 技能冷却完成闪光
+  // Skill cooldown complete flash
   skillReadyFlash(x, y) {
     if (!this.initialized) return;
 
@@ -654,11 +654,11 @@ const PixiEffects = {
     }
   },
 
-  // 传送门效果
+  // Portal effect
   portalEffect(x, y) {
     if (!this.initialized) return;
 
-    // 紫色旋转粒子
+    // Purple rotating particles
     for (let i = 0; i < 15; i++) {
       const angle = (Math.PI * 2 / 15) * i + performance.now() * 0.002;
       const radius = 30 + Math.random() * 20;
@@ -675,7 +675,7 @@ const PixiEffects = {
     }
   },
 
-  // 装备掉落光柱
+  // Gear drop light pillar
   itemDropBeam(x, y, rarity) {
     if (!this.initialized) return;
 
@@ -689,14 +689,14 @@ const PixiEffects = {
 
     const color = colors[rarity] || 0xffffff;
 
-    // 光柱
+    // Light pillar
     this._createParticle({
       x, y: y - 80, texture: 'glow',
       color: color, scale: 1.5,
       life: 0.8, scaleDecay: 0.8
     });
 
-    // 环绕粒子
+    // Orbiting particles
     for (let i = 0; i < 12; i++) {
       const angle = (Math.PI * 2 / 12) * i;
       this._createParticle({
@@ -711,7 +711,7 @@ const PixiEffects = {
     }
   },
 
-  // 奖励粒子爆发（每日签到）
+  // Reward particle burst (daily check-in)
   rewardBurst(x, y, isSpecial = false) {
     if (!this.initialized) return;
 
@@ -736,7 +736,7 @@ const PixiEffects = {
       });
     }
 
-    // 特殊日额外上升星星
+    // Extra rising stars on special days
     if (isSpecial) {
       for (let i = 0; i < 15; i++) {
         this._createParticle({
@@ -752,7 +752,7 @@ const PixiEffects = {
     }
   },
 
-  // 多重射击拖尾
+  // Multishot trail
   multishotTrail(x, y) {
     if (!this.initialized) return;
 
@@ -770,7 +770,7 @@ const PixiEffects = {
     });
   },
 
-  // 升级金色粒子爆发
+  // Level-up gold particle burst
   levelUpBurst(x, y) {
     if (!this.initialized) return;
 
@@ -793,7 +793,7 @@ const PixiEffects = {
       });
     }
 
-    // 上升星星
+    // Rising stars
     for (let i = 0; i < 15; i++) {
       this._createParticle({
         x: x + (Math.random() - 0.5) * 60,
@@ -807,7 +807,7 @@ const PixiEffects = {
     }
   },
 
-  // 墙壁碰撞粒子
+  // Wall collision particles
   wallHit(x, y, count = 3) {
     if (!this.initialized) return;
 
@@ -826,7 +826,7 @@ const PixiEffects = {
     }
   },
 
-  // 吸血鬼突进残影
+  // Vampire dash afterimage
   vampireDashTrail(x, y) {
     if (!this.initialized) return;
 
@@ -842,7 +842,7 @@ const PixiEffects = {
     });
   },
 
-  // 吸血效果（粒子吸入）
+  // Leech effect (particles sucked in)
   lifestealEffect(fromX, fromY, toX, toY) {
     if (!this.initialized) return;
 
@@ -859,17 +859,17 @@ const PixiEffects = {
         fadeOut: true
       });
 
-      // 手动计算一点点物理，使其飞向目标
+      // Compute a bit of physics manually so it flies to the target
       p.vx = (toX - fromX) * 2 + (Math.random() - 0.5) * 50;
       p.vy = (toY - fromY) * 2 + (Math.random() - 0.5) * 50;
     }
   },
 
-  // 凤凰复活特效
+  // Phoenix revive VFX
   phoenixResurrection(x, y) {
     if (!this.initialized) return;
 
-    // 巨大的火环爆发
+    // Huge fire ring burst
     for (let i = 0; i < 30; i++) {
       const angle = (Math.PI * 2 / 30) * i;
       const speed = 150 + Math.random() * 150;
@@ -886,7 +886,7 @@ const PixiEffects = {
       });
     }
 
-    // 核心闪光
+    // Core flash
     this._createParticle({
       x, y, texture: 'glow',
       color: 0xffaa00, scale: 2.5,
@@ -894,11 +894,11 @@ const PixiEffects = {
     });
   },
 
-  // Boss 死亡爆发
+  // Boss death burst
   bossDeathBurst(x, y) {
     if (!this.initialized) return;
 
-    // 极大量爆裂粒子
+    // Massive burst particles
     const count = 60;
     const colors = [0xff4400, 0xff8800, 0xffcc00, 0xffffff, 0xff0000];
 
@@ -918,7 +918,7 @@ const PixiEffects = {
       });
     }
 
-    // 红色冲击波
+    // Red shockwave
     this._createParticle({
       x, y, texture: 'glow',
       color: 0xff0000, scale: 3.0,
@@ -926,7 +926,7 @@ const PixiEffects = {
     });
   },
 
-  // 高级分段闪电（替代复杂的 Canvas 闪电）
+  // Advanced segmented lightning (replaces complex Canvas lightning)
   advancedLightning(points, color = 0xffffff, isMain = true) {
     if (!this.initialized) return;
 
@@ -936,7 +936,7 @@ const PixiEffects = {
       const p1 = points[i];
       const p2 = points[i + 1];
 
-      // 每个分段创建一些发光点
+      // Create a few glow dots per segment
       this._createParticle({
         x: (p1.x + p2.x) / 2,
         y: (p1.y + p2.y) / 2,
@@ -948,7 +948,7 @@ const PixiEffects = {
         alpha: isMain ? 1.0 : 0.6
       });
 
-      // 如果是主闪电，在节点处加光晕
+      // For the main bolt, add halos at nodes
       if (isMain && Math.random() < 0.3) {
         this._createParticle({
           x: p1.x, y: p1.y,
@@ -961,18 +961,18 @@ const PixiEffects = {
     }
   },
 
-  // 传送光圈
+  // Teleport ring
   teleportFlash(x, y) {
     if (!this.initialized) return;
 
-    // 中心爆发
+    // Center burst
     this._createParticle({
       x, y, texture: 'glow',
       color: 0x8866ff, scale: 1.5,
       life: 0.4, scaleDecay: 3
     });
 
-    // 环状粒子
+    // Ring particles
     for (let i = 0; i < 16; i++) {
       const angle = (Math.PI * 2 / 16) * i;
       const radius = 40;
@@ -990,7 +990,7 @@ const PixiEffects = {
     }
   },
 
-  // 环境氛围粒子
+  // Ambient atmosphere particles
   atmosphere(type, x, y) {
     if (!this.initialized) return;
 
@@ -1020,17 +1020,17 @@ const PixiEffects = {
     }
   },
 
-  // ========== 辅助函数 ==========
+  // ========== Helper functions ==========
 
-  // 解析颜色（CSS 颜色字符串转 hex 数值）
+  // Parse color (CSS color string to hex number)
   _parseColor(color) {
     if (typeof color === 'number') return color;
     if (typeof color !== 'string') return 0xffffff;
 
-    // 移除 # 前缀
+    // Strip the # prefix
     let hex = color.replace('#', '');
 
-    // 处理简写
+    // Handle shorthand
     if (hex.length === 3) {
       hex = hex[0] + hex[0] + hex[1] + hex[1] + hex[2] + hex[2];
     }
@@ -1039,6 +1039,6 @@ const PixiEffects = {
   }
 };
 
-// 导出全局
+// Export globals
 window.PixiEffects = PixiEffects;
 

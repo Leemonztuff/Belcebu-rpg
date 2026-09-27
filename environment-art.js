@@ -1,5 +1,5 @@
-// 全区域静态美术：复用透明图集归一化，仅裁切原生 alpha 内容，不执行抠色。
-// 加载顺序：art-samples.js → environment-art.js → game.js。
+// Whole-area static art: reuse transparent atlas normalization, cropping only native alpha content, with no color keying.
+// Load order: art-samples.js -> environment-art.js -> game.js.
 const EnvironmentArt = (() => {
     const definitions = Object.freeze({
         ice: { file: 'ice-props-painted.png', cols: 2, rows: 3 },
@@ -32,7 +32,7 @@ const EnvironmentArt = (() => {
         lava_gate: ['biomeLandmarks',2,0], obsidian_spires: ['biomeLandmarks',2,1]
     });
     const npcFrames = Object.freeze({merchant: [0, 0], healer: [0, 1], stash: [1, 0], blacksmith: [1, 1], difficulty: [2, 0], respec: [2, 1]});
-    // 世界像素高度：小型杂物低于人物，地标高于人物，不再按源图片长宽猜尺度。
+    // World pixel heights: small props below characters, landmarks above; stop guessing scale from source image dimensions.
     const visualHeights = Object.freeze({
         moss_rock:30, stump:28, lantern:62, gravestone:44, shrub:30, bones:16,
         ice_cluster:46, ice_spire:86, frost_bones:17, blue_flame:54, rune_stone:44, frost_pillar:92,
@@ -50,7 +50,7 @@ const EnvironmentArt = (() => {
     const atlases = new Map();
     function registerAtlas(key, source) {
         const definition = definitions[key];
-        if (!definition) throw new RangeError(`未知环境图集：${key}`);
+        if (!definition) throw new RangeError(`Unknown environment atlas: ${key}`);
         const atlas = ArtSamples.prepareSource(source, definition);
         atlases.set(key, atlas);
         return atlas;
@@ -60,7 +60,7 @@ const EnvironmentArt = (() => {
         const source = atlases.get(key);
         if (!source) return null;
         const definition = definitions[key];
-        if (row < 0 || row >= definition.rows || col < 0 || col >= definition.cols) throw new RangeError(`环境素材帧越界：${key} ${row}:${col}`);
+        if (row < 0 || row >= definition.rows || col < 0 || col >= definition.cols) throw new RangeError(`Environment frame out of range: ${key} ${row}:${col}`);
         return {source, x: col * 128, y: row * 128, width: 128, height: 128, animated: false,
             contentBounds: source.contentBounds[row * definition.cols + col]};
     }
@@ -86,9 +86,9 @@ const EnvironmentArt = (() => {
             try { registerAtlas(key, image); resolve(key); }
             catch (error) { reject(error); }
         };
-        image.onerror = () => reject(new Error(`环境图集加载失败：${definition.file}`));
+        image.onerror = () => reject(new Error(`Environment atlas load failed: ${definition.file}`));
         image.src = `${ArtSamples.assetPath(definition.file)}?v=2026090701`;
     })));
-    ready.catch(error => console.error('[环境美术] 素材验收失败', error));
+    ready.catch(error => console.error('[Env Art] asset validation failed', error));
     return {definitions, scenicFrames, visualHeights, npcFrames, destructibleRows, floorFrames, registerAtlas, frame, scenic, npc, destructible, floor, ready};
 })();

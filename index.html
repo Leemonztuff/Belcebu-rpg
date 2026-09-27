@@ -1,30 +1,30 @@
 <!DOCTYPE html>
-<!-- 使用 Service Worker 网络优先策略，无需手动更新版本号 -->
-<html lang="zh-CN">
+<!-- Uses the Service Worker network-first strategy; no manual version bumps needed -->
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- 禁用HTML缓存 -->
+    <!-- Disable HTML caching -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title data-i18n="game_title">菠萝战纪 Brawlore</title>
-    <meta name="description" content="菠萝战纪 - 经典的动作RPG游戏，在您的浏览器中体验原汁原味的ARPG风格冒险。战斗、收集装备、学习技能、完成任务！">
-    <meta name="keywords" content="菠萝战纪,Brawlore,网页游戏,在线游戏,ARPG,动作RPG">
+    <title data-i18n="game_title">Brawlore</title>
+    <meta name="description" content="Brawlore - A classic action RPG: enjoy authentic ARPG-style adventures right in your browser. Fight, collect gear, learn skills, complete quests!">
+    <meta name="keywords" content="Brawlore, browser game, online game, ARPG, action RPG">
     <meta name="author" content="Hardcore Travel">
 
     <!-- Open Graph Meta Tags -->
-    <meta property="og:title" content="菠萝战纪 Brawlore">
-    <meta property="og:description" content="在浏览器中体验经典ARPG游戏 - 战斗、探索、收集史诗装备！">
+    <meta property="og:title" content="Brawlore">
+    <meta property="og:description" content="Experience a classic ARPG in your browser - fight, explore, collect epic gear!">
     <meta property="og:type" content="website">
     <!-- <meta property="og:url" content="https://example.com/diablo-web/">
     <meta property="og:image" content="https://example.com/diablo-web/preview.jpg"> -->
 
     <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="菠萝战纪 Brawlore">
-    <meta name="twitter:description" content="在浏览器中体验经典ARPG游戏 - 战斗、探索、收集史诗装备！">
+    <meta name="twitter:title" content="Brawlore">
+    <meta name="twitter:description" content="Experience a classic ARPG in your browser - fight, explore, collect epic gear!">
     <!-- <meta name="twitter:image" content="https://example.com/diablo-web/preview.jpg"> -->
 
     <!-- PWA -->
@@ -33,56 +33,56 @@
     <meta name="theme-color" content="#1a1a2e">
     <link rel="apple-touch-icon" href="icon-192.png?v=2026090803">
 
-    <link rel="stylesheet" href="style.css?v=202609251900">
-    <link rel="stylesheet" href="skill-art.css?v=2026090602">
+    <link rel="stylesheet" href="style.css?v=202609271500">
+    <link rel="stylesheet" href="skill-art.css?v=202609271500">
 </head>
 
-<!-- 版本标记: v7.13 物理横扫刀锋 -->
+<!-- Version marker: v7.13 Physical Sweeping Blade -->
 
 <body>
 
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
-        <div id="art-loading" role="status" aria-live="polite" hidden>正在加载区域资源…</div>
-        <!-- 濒危视觉警告：低HP时屏幕边缘红光 -->
+        <div id="art-loading" role="status" aria-live="polite" hidden>Loading area assets…</div>
+        <!-- Low-HP visual warning: red screen edge glow -->
         <div id="low-hp-vignette"></div>
         <div class="ui-layer">
-            <div id="floor-display" data-i18n="floor_display_town">罗格营地 (Town)</div>
+            <div id="floor-display" data-i18n="floor_display_town">Rogue Encampment (Town)</div>
             <button id="quick-lang-btn" class="quick-lang-btn" onclick="toggleQuickLanguage()" title="Cambiar Idioma / Change Language">
                 <span id="quick-lang-text">🌐 ES</span>
             </button>
             <div id="hell-indicator" data-i18n="hell_mode"
                 style="display:none; position: absolute; top: 70px; left: 10px; color: #ff4444; font-weight: bold; font-size: 16px;">
-                地狱</div>
+                Hell</div>
             <div id="minimap-container"><canvas id="minimap" width="150" height="150"></canvas></div>
             <div class="auto-battle-container" onmousedown="event.stopPropagation()">
-                <div id="auto-battle-btn" class="auto-battle-btn" onclick="toggleAutoBattle()" title="开启/关闭自动战斗"
+                <div id="auto-battle-btn" class="auto-battle-btn" onclick="toggleAutoBattle()" title="Toggle auto battle"
                     data-i18n-title="auto_battle_tip">
                     <span id="auto-battle-icon">⚔️</span>
-                    <span id="auto-battle-text" data-i18n="auto_battle_btn">自动战斗(F)</span>
+                    <span id="auto-battle-text" data-i18n="auto_battle_btn">Auto Battle(F)</span>
                 </div>
                 <div id="auto-battle-settings-btn" class="auto-battle-settings-btn" onclick="togglePanel('auto-battle')"
-                    title="自动战斗设置" data-i18n-title="auto_battle_settings">⚙️</div>
-                <!-- 自动战斗收益HUD -->
+                    title="Auto battle settings" data-i18n-title="auto_battle_settings">⚙️</div>
+                <!-- Auto battle earnings HUD -->
                 <div id="auto-battle-fee-hud" class="auto-battle-fee-hud">
-                    <div><span data-i18n="auto_battle_earned">获得: </span><span id="auto-battle-gold">0</span>💰</div>
-                    <div><span data-i18n="auto_battle_fee">雇佣费: </span><span id="auto-battle-fee">0</span>💰</div>
+                    <div><span data-i18n="auto_battle_earned">Earned:</span><span id="auto-battle-gold">0</span>💰</div>
+                    <div><span data-i18n="auto_battle_fee">Fee:</span><span id="auto-battle-fee">0</span>💰</div>
                 </div>
             </div>
             <div id="quest-tracker"></div>
 
-            <!-- 世界聊天框 -->
+            <!-- World chat box -->
             <div id="chat-box" class="chat-box" onmousedown="event.stopPropagation()">
                 <div class="chat-header" onclick="toggleChatBox()">
-                    <span class="chat-title" data-i18n="world_chat">💬 世界频道</span>
+                    <span class="chat-title" data-i18n="world_chat">💬 World Channel</span>
                     <span class="chat-unread" id="chat-unread"></span>
                     <span class="chat-toggle" id="chat-toggle-icon">▼</span>
                 </div>
                 <div class="chat-body" id="chat-body">
                     <div class="chat-messages" id="chat-messages">
-                        <!-- 消息会动态添加 -->
+                        <!-- Messages are appended dynamically -->
                     </div>
-                    <!-- 快捷表情面板 -->
+                    <!-- Quick emote panel -->
                     <div id="emote-panel" class="emote-panel" style="display:none;">
                         <div class="emote-row emote-emoji">
                             <span class="emote-item" data-emote="👍">👍</span>
@@ -95,16 +95,16 @@
                         </div>
                         <div class="emote-row emote-text">
                             <span class="emote-item" data-emote="666" data-i18n="chat_quick_666">666</span>
-                            <span class="emote-item" data-emote="大佬带带" data-i18n="chat_quick_carry">大佬带带</span>
-                            <span class="emote-item" data-emote="厉害" data-i18n="chat_quick_nice">厉害</span>
-                            <span class="emote-item" data-emote="求组队" data-i18n="chat_quick_party">求组队</span>
-                            <span class="emote-item" data-emote="谢谢" data-i18n="chat_quick_thanks">谢谢</span>
+                            <span class="emote-item" data-emote="Carry me please" data-i18n="chat_quick_carry">Carry me</span>
+                            <span class="emote-item" data-emote="Nice" data-i18n="chat_quick_nice">Nice</span>
+                            <span class="emote-item" data-emote="LFG" data-i18n="chat_quick_party">LFG</span>
+                            <span class="emote-item" data-emote="Thank you" data-i18n="chat_quick_thanks">Thanks</span>
                         </div>
                     </div>
                     <div class="chat-input-area">
-                        <input type="text" id="chat-input" placeholder="输入消息..." data-i18n-placeholder="chat_placeholder" maxlength="50" autocomplete="off">
+                        <input type="text" id="chat-input" placeholder="Type a message..." data-i18n-placeholder="chat_placeholder" maxlength="50" autocomplete="off">
                         <button id="emote-btn" class="emote-btn" onclick="toggleEmotePanel(event)">😀</button>
-                        <button id="chat-send-btn" onclick="sendChatMessage()" data-i18n="chat_send">发送</button>
+                        <button id="chat-send-btn" onclick="sendChatMessage()" data-i18n="chat_send">Send</button>
                     </div>
                 </div>
             </div>
@@ -124,93 +124,93 @@
                 </div>
                 <picture>
                     <source media="(max-width: 768px) and (orientation: portrait)" srcset="art/brand-terrain/cover-mobile.webp?v=2026090803">
-                    <img id="start-screen-bg" src="art/brand-terrain/cover-desktop.webp?v=2026090803" alt="蓝围巾冒险者守候在暮色营地，石拱门通向森林" fetchpriority="high">
+                    <img id="start-screen-bg" src="art/brand-terrain/cover-desktop.webp?v=2026090803" alt="A blue-scarfed adventurer waits at the dusk camp, stone arch leading to the forest" fetchpriority="high">
                 </picture>
-                <div class="login-brand"><h1 data-i18n="game_title">菠萝战纪</h1><p data-i18n="game_sub">BRAWLORE</p></div>
+                <div class="login-brand"><h1 data-i18n="game_title">Brawlore</h1><p data-i18n="game_sub">BRAWLORE</p></div>
                 <div id="welcome-back"></div>
 
-                <!-- 云同步状态栏 -->
+                <!-- Cloud sync status bar -->
                 <div id="cloud-sync-bar" class="cloud-sync-bar" style="display:none;">
                     <span class="cloud-icon">☁️</span>
-                    <span id="cloud-sync-status">加载中...</span>
-                    <button id="btn-cloud-sync" class="cloud-btn" onclick="CloudSync.showSyncDialog()" data-i18n="cloud_sync">云同步</button>
+                    <span id="cloud-sync-status">Loading...</span>
+                    <button id="btn-cloud-sync" class="cloud-btn" onclick="CloudSync.showSyncDialog()" data-i18n="cloud_sync">Cloud Sync</button>
                     <span id="cloud-sync-code" style="display:none;"></span>
                 </div>
 
-                <button class="start-btn disabled" onclick="showSlotSelection()" data-i18n="enter_sanctuary" disabled>踏入庇护所</button>
+                <button class="start-btn disabled" onclick="showSlotSelection()" data-i18n="enter_sanctuary" disabled>Enter Sanctuary</button>
 
                 <div id="save-status" data-i18n="loading" style="color: #fff; font-size: 12px; margin-top: 20px;">
-                    正在加载...
+                    Loading...
                 </div>
-                <!-- <p style="color: #666; font-size: 10px; margin-top: 5px;">在线: <span id="online-count">1</span></p> -->
+                <!-- <p style="color: #666; font-size: 10px; margin-top: 5px;">Online: <span id="online-count">1</span></p> -->
                 <p style="color: #888; font-size: 11px; margin-top: 10px;"><span id="game-version"></span>
                     <span id="changelog-link" onclick="showChangelogPanel()"
                         style="color: #ffd700; text-decoration: underline; cursor: pointer; margin-left: 8px;"
-                        data-i18n="changelog_btn">更新公告</span>
+                        data-i18n="changelog_btn">Patch Notes</span>
                 </p>
             </div>
 
-            <!-- 更新公告面板 -->
+            <!-- Update announcement panel -->
             <div id="changelog-panel" class="changelog-panel" style="display: none;">
                 <div class="changelog-header">
-                    <span data-i18n="changelog_title">📜 更新公告</span>
+                    <span data-i18n="changelog_title">📜 Update Notes</span>
                 </div>
                 <div class="changelog-content" id="changelog-content">
-                    <!-- 动态生成 -->
+                    <!-- Generated dynamically -->
                 </div>
                 <div class="changelog-footer">
-                    <button class="changelog-confirm-btn" onclick="closeChangelogPanel()" data-i18n="confirm">确定</button>
+                    <button class="changelog-confirm-btn" onclick="closeChangelogPanel()" data-i18n="confirm">Confirm</button>
                 </div>
             </div>
 
             <div id="stats-panel" class="panel">
                 <div class="panel-close" onclick="togglePanel('stats')"></div>
-                <div class="panel-header" data-i18n="stats_title">角色属性</div>
-                <div class="stat-row"><span data-i18n="stat_level">等级</span> <span><span id="stat-lvl" style="color:white">1</span> <span
+                <div class="panel-header" data-i18n="stats_title">Character Stats</div>
+                <div class="stat-row"><span data-i18n="stat_level">Level</span> <span><span id="stat-lvl" style="color:white">1</span> <span
                             id="stat-title" style="font-size:11px;margin-left:4px;"></span></span></div>
-                <div class="stat-row"><span data-i18n="stat_xp">经验</span> <span id="stat-xp">0 / 100</span></div>
+                <div class="stat-row"><span data-i18n="stat_xp">Experience</span> <span id="stat-xp">0 / 100</span></div>
                 <hr style="border-color: #333">
-                <div class="stat-row" style="color:var(--text-gold)"><span data-i18n="stat_points">属性点</span> <span id="stat-points">0</span>
+                <div class="stat-row" style="color:var(--text-gold)"><span data-i18n="stat_points">Stat Points</span> <span id="stat-points">0</span>
                 </div>
-                <div class="stat-row"><span data-i18n="stat_str">力量</span>
+                <div class="stat-row"><span data-i18n="stat_str">Strength</span>
                     <div><span id="stat-str">15</span> <button class="stat-btn" onclick="addStat('str')">+</button>
                     </div>
                 </div>
-                <div class="stat-row"><span data-i18n="stat_dex">敏捷</span>
+                <div class="stat-row"><span data-i18n="stat_dex">Dexterity</span>
                     <div><span id="stat-dex">15</span> <button class="stat-btn" onclick="addStat('dex')">+</button>
                     </div>
                 </div>
-                <div class="stat-row"><span data-i18n="stat_vit">体力</span>
+                <div class="stat-row"><span data-i18n="stat_vit">Vitality</span>
                     <div><span id="stat-vit">20</span> <button class="stat-btn" onclick="addStat('vit')">+</button>
                     </div>
                 </div>
-                <div class="stat-row"><span data-i18n="stat_ene">精力</span>
+                <div class="stat-row"><span data-i18n="stat_ene">Energy</span>
                     <div><span id="stat-ene">10</span> <button class="stat-btn" onclick="addStat('ene')">+</button>
                     </div>
                 </div>
                 <hr style="border-color: #333">
-                <div class="stat-row"><span data-i18n="stat_hp">生命值 (HP)</span> <span id="stat-hp-val" style="color:#ff4444">100</span>
+                <div class="stat-row"><span data-i18n="stat_hp">Health (HP)</span> <span id="stat-hp-val" style="color:#ff4444">100</span>
                 </div>
-                <div class="stat-row"><span data-i18n="stat_mp">法力值 (MP)</span> <span id="stat-mp-val" style="color:#4444ff">50</span></div>
-                <div class="stat-row"><span data-i18n="stat_damage">伤害</span> <span id="stat-dmg" style="color:white">2-4</span></div>
-                <div class="stat-row"><span data-i18n="stat_defense">防御</span> <span id="stat-def" style="color:white">5</span></div>
-                <div class="stat-row"><span data-i18n="stat_crit">暴击率</span> <span id="stat-crit" style="color:#ffff00">0%</span></div>
-                <div class="stat-row"><span data-i18n="stat_ias">攻速加成</span> <span id="stat-ias" style="color:#ffff00">0%</span></div>
-                <div class="stat-row"><span data-i18n="stat_ll">生命窃取</span> <span id="stat-ll" style="color:#ff0000">0%</span></div>
+                <div class="stat-row"><span data-i18n="stat_mp">Mana (MP)</span> <span id="stat-mp-val" style="color:#4444ff">50</span></div>
+                <div class="stat-row"><span data-i18n="stat_damage">Damage</span> <span id="stat-dmg" style="color:white">2-4</span></div>
+                <div class="stat-row"><span data-i18n="stat_defense">Defense</span> <span id="stat-def" style="color:white">5</span></div>
+                <div class="stat-row"><span data-i18n="stat_crit">Critical Rate</span> <span id="stat-crit" style="color:#ffff00">0%</span></div>
+                <div class="stat-row"><span data-i18n="stat_ias">Attack Speed</span> <span id="stat-ias" style="color:#ffff00">0%</span></div>
+                <div class="stat-row"><span data-i18n="stat_ll">Life Leech</span> <span id="stat-ll" style="color:#ff0000">0%</span></div>
                 <hr style="border-color: #333">
-                <div class="stat-row"><span data-i18n="stat_res_fire">🔥 火焰抗性</span> <span id="stat-fire-res" style="color:#ff6644">0%</span>
+                <div class="stat-row"><span data-i18n="stat_res_fire">🔥 Fire Resistance</span> <span id="stat-fire-res" style="color:#ff6644">0%</span>
                 </div>
-                <div class="stat-row"><span data-i18n="stat_res_cold">❄️ 冰霜抗性</span> <span id="stat-cold-res" style="color:#4488ff">0%</span>
+                <div class="stat-row"><span data-i18n="stat_res_cold">❄️ Cold Resistance</span> <span id="stat-cold-res" style="color:#4488ff">0%</span>
                 </div>
-                <div class="stat-row"><span data-i18n="stat_res_lightning">⚡ 闪电抗性</span> <span id="stat-lightning-res" style="color:#ffff44">0%</span>
+                <div class="stat-row"><span data-i18n="stat_res_lightning">⚡ Lightning Res.</span> <span id="stat-lightning-res" style="color:#ffff44">0%</span>
                 </div>
-                <div class="stat-row"><span data-i18n="stat_res_poison">☠️ 毒素抗性</span> <span id="stat-poison-res" style="color:#44ff44">0%</span>
+                <div class="stat-row"><span data-i18n="stat_res_poison">☠️ Poison Res.</span> <span id="stat-poison-res" style="color:#44ff44">0%</span>
                 </div>
             </div>
 
             <div id="inventory-panel" class="panel">
                 <div class="panel-close" onclick="togglePanel('inventory')"></div>
-                <div class="panel-header" data-i18n="inv_title">物品栏</div>
+                <div class="panel-header" data-i18n="inv_title">Inventory</div>
                 <div class="equipment-grid">
                     <!-- Row 1 -->
                     <div class="equip-slot" id="slot-helm" onclick="unequipItem('helm')"></div>
@@ -226,63 +226,61 @@
                     <div class="equip-slot" id="slot-boots" onclick="unequipItem('boots')"></div>
                 </div>
                 <div style="margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size: 0.8em; color: #888;"><span data-i18n="inv_gold">金币: </span><span id="gold-display" style="color:gold">0</span>
-                        <span style="font-size:0.8em; color:#666;" data-i18n="inv_sellable">(商店可售)</span></span>
-                    <button class="sort-btn" onclick="sortInventory()" data-i18n="inv_sort">📦 整理</button>
+                    <span style="font-size: 0.8em; color: #888;"><span data-i18n="inv_gold">Gold:</span><span id="gold-display" style="color:gold">0</span>
+                        <span style="font-size:0.8em; color:#666;" data-i18n="inv_sellable">(Can sell in shop)</span></span>
+                    <button class="sort-btn" onclick="sortInventory()" data-i18n="inv_sort">📦 Sort</button>
                 </div>
                 <div class="bag-grid" id="bag-grid"></div>
                 <div
                     style="margin-top: 15px; padding: 8px; background: rgba(0, 0, 0, 0.5); border: 1px solid #333; border-radius: 5px; font-size: 11px; color: #aaa; line-height: 1.5;">
-                    <div data-i18n="inv_tips_click">💡 左键：使用或装备物品（打开仓库时左键=存入） 右键：丢弃物品（仅在地牢）</div>
-                    <div data-i18n="inv_tips_town">💰 罗格营地找基格可以买卖物品，找瓦瑞夫使用仓库</div>
+                    <div data-i18n="inv_tips_click">💡 Left click: Use or equip (in stash = store) Right click: Drop (dungeon only)</div>
+                    <div data-i18n="inv_tips_town">💰 Visit Gheed to trade, visit Warriv to access personal stash</div>
                 </div>
             </div>
 
             <div id="skills-panel" class="panel skill-tree-panel">
                 <div class="panel-close" onclick="togglePanel('skills')"></div>
-                <div class="panel-header" data-i18n="skills_title">技能树</div>
-                <div class="skill-tree-points"><span data-i18n="skills_points">技能点: </span><span id="skill-points">0</span></div>
+                <div class="panel-header" data-i18n="skills_title">Skill Tree</div>
+                <div class="skill-tree-points"><span data-i18n="skills_points">Skill Points:</span><span id="skill-points">0</span></div>
                 <div class="skill-tree-tabs">
                     <div class="skill-tree-tab active" data-skill="fireball" data-i18n="tab_fire"
-                        onclick="switchSkillTab('fireball')">🔥 火焰
-                    </div>
+                        onclick="switchSkillTab('fireball')">🔥 Fire</div>
                     <div class="skill-tree-tab" data-skill="thunder" data-i18n="tab_thunder"
-                        onclick="switchSkillTab('thunder')">⚡ 雷电</div>
+                        onclick="switchSkillTab('thunder')">⚡ Lightning</div>
                     <div class="skill-tree-tab" data-skill="multishot" data-i18n="tab_multishot"
-                        onclick="switchSkillTab('multishot')">🏹 射击</div>
+                        onclick="switchSkillTab('multishot')">🏹 Archery</div>
                     <div class="skill-tree-tab" data-skill="holy_shield" data-i18n="tab_holy_shield"
-                        onclick="switchSkillTab('holy_shield')">🛡️ 护盾
-                    </div>
+                        onclick="switchSkillTab('holy_shield')">🛡️ Shield</div>
                 </div>
                 <div id="skill-tree-content" class="skill-tree-scroll">
-                    <!-- 动态生成技能树内容 -->
+                    <!-- Skill tree content generated dynamically -->
                 </div>
             </div>
 
             <div id="quest-panel" class="panel">
                 <div class="panel-close" onclick="togglePanel('quest')"></div>
-                <div class="panel-header" data-i18n="quest_title">任务日志</div>
+                <div class="panel-header" data-i18n="quest_title">Quest Log</div>
                 <div id="quest-list"></div>
             </div>
 
             <div id="achievements-panel" class="panel">
                 <div class="panel-close" onclick="togglePanel('achievements')"></div>
-                <div class="panel-header" data-i18n="menu_achievements">🏆 成就</div>
+                <div class="panel-header" data-i18n="menu_achievements">Trophies</div>
                 <div id="achievement-list"></div>
             </div>
 
             <div id="set-collection-panel" class="panel">
                 <div class="panel-close" onclick="togglePanel('set-collection')"></div>
-                <div class="panel-header" data-i18n="menu_codex">📚 图鉴</div>
+                <div class="panel-header" data-i18n="menu_codex">Codex</div>
                 <div class="codex-tabs">
-                    <div class="codex-tab active" data-tab="sets" data-i18n="tt_set" onclick="switchCodexTab('sets')">套装</div>
-                    <div class="codex-tab" data-tab="monsters" onclick="switchCodexTab('monsters')">怪物</div>
+                    <div class="codex-tab active" data-tab="sets" data-i18n="tt_set" onclick="switchCodexTab('sets')">Set</div>
+                    <div class="codex-tab" data-tab="monsters" onclick="switchCodexTab('monsters')">Monsters</div>
                 </div>
                 <div id="codex-sets" class="codex-content active">
                     <div class="set-collection-header">
                         <div class="set-collection-stats">
-                            <span>已发现: <span id="set-discovered-count">0</span>/9 套装</span>
-                            <span>已收集: <span id="set-pieces-count">0</span> 部件</span>
+                            <span>Discovered: <span id="set-discovered-count">0</span>/9 sets</span>
+                            <span>Collected: <span id="set-pieces-count">0</span> pieces</span>
                         </div>
                     </div>
                     <div id="set-collection-list"></div>
@@ -290,7 +288,7 @@
                 <div id="codex-monsters" class="codex-content">
                     <div class="monster-codex-header">
                         <div class="monster-codex-stats">
-                            <span>已发现: <span id="monster-discovered-count">0</span>/15</span>
+                            <span>Discovered: <span id="monster-discovered-count">0</span>/15</span>
                         </div>
                     </div>
                     <div id="monster-codex-list"></div>
@@ -299,122 +297,122 @@
 
             <div id="shop-panel" class="panel">
                 <div class="panel-close" onclick="togglePanel('shop')"></div>
-                <div class="panel-header" data-i18n="shop_title">基格商店</div>
-                <div class="shop-section-title" data-i18n="shop_supplies">物资补给（长按可以快速购买）</div>
+                <div class="panel-header" data-i18n="shop_title">Gheed's Shop</div>
+                <div class="shop-section-title" data-i18n="shop_supplies">Supplies (Long press for fast buy)</div>
                 <div class="gamble-grid" style="margin-top:0; grid-template-columns: repeat(4, 1fr);">
                     <div class="gamble-slot buy-slot" data-type="health">
                         <div class="shop-item-icon" style="background-position: 33.333% 0%"></div>
-                        <div data-i18n="item_health_pot">治疗药剂</div>
+                        <div data-i18n="item_health_pot">Health Potion</div>
                         <div class="gamble-price">50 G</div>
                     </div>
                     <div class="gamble-slot buy-slot" data-type="mana">
                         <div class="shop-item-icon" style="background-position: 66.666% 0%"></div>
-                        <div data-i18n="item_mana_pot">法力药剂</div>
+                        <div data-i18n="item_mana_pot">Mana Potion</div>
                         <div class="gamble-price">50 G</div>
                     </div>
                     <div class="gamble-slot buy-slot" data-type="scroll">
                         <div class="shop-item-icon" style="background-position: 100% 0%"></div>
-                        <div data-i18n="item_tp_scroll">回城卷轴</div>
+                        <div data-i18n="item_tp_scroll">Portal Scroll</div>
                         <div class="gamble-price">100 G</div>
                     </div>
                     <div class="gamble-slot buy-slot" data-type="xp_scroll" style="border-color:#ffff00;">
                         <div style="font-size:20px;">⚡</div>
-                        <div style="font-size:11px;" data-i18n="item_xp_scroll">双倍经验</div>
+                        <div style="font-size:11px;" data-i18n="item_xp_scroll">Double XP</div>
                         <div class="gamble-price" style="color:#ffff00;">1000 G</div>
                     </div>
                 </div>
-                <div class="shop-section-title" style="margin-top:15px;" data-i18n="shop_gamble">未辨识装备 (赌博)</div>
+                <div class="shop-section-title" style="margin-top:15px;" data-i18n="shop_gamble">Unidentified Items (Gamble)</div>
                 <div class="gamble-grid" style="margin-top:0; grid-template-columns: repeat(4, 1fr);">
                     <div class="gamble-slot" onclick="gambleItem('weapon')">
                         <div class="shop-item-icon" style="background-position: 0% 33.333%"></div>
-                        <div data-i18n="item_weapon">武器</div>
+                        <div data-i18n="item_weapon">Weapon</div>
                         <div class="gamble-price">500</div>
                     </div>
                     <div class="gamble-slot" onclick="gambleItem('armor')">
                         <div class="shop-item-icon" style="background-position: 33.333% 66.666%"></div>
-                        <div data-i18n="item_armor">护甲</div>
+                        <div data-i18n="item_armor">Armor</div>
                         <div class="gamble-price">400</div>
                     </div>
                     <div class="gamble-slot" onclick="gambleItem('helm')">
                         <div class="shop-item-icon" style="background-position: 0% 66.666%"></div>
-                        <div data-i18n="item_helm">头盔</div>
+                        <div data-i18n="item_helm">Helm</div>
                         <div class="gamble-price">300</div>
                     </div>
                     <div class="gamble-slot" onclick="gambleItem('gloves')">
                         <div class="shop-item-icon" style="background-position: 66.666% 66.666%"></div>
-                        <div data-i18n="item_gloves">手套</div>
+                        <div data-i18n="item_gloves">Gloves</div>
                         <div class="gamble-price">250</div>
                     </div>
                     <div class="gamble-slot" onclick="gambleItem('boots')">
                         <div class="shop-item-icon" style="background-position: 100% 66.666%"></div>
-                        <div data-i18n="item_boots">鞋子</div>
+                        <div data-i18n="item_boots">Boots</div>
                         <div class="gamble-price">250</div>
                     </div>
                     <div class="gamble-slot" onclick="gambleItem('belt')">
                         <div class="shop-item-icon" style="background-position: 0% 100%"></div>
-                        <div data-i18n="item_belt">腰带</div>
+                        <div data-i18n="item_belt">Belt</div>
                         <div class="gamble-price">250</div>
                     </div>
                     <div class="gamble-slot" onclick="gambleItem('ring')">
                         <div class="shop-item-icon" style="background-position: 66.666% 100%"></div>
-                        <div data-i18n="item_ring">戒指</div>
+                        <div data-i18n="item_ring">Ring</div>
                         <div class="gamble-price">800</div>
                     </div>
                     <div class="gamble-slot" onclick="gambleItem('amulet')">
                         <div class="shop-item-icon" style="background-position: 100% 100%"></div>
-                        <div data-i18n="item_amulet">项链</div>
+                        <div data-i18n="item_amulet">Amulet</div>
                         <div class="gamble-price">1000</div>
                     </div>
                 </div>
-                <!-- 内嵌背包 -->
+                <!-- Embedded inventory -->
                 <div class="embedded-bag-section">
-                    <div class="embedded-bag-header"><span data-i18n="bag_title">📦 背包</span> <span style="color:#888;font-size:11px;"
-                            data-i18n="bag_click_sell">(点击出售)</span> <span
-                            id="shop-gold-display" style="color:gold; float:right;">金币: 0</span></div>
+                    <div class="embedded-bag-header"><span data-i18n="bag_title">📦 Backpack</span> <span style="color:#888;font-size:11px;"
+                            data-i18n="bag_click_sell">(Click to sell)</span> <span
+                            id="shop-gold-display" style="color:gold; float:right;">Gold: 0</span></div>
                     <div class="embedded-bag-grid" id="shop-embedded-bag"></div>
                 </div>
             </div>
 
             <div id="stash-panel" class="panel">
                 <div class="panel-close" onclick="togglePanel('stash')"></div>
-                <div class="panel-header"><span data-i18n="stash_title">私人仓库</span> <span id="stash-size-info"
+                <div class="panel-header"><span data-i18n="stash_title">Private Stash</span> <span id="stash-size-info"
                         style="font-size:12px;color:#888;"></span>
                 </div>
                 <div style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
-                    <span style="font-size: 0.9em; color: #888;" data-i18n="stash_subtitle">与背包互通，可自由存取物品</span>
-                    <button class="sort-btn" onclick="sortStash()" data-i18n="inv_sort">📦 整理</button>
+                    <span style="font-size: 0.9em; color: #888;" data-i18n="stash_subtitle">Linked with bag, freely transfer items</span>
+                    <button class="sort-btn" onclick="sortStash()" data-i18n="inv_sort">📦 Sort</button>
                 </div>
                 <div class="stash-grid" id="stash-grid"></div>
                 <div id="stash-expand-btn" class="stash-expand-btn" onclick="expandStash()"></div>
-                <!-- 内嵌背包 -->
+                <!-- Embedded inventory -->
                 <div class="embedded-bag-section">
-                    <div class="embedded-bag-header"><span data-i18n="bag_title">📦 背包</span> <span style="color:#888;font-size:11px;"
-                            data-i18n="bag_click_deposit">(点击存入)</span> <span
-                            id="stash-gold-display" style="color:gold; float:right;">金币: 0</span></div>
+                    <div class="embedded-bag-header"><span data-i18n="bag_title">📦 Backpack</span> <span style="color:#888;font-size:11px;"
+                            data-i18n="bag_click_deposit">(Click to store)</span> <span
+                            id="stash-gold-display" style="color:gold; float:right;">Gold: 0</span></div>
                     <div class="embedded-bag-grid" id="stash-embedded-bag"></div>
                 </div>
             </div>
 
             <div id="auto-battle-panel" class="panel">
                 <div class="panel-close" onclick="togglePanel('auto-battle')"></div>
-                <div class="panel-header" data-i18n="settings_title">系统设置</div>
+                <div class="panel-header" data-i18n="settings_title">System Settings</div>
 
                 <!-- Tabs -->
                 <div class="settings-tabs">
                     <button class="tab-btn active" id="tab-btn-combat" data-i18n="settings_tab_combat"
-                        onclick="switchSettingsTab('combat')">挂机策略</button>
+                        onclick="switchSettingsTab('combat')">Strategy</button>
                     <button class="tab-btn" id="tab-btn-general" data-i18n="settings_tab_general"
-                        onclick="switchSettingsTab('general')">通用设置</button>
+                        onclick="switchSettingsTab('general')">General</button>
                 </div>
 
                 <!-- Tab 1: Combat Strategy -->
                 <div id="tab-combat" class="tab-content" style="display: block;">
                     <div class="stat-row" style="color: #ffff88; font-weight: bold; margin-bottom: 10px;">
-                        <span data-i18n="settings_combat_heading">战斗策略</span>
+                        <span data-i18n="settings_combat_heading">Combat Tactics</span>
                     </div>
 
                     <div class="stat-row">
-                        <span data-i18n="settings_use_skills">优先使用技能</span>
+                        <span data-i18n="settings_use_skills">Prioritize skills</span>
                         <label class="checkbox-label">
                             <input type="checkbox" id="auto-use-skill" checked onchange="updateAutoBattleSettings()">
                             <span class="checkmark"></span>
@@ -422,7 +420,7 @@
                     </div>
 
                     <div class="stat-row">
-                        <span data-i18n="settings_keep_distance">保持距离 (远程)</span>
+                        <span data-i18n="settings_keep_distance">Keep distance (Ranged)</span>
                         <div>
                             <input type="range" id="auto-keep-distance" min="50" max="300" value="150" step="10"
                                 onchange="updateAutoBattleSettings(); updateDistanceDisplay()">
@@ -432,11 +430,11 @@
 
                     <hr style="border-color: #333; margin: 15px 0;">
                     <div class="stat-row" style="color: #ffff88; font-weight: bold; margin-bottom: 10px;">
-                        <span data-i18n="settings_survival_heading">生存设置</span>
+                        <span data-i18n="settings_survival_heading">Survival Tactics</span>
                     </div>
 
                     <div class="stat-row">
-                        <span data-i18n="settings_hp_potion_at">喝红药阈值</span>
+                        <span data-i18n="settings_hp_potion_at">Drink Health Potion at</span>
                         <div>
                             <input type="range" id="auto-hp-threshold" min="10" max="80" value="30" step="5"
                                 onchange="updateAutoBattleSettings(); updateHpDisplay()">
@@ -445,7 +443,7 @@
                     </div>
 
                     <div class="stat-row">
-                        <span data-i18n="settings_mp_potion_at">喝蓝药阈值</span>
+                        <span data-i18n="settings_mp_potion_at">Drink Mana Potion at</span>
                         <div>
                             <input type="range" id="auto-mp-threshold" min="10" max="50" value="20" step="5"
                                 onchange="updateAutoBattleSettings(); updateMpDisplay()">
@@ -454,7 +452,7 @@
                     </div>
 
                     <div class="stat-row">
-                        <span data-i18n="settings_tp_at">紧急回城阈值</span>
+                        <span data-i18n="settings_tp_at">Emergency town portal at</span>
                         <div>
                             <input type="range" id="auto-emergency-hp" min="5" max="30" value="15" step="5"
                                 onchange="updateAutoBattleSettings(); updateEmergencyDisplay()">
@@ -464,11 +462,11 @@
 
                     <hr style="border-color: #333; margin: 15px 0;">
                     <div class="stat-row" style="color: #ffff88; font-weight: bold; margin-bottom: 10px;">
-                        <span data-i18n="settings_pickup_adv">高级拾取</span>
+                        <span data-i18n="settings_pickup_adv">Advanced Looting</span>
                     </div>
 
                     <div class="stat-row">
-                        <span data-i18n="settings_pickup_unique">自动拾取暗金</span>
+                        <span data-i18n="settings_pickup_unique">Auto-loot Unique items</span>
                         <label class="checkbox-label">
                             <input type="checkbox" id="auto-pickup-unique" checked
                                 onchange="updateAutoBattleSettings()">
@@ -477,7 +475,7 @@
                     </div>
 
                     <div class="stat-row">
-                        <span data-i18n="settings_pickup_set">自动拾取套装</span>
+                        <span data-i18n="settings_pickup_set">Auto-loot Set items</span>
                         <label class="checkbox-label">
                             <input type="checkbox" id="auto-pickup-set" checked onchange="updateAutoBattleSettings()">
                             <span class="checkmark"></span>
@@ -488,10 +486,10 @@
                 <!-- Tab 2: General Settings -->
                 <div id="tab-general" class="tab-content" style="display: none;">
                     <div class="stat-row" style="color: #ffff88; font-weight: bold; margin-bottom: 10px;">
-                        <span data-i18n="settings_language">语言 / Language / Idioma</span>
+                        <span data-i18n="settings_language">Language</span>
                     </div>
                     <div class="stat-row">
-                        <span data-i18n="settings_language">语言 / Language</span>
+                        <span data-i18n="settings_language">Language</span>
                         <select id="select-game-language" onchange="I18N.setLanguage(this.value)"
                             style="background:#222; color:#fff; border:1px solid #c7b377; padding:4px 8px; border-radius:4px; font-weight:bold;">
                             <option value="es">🇪🇸 Español</option>
@@ -502,18 +500,18 @@
                     <hr style="border-color: #333; margin: 15px 0;">
 
                     <div class="stat-row" style="color: #ffff88; font-weight: bold; margin-bottom: 10px;">
-                        <span data-i18n="settings_graphics">画质设置</span>
+                        <span data-i18n="settings_graphics">Graphics Settings</span>
                     </div>
                     <div class="stat-row">
-                        <span data-i18n="settings_vfx_quality">特效质量</span>
+                        <span data-i18n="settings_vfx_quality">Visual Quality</span>
                         <select id="select-graphics-quality" onchange="toggleGraphicsQuality()"
                             style="background:#222; color:#fff; border:1px solid #444; padding:4px 8px; border-radius:4px;">
-                            <option value="high" data-i18n="settings_vfx_high">华丽特效</option>
-                            <option value="low" data-i18n="settings_vfx_low">性能优先</option>
+                            <option value="high" data-i18n="settings_vfx_high">High FX</option>
+                            <option value="low" data-i18n="settings_vfx_low">Performance</option>
                         </select>
                     </div>
                     <div class="stat-row">
-                        <span data-i18n="settings_juice">打击感增强 (顿帧/实体缩放)</span>
+                        <span data-i18n="settings_juice">Combat Hit Impact (Frame pause/scaling)</span>
                         <label class="checkbox-label">
                             <input type="checkbox" id="chk-juice" onchange="updateAutoBattleSettings()">
                             <span class="checkmark"></span>
@@ -522,10 +520,10 @@
 
                     <hr style="border-color: #333; margin: 15px 0;">
                     <div class="stat-row" style="color: #ffff88; font-weight: bold; margin-bottom: 10px;">
-                        <span data-i18n="settings_sound_heading">音效设置</span>
+                        <span data-i18n="settings_sound_heading">Audio Settings</span>
                     </div>
                     <div class="stat-row">
-                        <span data-i18n="settings_bgm">背景音乐</span>
+                        <span data-i18n="settings_bgm">Background Music</span>
                         <label class="checkbox-label">
                             <input type="checkbox" id="chk-bgm" checked
                                 onchange="AudioSys.toggleSetting('bgm', this.checked)">
@@ -533,7 +531,7 @@
                         </label>
                     </div>
                     <div class="stat-row">
-                        <span data-i18n="settings_sfx">音效</span>
+                        <span data-i18n="settings_sfx">Sound Effects</span>
                         <label class="checkbox-label">
                             <input type="checkbox" id="chk-sfx" checked
                                 onchange="AudioSys.toggleSetting('sfx', this.checked)">
@@ -543,25 +541,25 @@
 
                     <hr style="border-color: #333; margin: 15px 0;">
                     <div class="stat-row" style="color: #ffff88; font-weight: bold; margin-bottom: 10px;">
-                        <span data-i18n="settings_pickup_basic">基础拾取</span>
+                        <span data-i18n="settings_pickup_basic">Basic Looting</span>
                     </div>
 
                     <div class="stat-row">
-                        <span data-i18n="settings_pickup_gold">自动拾取金币</span>
+                        <span data-i18n="settings_pickup_gold">Auto-loot Gold</span>
                         <label class="checkbox-label">
                             <input type="checkbox" id="chk-auto-gold" checked onchange="toggleAutoPickup('gold')">
                             <span class="checkmark"></span>
                         </label>
                     </div>
                     <div class="stat-row">
-                        <span data-i18n="settings_pickup_potion">自动拾取药水</span>
+                        <span data-i18n="settings_pickup_potion">Auto-loot Potions</span>
                         <label class="checkbox-label">
                             <input type="checkbox" id="chk-auto-potion" checked onchange="toggleAutoPickup('potion')">
                             <span class="checkmark"></span>
                         </label>
                     </div>
                     <div class="stat-row">
-                        <span data-i18n="settings_pickup_scroll">自动拾取卷轴</span>
+                        <span data-i18n="settings_pickup_scroll">Auto-loot Scrolls</span>
                         <label class="checkbox-label">
                             <input type="checkbox" id="chk-auto-scroll" checked onchange="toggleAutoPickup('scroll')">
                             <span class="checkmark"></span>
@@ -570,12 +568,12 @@
                 </div>
             </div>
 
-            <!-- 传送小站网络面板 -->
+            <!-- Waypoint network panel -->
             <div id="waypoint-panel" class="panel">
                 <div class="panel-close" onclick="togglePanel('waypoint')"></div>
-                <div class="panel-header" id="waypoint-panel-title" data-i18n="waypoint_title">传送小站网络</div>
+                <div class="panel-header" id="waypoint-panel-title" data-i18n="waypoint_title">Waypoint Network</div>
                 <div class="waypoint-panel-body">
-                    <div class="waypoint-subtitle" id="waypoint-subtitle" data-i18n="waypoint_subtitle">在已激活的地点之间快速传送</div>
+                    <div class="waypoint-subtitle" id="waypoint-subtitle" data-i18n="waypoint_subtitle">Fast travel between discovered locations</div>
                     <div id="waypoint-list" class="waypoint-list"></div>
                 </div>
             </div>
@@ -584,150 +582,147 @@
                 <div class="dialog-name" id="dialog-name">NPC Name</div>
                 <div class="dialog-text" id="dialog-text">Hello adventurer.</div>
                 <div class="dialog-options" id="dialog-options"><button class="dialog-btn"
-                        onclick="closeDialog()">离开</button></div>
+                        onclick="closeDialog()">Leave</button></div>
             </div>
 
-            <!-- 天赋商店弹窗 -->
+            <!-- Talent shop dialog -->
             <div id="talent-shop-overlay">
                 <div id="talent-shop">
                     <div class="talent-shop-header">
-                        <span class="talent-shop-title" data-i18n="talent_shop_title">⚔️ 天赋商店</span>
-                        <span class="talent-shop-floor" id="talent-shop-floor">第 1 层</span>
+                        <span class="talent-shop-title" data-i18n="talent_shop_title">⚔️ Talent Shop</span>
+                        <span class="talent-shop-floor" id="talent-shop-floor">Floor 1</span>
                     </div>
                     <div class="talent-shop-gold">💰 <span id="talent-shop-gold">0</span></div>
                     <div class="talent-grid" id="talent-grid">
-                        <!-- 天赋卡片会动态生成 -->
+                        <!-- Talent cards are generated dynamically -->
                     </div>
                     <div class="talent-shop-actions">
                         <button class="talent-btn talent-btn-refresh" onclick="refreshTalentShop()">
-                            🔄 <span data-i18n="talent_refresh_btn">刷新</span> <span class="refresh-cost" id="refresh-cost-display">30金</span>
+                            🔄 <span data-i18n="talent_refresh_btn">Refresh</span> <span class="refresh-cost" id="refresh-cost-display">30G</span>
                         </button>
-                        <button class="talent-btn talent-btn-skip" data-i18n="talent_skip" onclick="closeTalentShop()">
-                            不买
-                        </button>
+                        <button class="talent-btn talent-btn-skip" data-i18n="talent_skip" onclick="closeTalentShop()">Skip</button>
                     </div>
                 </div>
             </div>
 
-            <!-- 天赋栏HUD（显示当前已购买的天赋） -->
+            <!-- Talent bar HUD (shows purchased talents) -->
             <div id="talent-hud"></div>
 
 
-            <!-- 铁匠铺面板 -->
+            <!-- Blacksmith panel -->
             <div id="blacksmith-panel" class="panel" style="display:none; width:360px;">
                 <div class="panel-close" onclick="togglePanel('blacksmith')"></div>
-                <div class="panel-header" data-i18n="forge_title">⚒️ 恰西的铁匠铺</div>
+                <div class="panel-header" data-i18n="forge_title">⚒️ Charsi's Blacksmith</div>
 
                 <div class="forge-container">
-                    <!-- 装备强化槽位 (品字形布局) -->
+                    <!-- Enhance slots (triangular layout) -->
                     <div class="forge-slots-area">
-                        <!-- 主槽位 (顶部居中) -->
+                        <!-- Main slot (top center) -->
                         <div class="forge-main-slot-container">
                             <div class="forge-slot main-slot" id="forge-main-slot" data-slot="main">
-                                <span class="slot-placeholder" data-i18n="forge_target_placeholder">装备</span>
+                                <span class="slot-placeholder" data-i18n="forge_target_placeholder">Equipment</span>
                             </div>
-                            <div class="slot-label" data-i18n="forge_target_slot">强化目标</div>
+                            <div class="slot-label" data-i18n="forge_target_slot">Target Item</div>
                         </div>
 
-                        <!-- 祭品槽位 (下方左右) -->
+                        <!-- Sacrifice slots (lower left/right) -->
                         <div class="forge-sacrifices-container">
                             <div class="sacrifice-wrapper">
                                 <div class="forge-slot sacrifice-slot" id="forge-sub-slot-1" data-slot="sub1">
-                                    <span class="slot-placeholder" data-i18n="forge_sacrifice_slot">祭品</span>
+                                    <span class="slot-placeholder" data-i18n="forge_sacrifice_slot">Sacrifice</span>
                                 </div>
                             </div>
                             <div class="sacrifice-wrapper">
                                 <div class="forge-slot sacrifice-slot" id="forge-sub-slot-2" data-slot="sub2">
-                                    <span class="slot-placeholder" data-i18n="forge_sacrifice_slot">祭品</span>
+                                    <span class="slot-placeholder" data-i18n="forge_sacrifice_slot">Sacrifice</span>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- 辅助操作 -->
+                        <!-- Auxiliary actions -->
                         <div class="forge-tools" style="text-align:center; margin-top:5px;">
-                            <button class="sys-btn small-btn" onclick="autoFillForgeMaterial()" title="自动填充背包中符合条件的装备">⚡
-                                <span data-i18n="forge_autofill">一键填充</span></button>
+                            <button class="sys-btn small-btn" onclick="autoFillForgeMaterial()" title="Auto-fill eligible equipment from your inventory">⚡
+                                <span data-i18n="forge_autofill">⚡ Auto-fill</span></button>
                         </div>
                     </div>
 
-                    <!-- 属性预览与信息 -->
+                    <!-- Stat preview and info -->
                     <div class="forge-info-area">
                         <div id="forge-preview-text" class="forge-preview" style="font-size:12px; padding:8px;">
-                            <span data-i18n="forge_preview_tip">请放入需要强化的装备 (最高 +9)</span>
-                            <div style="color:#666; font-size:10px; margin-top:4px;" data-i18n="forge_preview_subtip">同部位同稀有度祭品 · 成功提升属性 · +6以上有失败风险
-                            </div>
+                            <span data-i18n="forge_preview_tip">Insert equipment to enhance (Up to +9)</span>
+                            <div style="color:#666; font-size:10px; margin-top:4px;" data-i18n="forge_preview_subtip">Same slot and rarity · Boosts stats · Failure risk above +6</div>
                         </div>
                         <div id="forge-cost-display" class="forge-cost" style="display:none;">
-                            <span data-i18n="forge_cost">消耗:</span> <span id="forge-gold-cost">0</span> G
+                            <span data-i18n="forge_cost">Cost:</span> <span id="forge-gold-cost">0</span> G
                         </div>
                     </div>
 
-                    <!-- 操作按钮 -->
+                    <!-- Action buttons -->
                     <div class="forge-actions">
                         <button class="sys-btn highlight-btn" id="btn-forge-action" data-i18n="forge_btn" onclick="forgeItem()"
-                            disabled>开始强化</button>
+                            disabled>Start Enhancement</button>
                     </div>
 
-                    <!-- 内嵌背包 -->
+                    <!-- Embedded inventory -->
                     <div class="embedded-bag-section">
-                        <div class="embedded-bag-header">📦 <span data-i18n="menu_inventory">背包</span> <span style="color:#888;font-size:11px;" data-i18n="bag_click_add">(点击添加)</span>
-                            <span id="forge-gold-display" style="color:gold; float:right;">金币: 0</span>
+                        <div class="embedded-bag-header">📦 <span data-i18n="menu_inventory">Items</span> <span style="color:#888;font-size:11px;" data-i18n="bag_click_add">(Click to add)</span>
+                            <span id="forge-gold-display" style="color:gold; float:right;">Gold: 0</span>
                         </div>
                         <div class="embedded-bag-grid" id="forge-embedded-bag"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- 天神赐福选择弹窗 -->
+            <!-- Divine Blessing pick dialog -->
             <div id="divine-blessing-panel" class="panel"
                 style="display:none; left:50%; top:50%; transform:translate(-50%,-50%); width:auto;">
                 <div class="panel-close" onclick="closeDivineBlessingUI()"></div>
-                <div class="panel-header" data-i18n="divine_title">🌟 天神赐福</div>
-                <div style="text-align:center; color:#aaa; font-size:12px; margin-bottom:15px;" data-i18n="divine_subtitle">选择一项永久强化</div>
+                <div class="panel-header" data-i18n="divine_title">🌟 Divine Blessing</div>
+                <div style="text-align:center; color:#aaa; font-size:12px; margin-bottom:15px;" data-i18n="divine_subtitle">Choose one permanent enhancement for this run</div>
                 <div id="divine-blessing-grid" style="display:flex; gap:15px;"></div>
             </div>
 
-            <!-- 已获得赐福列表面板 -->
+            <!-- Obtained blessings panel -->
             <div id="divine-blessing-list-panel" class="panel"
                 style="display:none; left:50%; top:50%; transform:translate(-50%,-50%); width:320px;">
                 <div class="panel-close" onclick="closeDivineBlessingListUI()"></div>
-                <div class="panel-header" data-i18n="divine_acquired_title">🌟 已获得赐福</div>
+                <div class="panel-header" data-i18n="divine_acquired_title">🌟 Acquired Blessings</div>
                 <div id="divine-blessing-list" style="max-height:300px; overflow-y:auto;"></div>
                 <div id="divine-blessing-summary" style="border-top:1px solid #444; margin-top:10px; padding-top:10px;">
                 </div>
             </div>
 
-            <!-- 每日登录奖励面板 -->
+            <!-- Daily login reward panel -->
             <div id="daily-login-panel" class="panel"
                 style="display:none; left:50%; top:50%; transform:translate(-50%,-50%); width:420px;">
                 <div class="panel-close" onclick="closeDailyLoginPanel()"></div>
-                <div class="panel-header" data-i18n="daily_title">📅 每日登录奖励</div>
+                <div class="panel-header" data-i18n="daily_title">📅 Daily Login Reward</div>
                 <div id="daily-login-info" style="text-align:center; color:#ffd700; margin-bottom:10px;"></div>
                 <div id="daily-login-grid" style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center;"></div>
                 <div style="text-align:center; margin-top:15px;">
-                    <button class="dialog-btn" id="btn-claim-daily" data-i18n="daily_claim" onclick="claimDailyReward()">领取奖励</button>
+                    <button class="dialog-btn" id="btn-claim-daily" data-i18n="daily_claim" onclick="claimDailyReward()">Claim Reward</button>
                 </div>
             </div>
 
             <div class="menu-btns" id="menu-btns">
                 <button class="sys-btn db-btn" id="btn-divine-blessing" onclick="onDivineBlessingBtnClick()"
-                    style="display:none">🌟 赐福<span class="db-count-badge">0</span></button>
-                <button class="sys-btn" id="btn-season" onclick="SeasonSystem.open()" data-i18n="season_btn">🏆 赛季</button>
-                <button class="sys-btn" id="btn-stats" onclick="togglePanel('stats')">角色<span
+                    style="display:none">🌟 Blessing<span class="db-count-badge">0</span></button>
+                <button class="sys-btn" id="btn-season" onclick="SeasonSystem.open()" data-i18n="season_btn">🏆 Season S1</button>
+                <button class="sys-btn" id="btn-stats" onclick="togglePanel('stats')">Character<span
                         class="notification-badge" id="badge-stats"></span></button>
-                <button class="sys-btn" id="btn-inventory" onclick="togglePanel('inventory')" data-i18n="menu_inventory">物品</button>
-                <button class="sys-btn" id="btn-skills" onclick="togglePanel('skills')">技能<span
+                <button class="sys-btn" id="btn-inventory" onclick="togglePanel('inventory')" data-i18n="menu_inventory">Items</button>
+                <button class="sys-btn" id="btn-skills" onclick="togglePanel('skills')">Skills<span
                         class="notification-badge" id="badge-skills"></span></button>
-                <button class="sys-btn" id="btn-quest" onclick="togglePanel('quest')">任务<span
+                <button class="sys-btn" id="btn-quest" onclick="togglePanel('quest')">Quests<span
                         class="notification-badge" id="badge-quest"></span></button>
-                <button class="sys-btn" id="btn-achievements" onclick="togglePanel('achievements')" data-i18n="menu_achievements">成就</button>
-                <button class="sys-btn" id="btn-set-collection" onclick="togglePanel('set-collection')" data-i18n="menu_codex">图鉴</button>
-                <button class="sys-btn" id="btn-share-hero" onclick="ShareCardSystem.open()" data-i18n="btn_share_hero">📢 战报</button>
+                <button class="sys-btn" id="btn-achievements" onclick="togglePanel('achievements')" data-i18n="menu_achievements">Trophies</button>
+                <button class="sys-btn" id="btn-set-collection" onclick="togglePanel('set-collection')" data-i18n="menu_codex">Codex</button>
+                <button class="sys-btn" id="btn-share-hero" onclick="ShareCardSystem.open()" data-i18n="btn_share_hero">📢 Share Build</button>
             </div>
             <button id="mobile-menu-toggle" class="mobile-fab mobile-menu-toggle" onclick="toggleMobileMenu(event)"
-                aria-label="展开菜单">☰<span class="mobile-fab-dot" id="mobile-menu-dot"></span></button>
+                aria-label="Expand menu">☰<span class="mobile-fab-dot" id="mobile-menu-dot"></span></button>
             <button id="mobile-chat-toggle" class="mobile-fab mobile-chat-toggle" onclick="toggleMobileChat(event)"
-                aria-label="展开聊天">💬<span class="mobile-fab-dot mobile-chat-dot" id="mobile-chat-dot"></span></button>
+                aria-label="Expand chat">💬<span class="mobile-fab-dot mobile-chat-dot" id="mobile-chat-dot"></span></button>
 
             <div id="bottom-hud">
                 <div class="orb-container" id="health-orb">
@@ -806,55 +801,55 @@
     </div>
 
     <script src="gsap.min.js"></script>
-    <script src="gsap-animations.js?v=202512301047"></script>
-    <script src="ui-panels.js?v=2026090601"></script>
-    <!-- 业务逻辑脚本 -->
-    <script src="i18n.js?v=202609261745"></script>
-    <script src="i18n-content-gear.js?v=202609261200"></script>
-    <script src="i18n-content-skills.js?v=202609261200"></script>
-    <script src="i18n-content-bestiary.js?v=202609261200"></script>
-    <script src="i18n-content-progression.js?v=202609261200"></script>
-    <script src="i18n-content-changelog.js?v=202609261200"></script>
-    <script src="i18n-content-social.js?v=202609261200"></script>
-    <script src="changelog.js?v=202606130910"></script>
-    <script src="constants.js?v=202609251600"></script>
-    <script src="items-data.js?v=202609251600"></script>
-    <script src="set-items.js?v=202609261200"></script>
-    <script src="runes-data.js?v=202609261200"></script>
-    <script src="item-system.js?v=202609261200"></script>
-    <script src="audio.js?v=202605052335"></script>
-    <script src="daily-quest.js?v=202609261200"></script>
-    <script src="talent-draft.js?v=202609261200"></script>
-    <script src="abyss-system.js?v=202609261200"></script>
-    <script src="share-card.js?v=202609261200"></script>
-    <script src="season-system.js?v=202609261200"></script>
-    <script src="return-bonus.js?v=202609261200"></script>
-    <script src="save-system.js?v=202609261200"></script>
-    <script src="combat-tactics.js?v=202609261200"></script>
-    <script src="enemy-system.js?v=202609261200"></script>
-    <script src="auto-battle.js?v=202609082115"></script>
+    <script src="gsap-animations.js?v=202609271500"></script>
+    <script src="ui-panels.js?v=202609271500"></script>
+    <!-- Game logic scripts -->
+    <script src="i18n.js?v=202609271500"></script>
+    <script src="i18n-content-gear.js?v=202609271500"></script>
+    <script src="i18n-content-skills.js?v=202609271500"></script>
+    <script src="i18n-content-bestiary.js?v=202609271500"></script>
+    <script src="i18n-content-progression.js?v=202609271500"></script>
+    <script src="i18n-content-changelog.js?v=202609271500"></script>
+    <script src="i18n-content-social.js?v=202609271500"></script>
+    <script src="changelog.js?v=202609271500"></script>
+    <script src="constants.js?v=202609271500"></script>
+    <script src="items-data.js?v=202609271500"></script>
+    <script src="set-items.js?v=202609271500"></script>
+    <script src="runes-data.js?v=202609271500"></script>
+    <script src="item-system.js?v=202609271500"></script>
+    <script src="audio.js?v=202609271500"></script>
+    <script src="daily-quest.js?v=202609271500"></script>
+    <script src="talent-draft.js?v=202609271500"></script>
+    <script src="abyss-system.js?v=202609271500"></script>
+    <script src="share-card.js?v=202609271500"></script>
+    <script src="season-system.js?v=202609271500"></script>
+    <script src="return-bonus.js?v=202609271500"></script>
+    <script src="save-system.js?v=202609271500"></script>
+    <script src="combat-tactics.js?v=202609271500"></script>
+    <script src="enemy-system.js?v=202609271500"></script>
+    <script src="auto-battle.js?v=202609271500"></script>
     <script src="vfx-manifest.js?v=2026090801"></script>
-    <script src="sprite-renderer.js?v=2026090601"></script>
+    <script src="sprite-renderer.js?v=202609271500"></script>
     <script src="art/atlas-manifest.js?v=2026090801"></script>
-    <script src="art-samples.js?v=202609271130"></script>
-    <script src="environment-art.js?v=2026090701"></script>
-    <script src="elemental-3d.js?v=2026090808"></script>
-    <script src="skill-branches.js?v=202609081935"></script>
-    <script src="shield-3d.js?v=2026090804"></script>
-    <script src="physical-3d.js?v=2026090810"></script>
-    <script src="game.js?v=202609271130"></script>
-    <script src="skill-art.js?v=2026090602"></script>
+    <script src="art-samples.js?v=202609271500"></script>
+    <script src="environment-art.js?v=202609271500"></script>
+    <script src="elemental-3d.js?v=202609271500"></script>
+    <script src="skill-branches.js?v=202609271500"></script>
+    <script src="shield-3d.js?v=202609271500"></script>
+    <script src="physical-3d.js?v=202609271500"></script>
+    <script src="game.js?v=202609271500"></script>
+    <script src="skill-art.js?v=202609271500"></script>
     <script src="pocketbase.umd.js"></script>
-    <script src="online.js?v=202609261200"></script>
-    <script src="market.js?v=202609261200"></script>
+    <script src="online.js?v=202609271500"></script>
+    <script src="market.js?v=202609271500"></script>
     <script>
-        // 显示欢迎回来信息
+        // Show welcome-back message
         const savedNickname = localStorage.getItem('pb_nickname');
         if (savedNickname) {
-            document.getElementById('welcome-back').textContent = `欢迎回来，${savedNickname}`;
+            document.getElementById('welcome-back').textContent = I18N.interpolate(I18N.t('welcome_back'), { name: savedNickname });
         }
 
-        // 语言切换与同步
+        // Language switch and sync
         function toggleQuickLanguage() {
             if (typeof I18N === 'undefined') return;
             const langs = ['es', 'en', 'zh'];
@@ -878,197 +873,197 @@
             setTimeout(updateQuickLangButton, 50);
         }
 
-        // 注册 Service Worker（强制更新策略）
+        // Register the service worker (forced update strategy)
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
                 .then(reg => {
                     console.log('SW registered');
-                    return reg.update(); // 更新失败也交由注册入口处理
+                    return reg.update(); // update failures are also handled by the registration entry point
                 })
                 .catch(err => console.log('SW registration failed:', err));
         }
     </script>
 
-    <!-- 离线收益面板 -->
+    <!-- Offline rewards panel -->
     <div id="offline-rewards-overlay" class="offline-rewards-overlay" onmousedown="event.stopPropagation()">
         <div class="offline-rewards-panel" onmousedown="event.stopPropagation()">
             <div class="offline-rewards-header">
                 <span class="offline-icon">🌙</span>
-                <span class="offline-title" data-i18n="offline_title">离线收益</span>
+                <span class="offline-title" data-i18n="offline_title">Offline Rewards</span>
             </div>
             <div class="offline-rewards-body">
                 <div class="offline-time-row">
-                    <span class="offline-label" data-i18n="offline_duration">离线时长</span>
-                    <span class="offline-value" id="offline-time-text">0 分钟</span>
+                    <span class="offline-label" data-i18n="offline_duration">Offline Time</span>
+                    <span class="offline-value" id="offline-time-text">0 min</span>
                 </div>
                 <div class="offline-floor-row">
-                    <span class="offline-label" data-i18n="offline_floor">挂机层数</span>
-                    <span class="offline-value" id="offline-floor-text">第1层</span>
+                    <span class="offline-label" data-i18n="offline_floor">Grind Floor</span>
+                    <span class="offline-value" id="offline-floor-text">Floor 1</span>
                 </div>
                 <hr class="offline-divider">
                 <div class="offline-reward-row">
                     <span class="offline-reward-icon">💰</span>
-                    <span class="offline-reward-label" data-i18n="stat_gold">金币</span>
+                    <span class="offline-reward-label" data-i18n="stat_gold">Gold</span>
                     <span class="offline-reward-value gold" id="offline-gold-text">0</span>
                 </div>
                 <div class="offline-reward-row">
                     <span class="offline-reward-icon">⭐</span>
-                    <span class="offline-reward-label" data-i18n="stat_xp">经验</span>
+                    <span class="offline-reward-label" data-i18n="stat_xp">Experience</span>
                     <span class="offline-reward-value xp" id="offline-xp-text">0</span>
                 </div>
                 <div class="offline-items-section">
-                    <div class="offline-items-header" data-i18n="offline_items">📦 装备掉落</div>
+                    <div class="offline-items-header" data-i18n="offline_items">Equipment Drops</div>
                     <div id="offline-items-container" class="offline-items-container">
-                        <!-- 装备列表会动态生成 -->
+                        <!-- Gear list is generated dynamically -->
                     </div>
                 </div>
             </div>
             <div class="offline-rewards-footer">
-                <button class="offline-claim-btn" data-i18n="offline_claim" onclick="claimOfflineRewards()">领取奖励</button>
+                <button class="offline-claim-btn" data-i18n="offline_claim" onclick="claimOfflineRewards()">Claim Rewards</button>
             </div>
-            <div class="offline-tip" data-i18n="offline_hint">提示：离线收益最多8小时，以最高到达层数为挂机层数</div>
+            <div class="offline-tip" data-i18n="offline_hint">Up to 8 hours of rewards calculated based on highest floor cleared.</div>
         </div>
     </div>
 
-    <!-- 死亡弹窗面板 -->
+    <!-- Death dialog panel -->
     <div id="death-panel-overlay" class="death-panel-overlay" onmousedown="event.stopPropagation()">
         <div class="death-panel" onmousedown="event.stopPropagation()">
             <div class="death-panel-header">
                 <span class="death-icon">💀</span>
-                <span class="death-title" data-i18n="death_title">你已阵亡</span>
+                <span class="death-title" data-i18n="death_title">You Have Died</span>
             </div>
             <div class="death-panel-body">
                 <div class="death-stat-row">
                     <span class="death-stat-icon">🏆</span>
-                    <span class="death-stat-label" data-i18n="death_floor">到达层数</span>
-                    <span class="death-stat-value" id="death-floor-text">第1层</span>
+                    <span class="death-stat-label" data-i18n="death_floor">Floor Reached</span>
+                    <span class="death-stat-value" id="death-floor-text">Floor 1</span>
                 </div>
                 <div class="death-stat-row">
                     <span class="death-stat-icon">💀</span>
-                    <span class="death-stat-label" data-i18n="death_kills">击杀怪物</span>
-                    <span class="death-stat-value" id="death-kills-text">0 只</span>
+                    <span class="death-stat-label" data-i18n="death_kills">Enemies Slain</span>
+                    <span class="death-stat-value" id="death-kills-text">0</span>
                 </div>
                 <div class="death-stat-row">
                     <span class="death-stat-icon">⭐</span>
-                    <span class="death-stat-label" data-i18n="death_level">当前等级</span>
+                    <span class="death-stat-label" data-i18n="death_level">Current Level</span>
                     <span class="death-stat-value" id="death-level-text">Lv.1</span>
                 </div>
                 <hr class="death-divider">
                 <div class="death-cause">
                     <span class="death-cause-icon">☠️</span>
-                    <span class="death-cause-text" id="death-cause-text" data-i18n="death_unknown_cause">死因不明</span>
+                    <span class="death-cause-text" id="death-cause-text" data-i18n="death_unknown_cause">Cause of death unknown</span>
                 </div>
             </div>
             <div class="death-panel-footer">
                 <button class="death-btn revive-btn" id="death-revive-btn" onclick="DeathPanel.revive()">
                     <span class="btn-icon">✨</span>
-                    <span class="btn-text" data-i18n="death_revive_here">原地复活</span>
+                    <span class="btn-text" data-i18n="death_revive_here">Revive Here</span>
                     <span class="btn-cost">💰 <span id="revive-cost-text">1000</span></span>
                 </button>
                 <button class="death-btn return-btn" onclick="DeathPanel.returnToTown()">
                     <span class="btn-icon">🏠</span>
-                    <span class="btn-text" data-i18n="death_return_town">回城</span>
-                    <span class="btn-cost" data-i18n="death_free">(免费)</span>
+                    <span class="btn-text" data-i18n="death_return_town">Return to Town</span>
+                    <span class="btn-cost" data-i18n="death_free">(Free)</span>
                 </button>
             </div>
             <div class="death-gold-display">
-                💰 <span data-i18n="death_current_gold">当前金币:</span> <span id="death-gold-text">0</span>
+                💰 <span data-i18n="death_current_gold">Current Gold:</span> <span id="death-gold-text">0</span>
             </div>
         </div>
     </div>
 
-    <!-- 称号商店面板 -->
+    <!-- Title shop panel -->
     <div id="title-shop-overlay" class="title-shop-overlay" onmousedown="closeTitleShop()">
         <div class="title-shop-panel" onmousedown="event.stopPropagation()">
             <div class="title-shop-header">
                 <span class="title-shop-icon">👑</span>
-                <span class="title-shop-title" data-i18n="title_shop_name">称号商店</span>
+                <span class="title-shop-title" data-i18n="title_shop_name">Title Shop</span>
             </div>
             <div class="title-shop-body">
                 <div class="title-shop-current">
-                    <span data-i18n="title_current">当前称号：</span><span id="title-shop-current"></span>
+                    <span data-i18n="title_current">Current Title:</span><span id="title-shop-current"></span>
                 </div>
                 <div class="title-shop-gold">
-                    💰 <span data-i18n="inv_gold">金币:</span> <span id="title-shop-gold">0</span>
+                    💰 <span data-i18n="inv_gold">Gold:</span> <span id="title-shop-gold">0</span>
                 </div>
                 <hr class="title-shop-divider">
                 <div id="title-shop-list" class="title-shop-list">
-                    <!-- 称号列表会动态生成 -->
+                    <!-- Title list is generated dynamically -->
                 </div>
             </div>
             <div class="title-shop-footer">
-                <button class="title-shop-close-btn" data-i18n="btn_close" onclick="closeTitleShop()">关闭</button>
+                <button class="title-shop-close-btn" data-i18n="btn_close" onclick="closeTitleShop()">Close</button>
             </div>
         </div>
     </div>
 
-    <!-- 自动战斗雇佣费提醒面板 -->
+    <!-- Auto battle hire cost reminder panel -->
     <div id="auto-battle-fee-overlay" class="auto-battle-fee-overlay" onmousedown="event.stopPropagation()">
         <div class="auto-battle-fee-panel" onmousedown="event.stopPropagation()">
             <div class="auto-battle-fee-header">
                 <span class="fee-icon">⚔️</span>
-                <span class="fee-title" data-i18n="ab_fee_title">自动战斗服务</span>
+                <span class="fee-title" data-i18n="ab_fee_title">Auto Battle Service</span>
             </div>
             <div class="auto-battle-fee-body">
-                <p data-i18n="ab_fee_p1">启用自动战斗后，系统将收取</p>
-                <p data-i18n-html="ab_fee_p2">金币收益的 <span class="fee-highlight">15%</span> 作为雇佣费</p>
-                <p class="fee-note" data-i18n="ab_fee_p3">（每满100金币收取15金币）</p>
+                <p data-i18n="ab_fee_p1">When auto battle is enabled, the system collects</p>
+                <p data-i18n-html="ab_fee_p2">a <span class=\"fee-highlight\">15%</span> mercenary fee on gold earned</p>
+                <p class="fee-note" data-i18n="ab_fee_p3">(15 gold fee per 100 gold earned)</p>
             </div>
             <div class="auto-battle-fee-footer">
-                <button class="fee-confirm-btn" data-i18n="ab_fee_btn" onclick="confirmAutoBattleFee()">我知道了</button>
+                <button class="fee-confirm-btn" data-i18n="ab_fee_btn" onclick="confirmAutoBattleFee()">Understood</button>
             </div>
         </div>
     </div>
 
-    <!-- 存档选择面板 (放在body直接下面，避免pointer-events问题) -->
+    <!-- Save selection panel (right under body to avoid pointer-events issues) -->
     <div id="slot-selection-overlay" class="slot-selection-overlay">
         <div class="slot-selection-panel">
             <div class="panel-close" onclick="hideSlotSelection()"></div>
-            <div class="slot-selection-header" data-i18n="select_slot">选择存档</div>
+            <div class="slot-selection-header" data-i18n="select_slot">Select Character</div>
             <div class="slot-selection-grid" id="slot-selection-grid">
-                <!-- 动态生成3个存档槽位 -->
+                <!-- Generates the 3 save slots dynamically -->
             </div>
         </div>
     </div>
 
-    <!-- 删除存档确认对话框 -->
+    <!-- Delete save confirm dialog -->
     <div id="delete-slot-confirm" class="delete-slot-confirm-overlay">
         <div class="delete-slot-confirm-dialog">
-            <div class="delete-confirm-title" data-i18n="delete_slot_title">⚠️ 删除存档</div>
-            <div class="delete-confirm-text">确定要删除存档 <span id="delete-slot-num">1</span> 吗？<br>此操作<span
-                    style="color:#ff4444;">不可恢复</span>！</div>
+            <div class="delete-confirm-title" data-i18n="delete_slot_title">⚠️ Delete Character</div>
+            <div class="delete-confirm-text">Delete save slot <span id="delete-slot-num">1</span>?<br>This action is <span
+                    style="color:#ff4444;">irreversible</span>!</div>
             <div class="delete-confirm-input">
-                <span data-i18n="delete_slot_confirm_label">请输入"删除"以确认：</span>
-                <input type="text" id="delete-confirm-input" placeholder="删除" autocomplete="off">
+                <span data-i18n="delete_slot_confirm_label">Type \"delete\" to confirm:</span>
+                <input type="text" id="delete-confirm-input" placeholder="delete" autocomplete="off">
             </div>
             <div class="delete-confirm-actions">
-                <button class="delete-cancel-btn" onclick="hideDeleteConfirm()" data-i18n="cancel">取消</button>
+                <button class="delete-cancel-btn" onclick="hideDeleteConfirm()" data-i18n="cancel">Cancel</button>
                 <button class="delete-confirm-btn" id="delete-confirm-btn" onclick="confirmDeleteSlot()"
-                    data-i18n="delete_slot_btn" disabled>确认删除</button>
+                    data-i18n="delete_slot_btn" disabled>Delete</button>
             </div>
         </div>
     </div>
 
-    <!-- 云同步面板（复用 panel 样式） -->
+    <!-- Cloud sync panel (reuses panel styles) -->
     <div id="cloud-sync-overlay" class="cloud-dialog-overlay">
         <div id="cloud-sync-panel" class="panel"
             style="left:50%; top:50%; transform:translate(-50%,-50%); width:340px; border-radius:8px;">
             <div class="panel-close" onclick="CloudSync.hideDialog()"></div>
             <div class="panel-header" style="display:none;"></div>
             <div id="cloud-sync-content" style="padding:15px;">
-                <!-- 动态内容由 CloudSync 生成 -->
+                <!-- Dynamic content generated by CloudSync -->
             </div>
         </div>
     </div>
 
-    <!-- 通用游戏对话框 -->
+    <!-- Generic game dialog -->
     <div id="game-dialog-overlay" class="game-dialog-overlay">
         <div class="game-dialog-panel">
-            <div id="game-dialog-header" class="game-dialog-header">提示</div>
-            <div id="game-dialog-body" class="game-dialog-body">内容内容内容</div>
+            <div id="game-dialog-header" class="game-dialog-header">Notice</div>
+            <div id="game-dialog-body" class="game-dialog-body"></div>
             <div id="game-dialog-footer" class="game-dialog-footer">
-                <button id="game-dialog-btn-cancel" class="game-dialog-btn">取消</button>
-                <button id="game-dialog-btn-confirm" class="game-dialog-btn primary">确定</button>
+                <button id="game-dialog-btn-cancel" class="game-dialog-btn">Cancel</button>
+                <button id="game-dialog-btn-confirm" class="game-dialog-btn primary">Confirm</button>
             </div>
         </div>
     </div>

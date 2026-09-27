@@ -1,24 +1,24 @@
-// ========== item-system.js - 物品系统模块 ==========
-// 包含物品生成、使用、装备、掉落及管理逻辑
-// 依赖全局变量：player, enemies, groundItems, SET_ITEMS, BASE_ITEMS, AFFIXES, AudioSys, particles, damageNumbers
-// 依赖全局函数：updateUI, renderInventory, renderStash, updateBeltUI, showNotification, trackAchievement, getTalentEffect, triggerScreenShake
+// ========== item-system.js - Item system module ==========
+// Item generation, usage, equipping, drops and management logic
+// Global deps: player, enemies, groundItems, SET_ITEMS, BASE_ITEMS, AFFIXES, AudioSys, particles, damageNumbers
+// Global fn deps: updateUI, renderInventory, renderStash, updateBeltUI, showNotification, trackAchievement, getTalentEffect, triggerScreenShake
 
-// ========== 掉落位置修正工具函数 ==========
-// 确保物品掉落位置在可行走的瓦片上，避免A*寻路失败
+// ========== Drop position helpers ==========
+// Ensure drops land on walkable tiles so A* pathing never fails
 function ensureValidDropPosition(x, y) {
     const col = Math.floor(x / TILE_SIZE);
     const row = Math.floor(y / TILE_SIZE);
 
-    // 如果在地图内且是墙，找最近的地板
+    // Inside map and on a wall: find the nearest floor tile
     if (col >= 0 && col < MAP_WIDTH && row >= 0 && row < MAP_HEIGHT && mapData[row][col] === 0) {
-        // 在3x3范围内找地板
+        // Search a 3x3 area for a floor tile
         for (let radius = 1; radius <= 3; radius++) {
             for (let dr = -radius; dr <= radius; dr++) {
                 for (let dc = -radius; dc <= radius; dc++) {
                     const nr = row + dr;
                     const nc = col + dc;
                     if (nr >= 0 && nr < MAP_HEIGHT && nc >= 0 && nc < MAP_WIDTH && mapData[nr][nc] !== 0) {
-                        // 返回该瓦片的中心位置
+                        // Return that tile center
                         return {
                             x: nc * TILE_SIZE + TILE_SIZE / 2,
                             y: nr * TILE_SIZE + TILE_SIZE / 2
@@ -28,11 +28,11 @@ function ensureValidDropPosition(x, y) {
             }
         }
     }
-    // 原位置没问题，直接返回
+    // Original spot is fine, return as-is
     return { x, y };
 }
 
-// ========== 物品视觉配置 ==========
+// ========== Item visual configuration ==========
 
 const ITEM_FRAMES = {
   'gold': { col: 0, row: 0 },
@@ -60,9 +60,9 @@ function getItemSpriteCoords(item) {
   if (type === 'potion') {
     key = item.heal ? 'potion_health' : 'potion_mana';
   } else if (type === 'weapon') {
-    if (item.name.includes('斧')) key = 'axe';
-    else if (item.name.includes('弓')) key = 'bow';
-    else if (item.name.includes('杖')) key = 'staff';
+    if (item.name.includes('Axe')) key = 'axe';
+    else if (item.name.includes('Bow')) key = 'bow';
+    else if (item.name.includes('Staff')) key = 'staff';
     else key = 'weapon';
   } else if (type === 'body') {
     key = 'armor';
@@ -77,7 +77,7 @@ function getItemSpriteCoords(item) {
 }
 
 function applyItemSpriteToElement(el, item) {
-  // 符文特殊渲染
+  // Special rune rendering
   if (item && item.type === 'rune') {
     el.innerText = item.runeSymbol || 'ᚱ';
     el.style.backgroundImage = 'none';
@@ -94,7 +94,7 @@ function applyItemSpriteToElement(el, item) {
     return;
   }
 
-  // 装备、腰带和掉落预览共用暗底与小圆角，品质仅通过边框标识。
+  // Gear, belts and drop previews share the dark base and small radius; rarity is conveyed by border only.
   el.style.backgroundColor = '#151411';
   el.style.borderRadius = '4px';
   if (typeof itemSpritesLoaded !== 'undefined' && itemSpritesLoaded) {
@@ -133,7 +133,7 @@ function getItemColor(r) {
   return '#ffffff';
 }
 
-// 统计追踪：记录稀有物品发现
+// Stat tracking: record rare item discovery
 function trackItemFound(item) {
   if (!item) return;
   if (item.rarity === RARITY.UNIQUE) { // UNIQUE
@@ -143,10 +143,10 @@ function trackItemFound(item) {
   }
 }
 
-// ========== 物品生成逻辑 ==========
+// ========== Item generation logic ==========
 
 function calculateItemRequirements(item, level, rarity) {
-  // 药水和卷轴不需要需求
+  // Potions and scrolls have no requirements
   if (item.type === 'potion' || item.type === 'scroll') {
     return null;
   }
@@ -154,25 +154,25 @@ function calculateItemRequirements(item, level, rarity) {
   const requirements = {};
   const effectiveLevel = Math.max(1, level);
 
-  // 基础等级需求 = 楼层等级
+  // Base level requirement = floor level
   let levelReq = effectiveLevel;
 
-  // 根据稀有度增加等级需求
-  if (rarity === RARITY.MAGIC) levelReq += 2;  // 魔法
-  if (rarity === RARITY.RARE) levelReq += 5;  // 稀有
-  if (rarity === RARITY.UNIQUE) levelReq += 10; // 暗金
-  if (rarity === RARITY.SET) levelReq += 5;  // 套装（需求低于暗金）
+  // Raise level requirement by rarity
+  if (rarity === RARITY.MAGIC) levelReq += 2;  // Magic
+  if (rarity === RARITY.RARE) levelReq += 5;  // rare
+  if (rarity === RARITY.UNIQUE) levelReq += 10; // Unique
+  if (rarity === RARITY.SET) levelReq += 5;  // Set (requirements below Unique)
 
   requirements.level = levelReq;
 
-  // 需求上限：确保装备在掉落层级时玩家能够装备
-  // 公式：level × 8 + 15，5层时约55，10层约95，适合合理的属性分配
+  // Requirement caps: make sure gear is equippable at drop level
+  // Formula: level × 8 + 15; ~55 at floor 5, ~95 at floor 10, fits sensible stat allocation
   const strCap = effectiveLevel * 8 + 15;
   const dexCap = effectiveLevel * 6 + 10;
 
-  // 根据装备类型设置力量/敏捷需求
+  // Set Strength/Dexterity requirements by gear type
   if (item.type === 'weapon') {
-    // 武器：基于伤害值
+    // Weapons: based on damage
     if (item.minDmg) {
       const avgDmg = (item.minDmg + item.maxDmg) / 2;
       requirements.str = Math.min(Math.floor(avgDmg * 2), strCap);
@@ -180,17 +180,17 @@ function calculateItemRequirements(item, level, rarity) {
     }
   } else if (item.type === 'armor' || item.type === 'helm' || item.type === 'gloves' ||
     item.type === 'boots' || item.type === 'belt') {
-    // 防具：基于防御值
+    // Armor: based on defense
     if (item.def) {
       requirements.str = Math.min(Math.floor(item.def * 1.5), strCap);
     }
   } else if (item.type === 'ring' || item.type === 'amulet') {
-    // 饰品：较低需求
+    // Accessories: lower requirements
     requirements.str = Math.floor(levelReq / 2);
     requirements.dex = Math.floor(levelReq / 2);
   }
 
-  // 确保需求不为0
+  // Keep requirements non-zero
   if (requirements.str) requirements.str = Math.max(5, requirements.str);
   if (requirements.dex) requirements.dex = Math.max(5, requirements.dex);
 
@@ -220,17 +220,17 @@ function createItem(baseName, level) {
   }
   if (item.rarity >= RARITY.RARE) {
     const s = AFFIXES.suffixes[Math.floor(Math.random() * AFFIXES.suffixes.length)];
-    item.displayName += s.name; item.stats[s.stat] = (item.stats[s.stat] || 0) + Math.floor(Math.random() * (s.max - s.min)) + s.min;
+    item.displayName += (/^[A-Za-z]/.test(s.name) ? ' ' : '') + s.name; item.stats[s.stat] = (item.stats[s.stat] || 0) + Math.floor(Math.random() * (s.max - s.min)) + s.min;
   }
-  if (item.rarity === RARITY.UNIQUE) { item.displayName = "暗金·" + item.name; item.stats.allSkills = 1; item.stats.dmgPct = 50; item.stats.lifeSteal = 5; }
+  if (item.rarity === RARITY.UNIQUE) { item.displayName = "Unique · " + item.name; item.stats.allSkills = 1; item.stats.dmgPct = 50; item.stats.lifeSteal = 5; }
 
-  // 计算并添加装备需求
+// Compute and add gear requirements
   const requirements = calculateItemRequirements(item, level || 1, item.rarity);
   if (requirements) {
     item.requirements = requirements;
   }
 
-  // 符文系统：孔位生成（武器、防具、头盔）
+// Rune system: socket generation (weapons, armor, helms)
   item.sockets = 0;
   item.socketedRunes = [];
   item.isRuneword = false;
@@ -242,7 +242,7 @@ function createItem(baseName, level) {
     else if (item.type === 'armor' || item.type === 'body') maxSockets = (level >= 8) ? 3 : 2;
     else if (item.type === 'helm') maxSockets = 2;
 
-    // 白装打孔概率最高（35%），蓝装25%，黄装20%，暗金/套装不随机构建孔
+// White gear has the highest socket chance (35%), blue 25%, rare 20%; uniques/sets never roll sockets
     let socketChance = 0;
     if (item.rarity === RARITY.NORMAL) socketChance = 0.35;
     else if (item.rarity === RARITY.MAGIC) socketChance = 0.25;
@@ -256,7 +256,7 @@ function createItem(baseName, level) {
   return item;
 }
 
-// 生成套装物品
+// generateset items
 function createSetItem(setId, pieceSlot, level) {
   const setData = SET_ITEMS[setId];
   if (!setData || !setData.pieces[pieceSlot]) {
@@ -266,20 +266,20 @@ function createSetItem(setId, pieceSlot, level) {
 
   const pieceData = setData.pieces[pieceSlot];
 
-  // 创建套装物品
+  // Create set item
   const item = {
     ...pieceData,
     setId: setId,
-    setPieceKey: pieceSlot,  // 添加部件槽位标识，用于图鉴追踪
+    setPieceKey: pieceSlot,  // Add the piece-slot tag used for codex tracking
     setName: setData.name,
-    rarity: RARITY.SET,  // 套装稀有度为5（绿色）
+    rarity: RARITY.SET,  // setrarityin order to5（greencolor）
     displayName: pieceData.name,
     id: Math.random().toString(36),
     quantity: 1,
-    stats: { ...pieceData.stats }  // 复制属性对象
+    stats: { ...pieceData.stats }  // Copy the stats object
   };
 
-  // 根据等级提升属性
+// Scale stats by level
   if (level > 1) {
     if (item.minDmg) {
       item.minDmg += Math.floor(level * 1.5);
@@ -289,20 +289,20 @@ function createSetItem(setId, pieceSlot, level) {
       item.def += Math.floor(level * 2);
     }
 
-    // 对 stats 中的部分属性按层数增强（每层+2%）
-    // 不缩放的属性：有上限或恢复类
+// Boost some stats in stats per floor (+2% each)
+// Unscaled stats: capped or regen types
     const noScaleStats = ['critChance', 'allRes', 'lifeSteal', 'hpRegen', 'mpRegen', 'blockChance',
                           'fireRes', 'coldRes', 'lightningRes', 'poisonRes'];
     if (item.stats) {
       for (let key in item.stats) {
         if (noScaleStats.includes(key)) continue;
-        // 其他属性：maxHp, maxMp, def, dmgPct, attackSpeed, critDamage, fireDmg 等
+// Other stats: maxHp, maxMp, def, dmgPct, attackSpeed, critDamage, fireDmg, etc.
         item.stats[key] = Math.floor(item.stats[key] * (1 + level * 0.02));
       }
     }
   }
 
-  // 添加装备需求
+// Add gear requirements
   const requirements = calculateItemRequirements(item, level || 1, RARITY.SET);
   if (requirements) {
     item.requirements = requirements;
@@ -311,7 +311,7 @@ function createSetItem(setId, pieceSlot, level) {
   return item;
 }
 
-// 随机生成一个套装物品（从所有套装中随机选择）
+// Randomly generate a set item (picked from all sets)
 function generateRandomSetItem(level) {
   const setIds = Object.keys(SET_ITEMS).filter(id => id !== 'abyss_conqueror');
   const randomSetId = setIds[Math.floor(Math.random() * setIds.length)];
@@ -322,40 +322,53 @@ function generateRandomSetItem(level) {
   return createSetItem(randomSetId, randomSlot, level);
 }
 
-// ========== 稀有/暗金/套装物品拾取 顶部Pop-up动画系统 ==========
+// ========== Rare/Unique/Set loot pickup toppop-up animation system ==========
 
 function formatItemLootName(item) {
   if (!item) return '';
   let name = item.displayName || item.name || '';
-  // 暗金前缀由 itemTypes 表按语言给出
-  if (typeof I18N !== 'undefined' && name.startsWith('暗金·')) {
-    name = name.replace('暗金·', I18N.trPath('itemTypes', '暗金·', 'name', '暗金·'));
+  if (typeof I18N === 'undefined') return name;
+  // Unique prefix ("Unique · " for new saves, legacy zh prefix for old ones)
+  if (name.startsWith('Unique · ')) {
+    name = name.replace('Unique · ', I18N.trPath('itemTypes', 'Unique · ', 'name', 'Unique · '));
+  } else if (name.startsWith('\u6697\u91d1\u00b7')) {
+    name = name.replace('\u6697\u91d1\u00b7', I18N.trPath('itemTypes', 'Unique · ', 'name', 'Unique · '));
   }
   return name;
 }
 
-// 物品类型 -> itemTypes 表的中文键（表以中文为键）
-const ITEM_TYPE_ZH_KEYS = {
-  weapon: '武器', armor: '防具', body: '胸甲', helm: '头盔', shield: '盾牌',
-  ring: '戒指', amulet: '项链', gloves: '手套', boots: '鞋子', belt: '腰带'
+// Item type -> itemTypes table key (English since the i18n base-language migration)
+const ITEM_TYPE_KEYS = {
+  weapon: 'Combat Weapon', armor: 'Basic Armor', body: 'Chest Armor', helm: 'Helmet', shield: 'Shield',
+  ring: 'Magic Ring', amulet: 'Mystic Amulet', gloves: 'Gloves', boots: 'Boots', belt: 'Belt'
 };
 
-// lang 参数为兼容旧调用保留，实际语言统一取自 I18N
+// Legacy zh keys kept so loot popups from old saves still resolve
+const ITEM_TYPE_ZH_KEYS = {
+  weapon: '\u6b66\u5668', armor: '\u9632\u5177', body: '\u80f8\u7532', helm: '\u5934\u76d4', shield: '\u76fe\u724c',
+  ring: '\u622a\u6307', amulet: '\u9879\u94fe', gloves: '\u624b\u5957', boots: '\u978b\u5b50', belt: '\u8170\u5e26'
+};
+
+// Affix localization: prefixes via the i18n.js affixes dict, suffixes via the affixesExtra table
 function getSlotTypeName(item, lang) {
   const type = (item && item.type) || 'weapon';
-  const zhKey = ITEM_TYPE_ZH_KEYS[type] || '稀有装备';
-  if (typeof I18N === 'undefined') return zhKey;
-  return I18N.trPath('itemTypes', zhKey, 'name', zhKey);
+  if (typeof I18N === 'undefined') return ITEM_TYPE_KEYS[type] || 'Legendary Equipment';
+  const enKey = ITEM_TYPE_KEYS[type] || 'Legendary Equipment';
+  const enEntry = I18N.trPath('itemTypes', enKey, 'name', '');
+  if (enEntry) return enEntry;
+  const zhKey = ITEM_TYPE_ZH_KEYS[type] || '\u7a00\u6709\u88c5\u5907';
+  return I18N.trPath('itemTypes', zhKey, 'name', enKey);
 }
 
-// 词缀本地化：前缀走 i18n.js 的 affixes 字典，后缀走 affixesExtra 表
-function getAffixDisplayName(zhAffix) {
-  if (!zhAffix) return '';
-  if (typeof I18N === 'undefined') return zhAffix;
+// Affix localization: English and legacy zh keys both resolve through I18N.affixes,
+// falling back to the affixesExtra content table.
+function getAffixDisplayName(affix) {
+  if (!affix) return '';
+  if (typeof I18N === 'undefined') return affix;
   const lang = I18N.currentLang || 'zh';
-  const flat = I18N.affixes ? I18N.affixes[zhAffix] : null;
-  if (flat) return flat[lang] || flat.en || zhAffix;
-  return I18N.trPath('affixesExtra', zhAffix, 'name', zhAffix);
+  const flat = I18N.affixes ? I18N.affixes[affix] : null;
+  if (flat) return flat[lang] || flat.en || affix;
+  return I18N.trPath('affixesExtra', affix, 'name', affix);
 }
 
 const LootPopupManager = {
@@ -364,7 +377,7 @@ const LootPopupManager = {
 
   show: function(item) {
     if (!item) return;
-    // 仅针对暗金(UNIQUE=4) 或 套装(SET=5) 物品触发
+    // only fires forUnique(UNIQUE=4) or set(SET=5) items
     if (item.rarity !== RARITY.UNIQUE && item.rarity !== RARITY.SET && item.rarity < RARITY.UNIQUE) return;
 
     this.queue.push(item);
@@ -399,9 +412,9 @@ const LootPopupManager = {
 
     let headerText = '';
     if (isSet) {
-      headerText = lang === 'es' ? '★ OBJETO DE CONJUNTO ★' : (lang === 'en' ? '★ SET ITEM ★' : '★ 获得套装装备 ★');
+      headerText = lang === 'es' ? '★ OBJETO DE CONJUNTO ★' : (lang === 'en' ? '★ SET ITEM ★' : '★ Set equipment acquired ★');
     } else {
-      headerText = lang === 'es' ? '★ OBJETO LEGENDARIO ★' : (lang === 'en' ? '★ LEGENDARY ITEM ★' : '★ 获得暗金装备 ★');
+      headerText = lang === 'es' ? '★ OBJETO LEGENDARIO ★' : (lang === 'en' ? '★ LEGENDARY ITEM ★' : '★ Unique equipment acquired ★');
     }
 
     const nameText = formatItemLootName(item);
@@ -473,7 +486,7 @@ const LootPopupManager = {
   }
 };
 
-// ========== 背包与仓库管理 ==========
+// Collect achievements advance only once the item actually enters the inventory, so unclaimed drops don't count
 
 function addItemToInventory(i, options = {}) {
   if (i.stackable) {
@@ -494,30 +507,30 @@ function addItemToInventory(i, options = {}) {
   updateBeltUI();
   AudioSys.play('gold');
 
-  // 追踪稀有物品发现
+// Check set collection achievements and codex discovery
   trackItemFound(i);
 
-  // 收集类成就在物品实际进入背包后推进，避免落地未拾取也计数
+// Daily quest: pick up gear (consumables excluded)
   if (i.rarity === RARITY.UNIQUE) trackAchievement('collect_unique');
   if (i.rarity === RARITY.SET) trackAchievement('collect_set_item');
 
-  // 检查套装收藏成就和图鉴发现
+// Weekly goal: collect rare/unique/set gear
   if (i.setId) {
     if (typeof discoverSetPiece !== 'undefined') discoverSetPiece(i);
     if (typeof checkSetAchievements !== 'undefined') checkSetAchievements();
   }
 
-  // 每日任务：拾取装备（排除消耗品）
+// Trigger the top pop-up animation for rare/set/unique pickups
   if (typeof DailyQuestSystem !== 'undefined' && i.type !== 'potion' && i.type !== 'scroll' && i.type !== 'gold') {
     DailyQuestSystem.updateProgress('collect_item', 1);
   }
 
-  // 周常目标：收集稀有/暗金/套装装备
+// Find a free stash slot
   if (typeof WeeklyGoalSystem !== 'undefined' && (i.rarity === RARITY.RARE || i.rarity === RARITY.UNIQUE || i.rarity === RARITY.SET)) {
     WeeklyGoalSystem.onRareItemFound();
   }
 
-  // 触发稀有/套装/暗金物品拾取 顶部Pop-up动画通知
+// Move the item
   if (i && (i.rarity === RARITY.UNIQUE || i.rarity === RARITY.SET) && !options.fromStash && !options.fromUnequip && !options.fromForge) {
     if (typeof LootPopupManager !== 'undefined') {
       LootPopupManager.show(i);
@@ -531,24 +544,24 @@ function moveItemToStash(inventoryIdx) {
   const item = player.inventory[inventoryIdx];
   if (!item) return;
 
-  // 寻找仓库空位
+// Refresh the UI
   const stashIdx = player.stash.findIndex(i => !i);
   if (stashIdx === -1) {
-    showNotification('仓库已满！');
+    showNotification('Stash is full!');
     return;
   }
 
-  // 移动物品
+  // movementitem
   player.stash[stashIdx] = item;
   player.inventory[inventoryIdx] = null;
 
-  // 刷新UI
+  // refreshUI
   hideTooltip();
   renderInventory();
   renderStash();
-  showNotification(`已将 ${item.displayName || item.name} 存入仓库`);
+  showNotification(`Deposited ${item.displayName || item.name} into the stash`);
 
-  // 检查套装收藏成就
+  // check set collection achievement
   if (item.setId) {
     if (typeof checkSetAchievements !== 'undefined') checkSetAchievements();
   }
@@ -558,30 +571,30 @@ function moveItemFromStash(stashIdx) {
   const item = player.stash[stashIdx];
   if (!item) return;
 
-  // 寻找背包空位
+// Refresh the UI
   const inventoryIdx = player.inventory.findIndex(i => !i);
   if (inventoryIdx === -1) {
-    showNotification('背包已满！');
+    showNotification('Inventory is full!');
     return;
   }
 
-  // 移动物品
+  // movementitem
   player.inventory[inventoryIdx] = item;
   player.stash[stashIdx] = null;
 
-  // 刷新UI
+  // refreshUI
   hideTooltip();
   renderInventory();
   renderStash();
-  showNotification(`已从仓库取出 ${item.displayName || item.name}`);
+  showNotification(`Withdrew ${item.displayName || item.name} from the stash`);
 
-  // 检查套装收藏成就
+  // check set collection achievement
   if (item.setId) {
     if (typeof checkSetAchievements !== 'undefined') checkSetAchievements();
   }
 }
 
-// ========== 物品使用与装备 ==========
+// drinking a red potion resets the kill streak
 
 function useOrEquipItem(idx) {
   const item = player.inventory[idx]; if (!item) return;
@@ -603,7 +616,7 @@ function useOrEquipItem(idx) {
     renderInventory();
     updateBeltUI();
 
-    // 在物品槽位上显示卖出提示
+// play the potion-drinking SFX
     if (typeof showSellTooltip !== 'undefined') showSellTooltip(idx, val);
     return;
   }
@@ -611,14 +624,14 @@ function useOrEquipItem(idx) {
   if (item.type === 'potion') {
     if (item.heal) {
       player.hp = Math.min(player.maxHp, player.hp + item.heal);
-      player.stats.currentStreak = 0; // 喝红药重置连杀
+      player.stats.currentStreak = 0; // drinking a red potion resets the kill streak
     }
     if (item.mana) player.mp = Math.min(player.maxMp, player.mp + item.mana);
-    AudioSys.play('potion'); // 播放喝药音效
+    AudioSys.play('potion'); // play the potion-drinking SFX
     if (typeof spawnVfxEffect !== 'undefined') {
       spawnVfxEffect('potionUse', player.x, player.y + 8, 1, 0);
     }
-    // 每日任务：使用药水
+    // daily quest:usepotion
     if (typeof DailyQuestSystem !== 'undefined') {
       DailyQuestSystem.updateProgress('use_potion', 1);
     }
@@ -630,13 +643,13 @@ function useOrEquipItem(idx) {
     }
   }
   else if (item.type === 'scroll') {
-    // 地狱中无法使用回城卷轴
+    // Hellinthere is nomethodusetown portal scroll
     if (player.isInHell) {
-      showNotification("地狱中无法使用回城卷轴");
+      showNotification("Cannot use Town Portal in Hell");
       return;
     }
     if (player.floor !== 0) {
-      // 启动回城仪式
+// Fire the beam effect and SFX immediately (don't wait for the cast)
       if (typeof portalRitual !== 'undefined') {
         portalRitual.active = true;
         portalRitual.phase = 0;
@@ -646,10 +659,10 @@ function useOrEquipItem(idx) {
         portalRitual.flashAlpha = 0;
       }
 
-      // 消耗卷轴
+      // consumescroll
       if (item.quantity > 1) item.quantity--; else player.inventory[idx] = null;
 
-      // 立刻触发光柱效果和音效（不等施法完成）
+// Requirements unmet: refuse to equip
       if (typeof createPortalBeam !== 'undefined') createPortalBeam(player.x, player.y);
       if (typeof spawnVfxEffect !== 'undefined') {
         spawnVfxEffect('portalOpen', player.x, player.y, 1, 0);
@@ -657,9 +670,9 @@ function useOrEquipItem(idx) {
       AudioSys.playPortalOpen();
       triggerScreenShake(4, 0.2);
 
-      showNotification("正在施法回城...");
+      showNotification("Casting town portal...");
     } else {
-      showNotification("你已经在营地了");
+      showNotification("You are already in camp");
     }
   }
   else {
@@ -669,29 +682,29 @@ function useOrEquipItem(idx) {
     if (item.type === 'belt') s = 'belt'; if (item.type === 'amulet') s = 'amulet';
 
     if (s) {
-      // 检查装备需求
+// Requirements met: equip
       if (item.requirements) {
         const req = item.requirements;
         const failedReqs = [];
 
         if (req.level && player.lvl < req.level) {
-          failedReqs.push(`等级${req.level}`);
+          failedReqs.push(`Lv${req.level}`);
         }
         if (req.str && player.str < req.str) {
-          failedReqs.push(`力量${req.str}`);
+          failedReqs.push(`STR ${req.str}`);
         }
         if (req.dex && player.dex < req.dex) {
-          failedReqs.push(`敏捷${req.dex}`);
+          failedReqs.push(`DEX ${req.dex}`);
         }
 
-        // 如果不满足需求，拒绝装备
+        // Requirements unmet: refuse to equip
         if (failedReqs.length > 0) {
-          createFloatingText(player.x, player.y - 40, `需求不足: ${failedReqs.join(', ')}`, '#ff4444', 2);
+          createFloatingText(player.x, player.y - 40, `Requirements not met: ${failedReqs.join(', ')}`, '#ff4444', 2);
           return;
         }
       }
 
-      // 满足需求，执行装备
+// ========== Drop system ==========
       const cur = player.equipment[s];
       player.equipment[s] = item;
       player.inventory[idx] = cur;
@@ -711,22 +724,22 @@ function useQuickItem(type) {
     if (type === 'scroll') targetName = CONSUMABLE_NAME.TOWN_PORTAL;
   } else {
     // Fallback hardcoded values
-    if (type === 'health') targetName = '治疗药剂';
-    if (type === 'mana') targetName = '法力药剂';
-    if (type === 'scroll') targetName = '回城卷轴';
+    if (type === 'health') targetName = 'Health Potion';
+    if (type === 'mana') targetName = 'Mana Potion';
+    if (type === 'scroll') targetName = 'Town Portal Scroll';
   }
 
   const idx = player.inventory.findIndex(i => i && i.name === targetName);
   if (idx !== -1) {
     useOrEquipItem(idx);
   } else {
-    showNotification("没有该物品!");
+    showNotification("No such item!");
   }
 }
 
-// ========== 掉落系统 ==========
+// ========== dropsystem ==========
 
-// 创建掉落光柱特效 (从 game.js 移来)
+// Create beam particles
 function createDropBeam(x, y, rarity) {
   const isRare = rarity === RARITY.RARE;
   const isUnique = rarity === RARITY.UNIQUE;
@@ -737,11 +750,11 @@ function createDropBeam(x, y, rarity) {
     spawnVfxEffect('rareDropBurst', x, y, isUnique ? 1.05 : (isSet ? 0.98 : 0.78), 0);
   }
 
-  // 光柱颜色
+  // light pillarcolor
   const beamColor = isUnique ? '#ffd700' : (isSet ? '#00ff88' : '#fff05a');
   const glowColor = isUnique ? 'rgba(255, 215, 0, 0.6)' : (isSet ? 'rgba(0, 255, 136, 0.6)' : 'rgba(255, 240, 90, 0.42)');
 
-  // 创建光柱粒子
+// Play SFX and shake the screen
   particles.push({
     type: 'drop_beam',
     x: x,
@@ -755,7 +768,7 @@ function createDropBeam(x, y, rarity) {
     isUnique: isUnique
   });
 
-  // 火花粒子
+// Achievement tracking: Fallen One kill
   const sparkCount = isUnique ? 25 : (isSet ? 15 : 9);
   for (let i = 0; i < sparkCount; i++) {
     const angle = (Math.PI * 2 / sparkCount) * i + Math.random() * 0.3;
@@ -778,7 +791,7 @@ function createDropBeam(x, y, rarity) {
     });
   }
 
-  // 播放音效和震屏
+  // play SFXandscreen shake
   if (isUnique) {
     AudioSys.play('drop_unique');
     triggerScreenShake(8, 0.25);
@@ -789,13 +802,14 @@ function createDropBeam(x, y, rarity) {
 }
 
 function dropLoot(monster) {
-  // 成就追踪：击杀沉沦魔
+  // Achievement tracking: Fallen One kill
   trackAchievement('kill_monster', { monsterName: monster.name });
 
-  // 成就追踪：击杀BOSS
+// ========== Gold drops (floor bonus) ==========
   if (monster.isBoss || monster.isQuestTarget) {
     trackAchievement('kill_boss', { isBoss: monster.isBoss, isQuestTarget: monster.isQuestTarget });
-    trackAchievement('kill_specific_boss', { name: monster.name.replace('地狱', '') });
+    const baseMonsterName = (typeof stripBossDifficultyPrefix === 'function') ? stripBossDifficultyPrefix(monster.name) : monster.name.replace(/^(?:Hell|Pesadilla|Infierno|Tormento\\d*)\s*/, '');
+    trackAchievement('kill_specific_boss', { name: baseMonsterName });
   }
 
   const x = monster.x;
@@ -804,24 +818,24 @@ function dropLoot(monster) {
   const isBoss = monster.isBoss || monster.isQuestTarget;
   const isElite = monster.rarity > 0;
 
-  // 成就追踪：击杀精英
+// Base gold grows with floors
   if (isElite && !isBoss) {
     trackAchievement('kill_elite', { isElite: true });
   }
 
-  // ========== 金币掉落（层数加成） ==========
-  let goldBase = 10 + f * 5;  // 基础金币随层数增加
+// Greed talent + Divine Blessing: gold bonus
+  let goldBase = 10 + f * 5;  // Double gold buff
   let goldAmount = Math.floor(goldBase + Math.random() * goldBase);
   if (isBoss) goldAmount *= 3;
   else if (isElite) goldAmount *= 1.5;
 
-  // 贪婪天赋+天神赐福：金币加成
+  // Greed talent + Divine Blessing: gold bonus
   const greedBonus = getTalentEffect('goldPct', 0) + (player.goldPct || 0);
   if (greedBonus > 0) {
     goldAmount = Math.floor(goldAmount * (1 + greedBonus / 100));
   }
 
-  // 双倍金币buff
+// Every 8 monsters or a boss kill guarantees a consumable
   if (player.goldBuffExpiry && Date.now() < player.goldBuffExpiry) {
     goldAmount *= 2;
   }
@@ -835,21 +849,21 @@ function dropLoot(monster) {
     vz: 150 + Math.random() * 100,
     bounces: 2,
     soundLand: 'land_gold',
-    rarity: RARITY.COMMON, name: Math.floor(goldAmount) + " 金币", icon: '💰', dropTime: Date.now()
+    rarity: RARITY.COMMON, name: Math.floor(goldAmount) + " Gold", icon: '💰', dropTime: Date.now()
   });
 
-  // ========== 消耗品保底机制 ==========
+// ========== Gear drop system ==========
   player.killsSincePotion = (player.killsSincePotion || 0) + 1;
   if (player.killsSincePotion >= 8 || isBoss) {
-    // 每8只怪或击杀BOSS必掉消耗品
+// Floor bonus: +2% drop rate and +1% quality per floor (reduced magnitudes)
     const rand = Math.random();
     let dropItem;
     if (rand < 0.6) {
-      dropItem = { type: 'potion', name: '治疗药剂', heal: 50, rarity: RARITY.COMMON, stackable: true, count: 1 };
+      dropItem = { type: 'potion', name: 'Health Potion', heal: 50, rarity: RARITY.COMMON, stackable: true, count: 1 };
     } else if (rand < 0.88) {
-      dropItem = { type: 'potion', name: '法力药剂', mana: 30, rarity: RARITY.COMMON, stackable: true, count: 1 };
+      dropItem = { type: 'potion', name: 'Mana Potion', mana: 30, rarity: RARITY.COMMON, stackable: true, count: 1 };
     } else {
-      dropItem = { type: 'scroll', name: '回城卷轴', rarity: RARITY.COMMON, stackable: true, count: 1 };
+      dropItem = { type: 'scroll', name: 'Town Portal Scroll', rarity: RARITY.COMMON, stackable: true, count: 1 };
     }
     const validPos = ensureValidDropPosition(x, y);
     groundItems.push({
@@ -865,110 +879,110 @@ function dropLoot(monster) {
     player.killsSincePotion = 0;
   }
 
-  // ========== 装备掉落系统 ==========
-  // 层数加成：每层+2%掉落率，+1%品质提升（降低加成幅度）
-  const floorDropBonus = Math.min(f * 0.02, 0.25);      // 最高+25%
-  const floorQualityBonus = Math.min(f * 0.01, 0.15);   // 最高+15%
+// Max +25%
+// Max +15%
+  const floorDropBonus = Math.min(f * 0.02, 0.25);      // highest+25%
+  const floorQualityBonus = Math.min(f * 0.01, 0.15);   // highest+15%
 
-  // 累积幸运加成：每次没掉好东西+1，最高50（降低影响）
-  const luckBonus = Math.min((player.luckAccumulator || 0) * 0.005, 0.15);  // 最高+15%
+// Treasure Hunter talent + Divine Blessing: drop rate bonus
+  const luckBonus = Math.min((player.luckAccumulator || 0) * 0.005, 0.15);  // highest+15%
 
-  // 寻宝者天赋+天神赐福：掉落率加成
+// Extra +100% drop rate
   let treasureHunterBonus = (getTalentEffect('dropRatePct', 0) + (player.dropRatePct || 0)) / 100;
 
-  // 双倍掉落buff
+// Boss gear count scales with floors: 3 on 1-10, 4 on 11-20, 5 on 21+
   if (player.dropBuffExpiry && Date.now() < player.dropBuffExpiry) {
-    treasureHunterBonus += 1.0;  // 额外+100%掉落率
+    treasureHunterBonus += 1.0;  // additional+100%droprate
   }
 
-  // BOSS掉落装备数量根据楼层递增：1-10层3件，11-20层4件，21层+5件
+// Bosses drop 3-5 gear pieces by floor
   let bossEquipmentCount = 3;
   if (f > 20) bossEquipmentCount = 5;
   else if (f > 10) bossEquipmentCount = 4;
 
-  // 计算最终掉落参数
+// Boss base +30% quality
   let dropChance, dropCount, qualityBonus;
 
   if (isBoss) {
     dropChance = 1.0;
-    dropCount = bossEquipmentCount;  // BOSS根据楼层掉落3-5件装备
-    qualityBonus = 0.30 + floorQualityBonus;  // BOSS基础+30%品质
+    dropCount = bossEquipmentCount;  // BOSSbyfloordrop3-5piecegear
+    qualityBonus = 0.30 + floorQualityBonus;  // BOSSbase+30%quality
   } else if (isElite) {
-    dropChance = 0.45 + floorDropBonus + luckBonus + treasureHunterBonus;  // 45%起步
+    dropChance = 0.45 + floorDropBonus + luckBonus + treasureHunterBonus;  // 45%startstep
     dropCount = 1;
     qualityBonus = 0.10 + floorQualityBonus + luckBonus;
   } else {
-    dropChance = 0.25 + floorDropBonus + luckBonus + treasureHunterBonus;  // 25%起步
+    dropChance = 0.25 + floorDropBonus + luckBonus + treasureHunterBonus;  // 25%startstep
     dropCount = 1;
     qualityBonus = floorQualityBonus + luckBonus;
   }
 
-  let droppedGoodItem = false;  // 是否掉落了好东西（蓝装以上）
+  let droppedGoodItem = false;  // Set drop rate ×0.2 (-80%)
 
-  // 挂机模式掉率惩罚
+// Unique drop rate ×0.4 (-60%)
   const isAutoBattle = typeof AutoBattle !== 'undefined' && AutoBattle.enabled;
-  const autoBattleSetPenalty = isAutoBattle ? 0.2 : 1.0;      // 套装掉率 ×0.2（降80%）
-  const autoBattleUniquePenalty = isAutoBattle ? 0.4 : 1.0;   // 暗金掉率 ×0.4（降60%）
+  const autoBattleSetPenalty = isAutoBattle ? 0.2 : 1.0;      // setfallrate ×0.2（lower80%）
+  const autoBattleUniquePenalty = isAutoBattle ? 0.4 : 1.0;   // Uniquefallrate ×0.4（lower60%）
 
   for (let i = 0; i < dropCount; i++) {
     if (Math.random() < dropChance) {
       let item = null;
 
-      // ========== 套装掉落 ==========
-      // 套装掉落概率：BOSS 15%, 精英 3%, 普通怪 1%（符合留存优化规格）
+      // ========== setdrop ==========
+// Luck influence reduced to 5%
       const setBaseChance = isBoss ? 0.15 : (isElite ? 0.03 : (f >= 5 ? 0.01 : 0.003));
-      const setFloorBonus = f >= 10 ? 0.01 : 0;  // 10层以上+1%
-      const setLuckBonus = luckBonus * 0.05;     // 幸运值影响降到5%
-      const setChance = (setBaseChance + setFloorBonus + setLuckBonus) * autoBattleSetPenalty;  // 挂机惩罚
+      const setFloorBonus = f >= 10 ? 0.01 : 0;  // 10layerabove+1%
+      const setLuckBonus = luckBonus * 0.05;     // Server announce: set obtained
+      const setChance = (setBaseChance + setFloorBonus + setLuckBonus) * autoBattleSetPenalty;  // ========== Normal gear drops ==========
       if (Math.random() < setChance) {
         item = generateRandomSetItem(f);
         if (item) {
           droppedGoodItem = true;
-          // 全服公告：获得套装
+          // server-wide announce:unlockedset
           if (typeof OnlineSystem !== 'undefined') {
             OnlineSystem.announce('set_drop', item.displayName || item.name);
           }
         }
       }
 
-      // ========== 普通装备掉落 ==========
+// The higher the bonus, the better the loot
       if (!item) {
         item = createItem(null, f);
 
-        // 品质重roll（应用所有加成）
+// Bosses guarantee a rare and have raised unique odds (matching the buffed difficulty)
         const qualityRoll = Math.random();
-        const adjustedRoll = qualityRoll - qualityBonus;  // 加成越高，越容易出好东西
+        const adjustedRoll = qualityRoll - qualityBonus;  // AFK mode: unique threshold ×0.7
 
         if (isBoss) {
-          // BOSS保底蓝装，提高暗金概率（匹配加强后的难度）
-          // 挂机模式：暗金阈值 ×0.7
+// elite
+// Normal monster
           if (adjustedRoll < 0.05 * autoBattleUniquePenalty) { item.rarity = RARITY.UNIQUE; droppedGoodItem = true; }
           else if (adjustedRoll < 0.35) { item.rarity = RARITY.RARE; droppedGoodItem = true; }
           else { item.rarity = RARITY.MAGIC; droppedGoodItem = true; }
         } else if (isElite) {
-          // 精英怪
+          // elite
           if (adjustedRoll < 0.015 * autoBattleUniquePenalty) { item.rarity = RARITY.UNIQUE; droppedGoodItem = true; }
           else if (adjustedRoll < 0.12) { item.rarity = RARITY.RARE; droppedGoodItem = true; }
           else if (adjustedRoll < 0.45) { item.rarity = RARITY.MAGIC; droppedGoodItem = true; }
           else item.rarity = RARITY.NORMAL;
         } else {
-          // 普通怪
+          // normalmonster
           if (adjustedRoll < 0.005 * autoBattleUniquePenalty) { item.rarity = RARITY.UNIQUE; droppedGoodItem = true; }
           else if (adjustedRoll < 0.04) { item.rarity = RARITY.RARE; droppedGoodItem = true; }
           else if (adjustedRoll < 0.20) { item.rarity = RARITY.MAGIC; droppedGoodItem = true; }
           else item.rarity = RARITY.NORMAL;
         }
 
-        // 更新显示名称（如果品质被修改）
-        if (item.rarity === RARITY.UNIQUE && !item.displayName.startsWith('暗金')) {
-          item.displayName = "暗金·" + item.name;
+// High-quality drop VFX
+        if (item.rarity === RARITY.UNIQUE && !item.displayName.startsWith('Unique')) {
+          item.displayName = "Unique · " + item.name;
           item.stats.allSkills = (item.stats.allSkills || 0) + 1;
           item.stats.dmgPct = (item.stats.dmgPct || 0) + 50;
           item.stats.lifeSteal = (item.stats.lifeSteal || 0) + 5;
         }
       }
 
-      // 物理掉落初速度
+// ========== Rune drops ==========
       const angle = (Math.PI * 2 / dropCount) * i + (Math.random() * 0.5 - 0.25);
       const speed = 80 + Math.random() * 60;
 
@@ -984,14 +998,14 @@ function dropLoot(monster) {
       item.dropTime = Date.now();
       groundItems.push(item);
 
-      // 高品质掉落特效
+// ========== Boss bonus drops (gold piles + potions + town portal) ==========
       if (item.rarity >= RARITY.RARE) {
         createDropBeam(item.x, item.y, item.rarity);
       }
     }
   }
 
-  // ========== 符文掉落 (Rune Drops) ==========
+  // ========== runedrop (Rune Drops) ==========
   const runeDropChance = isBoss ? 0.35 : (isElite ? 0.12 : 0.025);
   if (Math.random() < runeDropChance && typeof createRuneItem === 'function') {
     const runePool = ['el', 'eld', 'tir', 'nef', 'eth'];
@@ -1020,16 +1034,16 @@ function dropLoot(monster) {
     }
   }
 
-  // ========== BOSS额外掉落（金币堆+药水+回城卷轴） ==========
+  // ========== BOSSextradrop（goldpile+potion+town portal scroll） ==========
   if (isBoss) {
-    // 金币堆数：3-5堆，每堆数量根据楼层递增
-    // 修正逻辑
-    const coinStacks = 3 + Math.floor(Math.random() * 3); // 3-5堆
+// 3-5 piles
+    // fixlogic
+    const coinStacks = 3 + Math.floor(Math.random() * 3); // 3-5pile
     for (let i = 0; i < coinStacks; i++) {
       let goldAmount;
-      if (f <= 10) goldAmount = 100 + Math.floor(Math.random() * 200); // 1-10层：100-300
-      else if (f <= 20) goldAmount = 300 + Math.floor(Math.random() * 300); // 11-20层：300-600
-      else goldAmount = 500 + Math.floor(Math.random() * 500); // 21层+：500-1000
+      if (f <= 10) goldAmount = 100 + Math.floor(Math.random() * 200); // 1-10layer:100-300
+      else if (f <= 20) goldAmount = 300 + Math.floor(Math.random() * 300); // 11-20layer:300-600
+      else goldAmount = 500 + Math.floor(Math.random() * 500); // 21layer+:500-1000
 
       const angle = (Math.PI * 2 / coinStacks) * i + (Math.random() * 0.5 - 0.25);
       const speed = 60 + Math.random() * 40;
@@ -1043,19 +1057,19 @@ function dropLoot(monster) {
         vz: 120 + Math.random() * 80,
         bounces: 2,
         soundLand: 'land_gold',
-        rarity: RARITY.COMMON, name: Math.floor(goldAmount) + " 金币", icon: '💰', dropTime: Date.now()
+        rarity: RARITY.COMMON, name: Math.floor(goldAmount) + " Gold", icon: '💰', dropTime: Date.now()
       });
     }
-    // 药水：红蓝各1-2瓶
-    const healthPotionCount = 1 + Math.floor(Math.random() * 2); // 1-2瓶
-    const manaPotionCount = 1 + Math.floor(Math.random() * 2); // 1-2瓶
+    // Potions: 1-2 of each red and blue
+    const healthPotionCount = 1 + Math.floor(Math.random() * 2); // 1-2 bottles
+    const manaPotionCount = 1 + Math.floor(Math.random() * 2); // 1-2 bottles
 
     for (let i = 0; i < healthPotionCount; i++) {
       const angle = (Math.PI * 2 / healthPotionCount) * i + (Math.random() * 0.5 - 0.25);
       const speed = 40 + Math.random() * 40;
       const validPos = ensureValidDropPosition(x + Math.cos(angle) * speed, y + Math.sin(angle) * speed);
       groundItems.push({
-        type: 'potion', name: '治疗药剂', heal: 50, rarity: RARITY.COMMON, stackable: true, count: 1,
+        type: 'potion', name: 'Health Potion', heal: 50, rarity: RARITY.COMMON, stackable: true, count: 1,
         x: validPos.x, y: validPos.y, z: 0,
         vx: (Math.random() - 0.5) * 80,
         vy: (Math.random() - 0.5) * 80,
@@ -1071,7 +1085,7 @@ function dropLoot(monster) {
       const speed = 40 + Math.random() * 40;
       const validPos = ensureValidDropPosition(x + Math.cos(angle) * speed, y + Math.sin(angle) * speed);
       groundItems.push({
-        type: 'potion', name: '法力药剂', mana: 30, rarity: RARITY.COMMON, stackable: true, count: 1,
+        type: 'potion', name: 'Mana Potion', mana: 30, rarity: RARITY.COMMON, stackable: true, count: 1,
         x: validPos.x, y: validPos.y, z: 0,
         vx: (Math.random() - 0.5) * 80,
         vy: (Math.random() - 0.5) * 80,
@@ -1082,14 +1096,14 @@ function dropLoot(monster) {
       });
     }
 
-    // 回城卷轴：1-2个
-    const scrollCount = 1 + Math.floor(Math.random() * 2); // 1-2个
+    // town portal scroll:1-2
+    const scrollCount = 1 + Math.floor(Math.random() * 2); // 1-2
     for (let i = 0; i < scrollCount; i++) {
       const angle = (Math.PI * 2 / scrollCount) * i + (Math.random() * 0.5 - 0.25);
       const speed = 40 + Math.random() * 40;
       const validPos = ensureValidDropPosition(x + Math.cos(angle) * speed, y + Math.sin(angle) * speed);
       groundItems.push({
-        type: 'scroll', name: '回城卷轴', rarity: RARITY.COMMON, stackable: true, count: 1,
+        type: 'scroll', name: 'Town Portal Scroll', rarity: RARITY.COMMON, stackable: true, count: 1,
         x: validPos.x, y: validPos.y, z: 0,
         vx: (Math.random() - 0.5) * 100,
         vy: (Math.random() - 0.5) * 100,
@@ -1101,7 +1115,7 @@ function dropLoot(monster) {
     }
   }
 
-  // ========== 更新累积幸运值 ==========
+// Beam color: blue-purple theme
   if (droppedGoodItem) {
     player.luckAccumulator = 0;
   } else {
@@ -1111,27 +1125,27 @@ function dropLoot(monster) {
   if (typeof updateWorldLabels !== 'undefined') updateWorldLabels();
 }
 
-// 创建传送门光柱特效（复用掉落光柱样式，蓝色主题）
+// Create beam particles
 function createPortalBeam(x, y) {
-  // 光柱颜色：蓝紫色主题
+// Lasts 1.2 seconds
   const beamColor = '#6699ff';
   const glowColor = 'rgba(100, 150, 255, 0.6)';
 
-  // 创建光柱粒子
+// Taller beam
   particles.push({
     type: 'drop_beam',
     x: x,
     y: y,
     color: beamColor,
     glowColor: glowColor,
-    life: 1.2,           // 持续1.2秒
+    life: 1.2,           // duration1.2second
     maxLife: 1.2,
-    height: 250,         // 光柱更高
+    height: 250,         // Spark particles (blue family)
     width: 50,
-    isUnique: true       // 使用更亮的效果
+    isUnique: true       // Offset upward
   });
 
-  // 火花粒子（蓝色系）
+// Gravity effect
   const sparkCount = 30;
   for (let i = 0; i < sparkCount; i++) {
     const angle = (Math.PI * 2 / sparkCount) * i + Math.random() * 0.3;
@@ -1142,15 +1156,15 @@ function createPortalBeam(x, y) {
       x: x,
       y: y - 20,
       vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - 120,  // 向上偏移
+      vy: Math.sin(angle) * speed - 120,  // towardupoffset by
       color: sparkColor,
       life: 0.8 + Math.random() * 0.4,
       size: 2 + Math.random() * 4,
-      gravity: 120  // 重力效果
+      gravity: 120  // gravityeffect
     });
   }
 
-  // 上升光点
+// ========== Socketing mode controller ==========
   for (let i = 0; i < 15; i++) {
     particles.push({
       type: 'rising_spark',
@@ -1195,7 +1209,7 @@ window.cheatGetSet = function(setId) {
   }
 };
 
-// ========== 符文镶嵌控制系统 (Socketing Mode Controller) ==========
+// Refresh the inventory to highlight socketable gear
 let currentSocketingRune = null;
 let currentSocketingIndex = -1;
 
@@ -1210,7 +1224,7 @@ function getActiveSocketingRune() {
 function startSocketingMode(runeItem, index) {
   if (!runeItem || runeItem.type !== 'rune') return;
 
-  // 如果点击的是当前正在镶嵌的符文，则取消镶嵌模式
+// Validate the target gear
   if (currentSocketingRune && currentSocketingRune.id === runeItem.id) {
     cancelSocketingMode();
     return;
@@ -1220,7 +1234,7 @@ function startSocketingMode(runeItem, index) {
   currentSocketingIndex = index;
 
   const lang = (typeof I18N !== 'undefined' && I18N.currentLang) ? I18N.currentLang : 'zh';
-  let msg = '请点击有空孔的装备进行镶嵌（再次点击符文可取消）';
+  let msg = 'Click gear with an empty socket to socket (click the rune again to cancel)';
   if (lang === 'es') msg = 'Haz clic en un equipo con huecos libres para engarzar';
   else if (lang === 'en') msg = 'Click an equipment with empty sockets to insert the rune';
 
@@ -1231,7 +1245,7 @@ function startSocketingMode(runeItem, index) {
     AudioSys.play('gold');
   }
 
-  // 刷新背包以高亮符合镶嵌条件的装备
+// Consume the rune
   if (typeof renderInventory === 'function') renderInventory();
   if (typeof renderStash === 'function') renderStash();
 }
@@ -1248,10 +1262,10 @@ function cancelSocketingMode() {
 function trySocketRuneIntoTarget(targetItem, targetSlotIndex) {
   if (!currentSocketingRune) return false;
 
-  // 验证目标装备
+// Cheat command to test rune acquisition quickly
   if (typeof canItemAcceptRune === 'function' && !canItemAcceptRune(targetItem, currentSocketingRune)) {
     const lang = (typeof I18N !== 'undefined' && I18N.currentLang) ? I18N.currentLang : 'zh';
-    let err = '该装备没有空孔，或无法镶嵌该符文！';
+    let err = 'No empty socket here, or this rune cannot be inserted!';
     if (lang === 'es') err = '¡Este equipo no tiene huecos libres para engarzar!';
     else if (lang === 'en') err = 'This equipment has no empty sockets!';
     if (typeof showNotification === 'function') showNotification(err, 'danger');
@@ -1263,7 +1277,7 @@ function trySocketRuneIntoTarget(targetItem, targetSlotIndex) {
     return false;
   }
 
-  // 消耗符文
+  // consumerune
   const runeIdx = currentSocketingIndex;
   if (player.inventory[runeIdx] && player.inventory[runeIdx].id === currentSocketingRune.id) {
     player.inventory[runeIdx] = null;
@@ -1285,7 +1299,7 @@ function trySocketRuneIntoTarget(targetItem, targetSlotIndex) {
     const rw = res.runeword;
     const rwName = getRunewordName(rw.id);
 
-    let successMsg = `✨ 符文之语【${rwName}】觉醒成功！`;
+    let successMsg = `✨ Runeword "${rwName}" awakened!`;
     if (lang === 'es') successMsg = `✨ ¡Palabra Rúnica [${rwName}] Despertada!`;
     else if (lang === 'en') successMsg = `✨ Runeword [${rwName}] Activated!`;
 
@@ -1299,7 +1313,7 @@ function trySocketRuneIntoTarget(targetItem, targetSlotIndex) {
       triggerScreenShake(8, 0.3);
     }
   } else {
-    let successMsg = `已将符文镶嵌至【${targetItem.displayName || targetItem.name}】`;
+    let successMsg = `Rune socketed into "${targetItem.displayName || targetItem.name}"`;
     if (lang === 'es') successMsg = `Runa engarzada en ${targetItem.displayName || targetItem.name}`;
     else if (lang === 'en') successMsg = `Rune socketed into ${targetItem.displayName || targetItem.name}`;
     if (typeof showNotification === 'function') showNotification(successMsg, 'gold');
@@ -1317,13 +1331,13 @@ function trySocketRuneIntoTarget(targetItem, targetSlotIndex) {
   return true;
 }
 
-// 快速测试获得符文作弊指令
+// Cheat command to test rune acquisition quickly
 window.cheatGetRune = function(runeKey) {
   if (typeof createRuneItem !== 'function') return;
   const rune = createRuneItem(runeKey || 'tir');
   if (rune) {
     addItemToInventory(rune);
-    showNotification(`获得测试符文: ${rune.displayName}`);
+    showNotification(`Acquired test rune: ${rune.displayName}`);
     renderInventory();
   }
 };

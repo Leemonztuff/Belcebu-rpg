@@ -1,4 +1,4 @@
-// 高阶物理斩击：三维弧形刀面、侧壁与分层残影，投影到现有战斗Canvas。
+// High-tier physical slash: 3D curved blade planes, side walls and layered afterimages projected onto the existing combat canvas.
 const Physical3D = (() => {
     const segments=28;
     function draw(ctx,s){
@@ -7,7 +7,7 @@ const Physical3D = (() => {
         const project=(a,r,z)=>[s.x+Math.cos(a)*r,s.y+Math.sin(a)*r*.78-z];
         const polygon=(points,color,alpha)=>{ctx.globalAlpha=alpha;ctx.fillStyle=color;ctx.beginPath();for(let i=0;i<points.length;i++)ctx[i?'lineTo':'moveTo'](...points[i]);ctx.closePath();ctx.fill();ctx.strokeStyle=color;ctx.lineWidth=.5;ctx.stroke();};
         ctx.save();
-        // 残影逐层降低、变薄；每片刀面保留上表面和厚度侧壁。
+// Afterimages fade and thin layer by layer; each blade plane keeps its top surface and thickness walls.
         for(let layer=2;layer>=0;layer--){
             const radius=s.radius-layer*9,span=1.05+s.tier*.12,start=swing-span*.55-layer*.17;
             for(let i=0;i<segments;i++){
@@ -23,7 +23,7 @@ const Physical3D = (() => {
                 polygon([outer,nextOuter,nextBevel,bevel],s.isCrit?'#fffbea':'#fff1c4',alpha);
             }
         }
-        // 高阶裂斩的窄亮锋，爆发集中在刀刃而非铺满屏幕。
+        // High-tier Rend's narrow bright edge; the burst concentrates on the blade instead of covering the screen.
         if(s.tier>=3){ctx.globalAlpha=fade*.75;ctx.strokeStyle='#fff0ba';ctx.lineWidth=s.isCrit?3:1.5;ctx.beginPath();for(let i=0;i<=segments;i++){const a=swing-.65+i/segments*1.3;ctx[i?'lineTo':'moveTo'](...project(a,s.radius+8,24));}ctx.stroke();}
         ctx.restore();return true;
     }
