@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+### GitHub Pages workflow y limpieza del pipeline de i18n
+- `.github/workflows/deploy.yml` publicaba `path: '.'`, es decir las 253 MB del repositorio incluyendo `node_modules/` y `.git/`. Ahora ejecuta `tools/vercel-build.cjs` —el mismo build que usa Vercel— y sube solo `dist/`, de modo que ambos hostings sirven un sitio idéntico y el upload entra en el presupuesto de Pages.
+- `cancel-in-progress: true` evita publicar un deploy construido desde un commit ya superado.
+- Añadido `workflow_dispatch` para relanzar el deploy a mano.
+- **Requisito pendiente**: Pages debe estar habilitado en el repo (*Settings → Pages → Source: GitHub Actions*). Hasta entonces `configure-pages` falla con `Get Pages site failed` en cada push. El error es de configuración del repo, no del workflow.
+- Eliminado `tools/i18n-migration/` (35 ficheros, 1,9 MB): pipeline de una sola vez usado para migrar los comentarios a inglés. No lo referencia ningún script, `package.json` ni workflow, y los `.json` que quedan ya no sirven para nada.
+
 ### Test Suite Green (Suite de tests en verde)
 - Added `tools/package.json` with `"type": "commonjs"` so the CommonJS test suite runs under the ESM root `package.json`. The game itself is loaded via classic `<script>` tags, so this only scopes the module type to `tools/`.
 - Converted the 6 remaining ESM test files (`achievement-slide-in`, `batch-3-features`, `paperdoll-set-bonus`, `plan-b-features`, `release-data-integrity`, `runes-and-sockets`) to `require`.

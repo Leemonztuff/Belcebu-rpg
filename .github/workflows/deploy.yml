@@ -5,15 +5,17 @@ on:
     branches:
       - main
       - master
+  workflow_dispatch:
 
 permissions:
   contents: read
   pages: write
   id-token: write
 
+# Never ship a deploy built from a superseded commit.
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -28,11 +30,16 @@ jobs:
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v4
 
+      # Same build script Vercel uses, so both hosts ship an identical dist/.
+      # Uploading the repository root instead would publish node_modules/ and .git/
+      # and exceed the Pages artifact budget.
+      - name: Build static site
+        run: node tools/vercel-build.cjs
+
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Deploy the root directory
-          path: '.'
+          path: 'dist'
 
       - name: Deploy to GitHub Pages
         id: deployment
