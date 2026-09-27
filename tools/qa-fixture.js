@@ -135,7 +135,7 @@
                     const height=kind==='hero'?HERO_SPRITE_CONFIG.renderSize:MONSTER_SPRITE_CONFIG.renderSize,width=height*frame.width/frame.height;
                     for(const [center,scale]of [[58,1],[204,2]]){
                         if(kind==='monster')drawMonsterSprite(ctx,source,frame,center,194,width*scale,height*scale);
-                        else drawHeroSprite(ctx,source,frame,center,194-height*scale,width*scale,height*scale);
+                        else drawActorSprite(ctx,source,frame,center,194-height*scale,width*scale,height*scale);
                     }
                 }
                 item.info.textContent=`${inspection.inBounds?'PASS 帧边界':'FAIL 未加载/越界'} · frame ${index}\n${inspection.source || '无来源'}\n${JSON.stringify(inspection.frame)}`;
@@ -393,7 +393,7 @@
                     for(let i=0;i<2;i++){
                         Shield3D.setEnabled(!!i);
                         c.save();c.translate(180+i*360,250);c.scale(2,2);
-                        drawPlayerShieldBack(c,0,0);drawHeroSprite(c,frame.source || processedHeroSprites,frame,0,-height+(frame.offsetY || 0),width,height,null);drawPlayerShieldFront(c,0,0);c.restore();
+                        drawPlayerShieldBack(c,0,0);drawActorSprite(c,frame.source || processedHeroSprites,frame,0,-height+(frame.offsetY || 0),width,height,null);drawPlayerShieldFront(c,0,0);c.restore();
                     }
                 } finally {player.shield=liveShield;player.graphicsQuality=quality;Shield3D.setEnabled(gpuEnabled);}
                 requestAnimationFrame(paint);

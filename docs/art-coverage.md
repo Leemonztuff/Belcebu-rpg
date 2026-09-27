@@ -42,7 +42,7 @@
 
 | 类别 | 完整覆盖 | 正式入口 |
 |---|---|---|
-| 主角 | 7张图集、112帧：6种动作，加4个斜向行走方向 | `getHeroFrame` / `drawHeroSprite` |
+| 主角 | 7张图集、112帧：6种动作，加4个斜向行走方向 | `getHeroFrame` / `drawActorSprite` |
 | 普通怪 | 9类，各32帧 | `getMonsterSpriteFrame` / `drawMonsterSprite` |
 | Boss | 血鸟、女伯爵、屠夫、树头木拳、暗黑破坏神、巴尔，各32帧 | 战斗和图鉴共用新素材 |
 | 场景 | 森林/冰原/熔岩/城镇共27种物件，覆盖所有对应区域 | `EnvironmentArt.scenic` / `floor` |

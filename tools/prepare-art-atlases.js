@@ -31,6 +31,8 @@ function loadCatalog(root) {
     const keys = new Set(), files = new Set();
     for (const catalog of scope.catalogs) for (const [key, data] of Object.entries(catalog)) {
         if (!/^[a-zA-Z0-9_-]+$/.test(key)) throw new Error(`不安全的图集名称：${key}`);
+        // raw 定义是运行时直接加载的条带（public/spritesheets），不参与烘焙。
+        if (data.raw) continue;
         if (keys.has(key) || files.has(data.file)) throw new Error(`重复图集定义：${key} / ${data.file}`);
         if (!Number.isInteger(data.cols) || data.cols < 1 || !Number.isInteger(data.rows) || data.rows < 1) throw new Error(`图集切格定义无效：${key}`);
         const sourcePath = path.resolve(root, data.file);

@@ -66,4 +66,24 @@ const root = path.resolve(__dirname, '..');
         console.log(`PASS: ${definition.file} → ${entry.file} / SHA、RGBA、尺寸、切格及逐像素等价`);
     }
     console.log(`PASS: 全部 ${definitions.length} 个图集可直接加载，无需运行时扫描`);
+    // raw 条带必须被烘焙目录排除，并在运行时按 alpha 自行归一化，不得依赖清单。
+    const rawScope = vm.createContext({console, Image: class {}, ArtAtlasManifest: manifest,
+        document: {createElement: () => createCanvas(1, 1)}});
+    for (const file of ['art-samples.js']) vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), rawScope, {filename: file});
+    vm.runInContext('this.art = ArtSamples;', rawScope);
+    const rawKeys = Object.keys(rawScope.art.definitions).filter(key => rawScope.art.definitions[key].raw);
+    assert.deepEqual(rawKeys, ['heroCastSheet', 'heroDeathSheet'], '仅施法/倒地条带标记为 raw');
+    for (const key of rawKeys) {
+        const def = rawScope.art.definitions[key];
+        assert.ok(!manifest[def.file], `${key} 不得写入烘焙清单`);
+        assert.ok(!definitions.some(d => d.file === def.file), `${key} 不得进入烘焙目录`);
+        assert.equal(rawScope.art.assetPath(def.file), def.file, `${key} 未命中清单时必须原样使用路径`);
+        const original = await loadImage(path.join(root, def.file));
+        const normalized = rawScope.art.prepareSource(original, def);
+        assert.equal(normalized.width, def.cols * 128);
+        assert.equal(normalized.height, def.rows * 128);
+        assert.equal(normalized.contentBounds.length, def.cols * def.rows);
+        for (const bounds of normalized.contentBounds) assert.ok(bounds.sw > 0 && bounds.sh > 0, `${key} 存在空帧`);
+        console.log(`PASS: raw 条带 ${key} 排除烘焙并按 alpha 归一化为 ${normalized.width}x${normalized.height}`);
+    }
 })().catch(error => {console.error(error); process.exitCode = 1;});

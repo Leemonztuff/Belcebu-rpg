@@ -42,13 +42,49 @@ const scope = vm.createContext({
 vm.runInContext(fs.readFileSync(path.join(root, 'sprite-renderer.js'), 'utf8') + ';globalThis.HeroTintCache=SpriteRenderer.createTintCache();globalThis.MonsterTintCache=SpriteRenderer.createTintCache();', scope);
 vm.runInContext(fs.readFileSync(path.join(root, 'art-samples.js'), 'utf8') + ';globalThis.art=ArtSamples;', scope);
 vm.runInContext(fs.readFileSync(path.join(root, 'environment-art.js'), 'utf8'), scope);
+vm.runInContext(game.match(/const ACTOR_RENDER_SIZE\s*=\s*\d+;/)[0], scope);
+vm.runInContext('globalThis.actorRenderSize = ACTOR_RENDER_SIZE;', scope);
+vm.runInContext('const npcSpriteCellRectCache = new WeakMap();', scope);
+vm.runInContext(game.match(/const PAPERDOLL_MOTION_PROFILES = Object\.freeze\(\{[\s\S]*?\n\}\);/)[0], scope);
+vm.runInContext(game.match(/const ACTIVE_PAPERDOLL_MOTION_PROFILE\s*=\s*'[^']+';/)[0], scope);
+vm.runInContext('globalThis.motionProfiles = PAPERDOLL_MOTION_PROFILES; globalThis.activeMotionProfile = ACTIVE_PAPERDOLL_MOTION_PROFILE;', scope);
 for (const name of ['HERO_SPRITE_CONFIG', 'MONSTER_SPRITE_CONFIG', 'SPRITE_CONFIG']) vm.runInContext(extract(game, `const ${name} =`) + ';', scope);
 for (const name of ['MONSTER_FRAMES', 'BOSS_FRAMES']) vm.runInContext(extract(enemySource, `const ${name} =`) + ';', scope);
-for (const name of ['normalizeHeroDirection', 'getCurrentHeroAction', 'getHeroFrame', 'drawHeroSprite', 'getEnemyMonsterType', 'getMonsterSpriteDirection', 'getMonsterSpriteFrame', 'drawMonsterSprite', 'addBiomeAtmosphere', 'getBiomeStyle']) vm.runInContext(extract(game, `function ${name}(`), scope);
+for (const name of ['normalizeHeroDirection', 'getCurrentHeroAction', 'getPaperdollMotionPose', 'getHeroFrame', 'drawActorSprite', 'getNPCSpriteCellRect', 'getNPCAlphaRowBounds', 'getNPCHeadNeckProfile', 'findNPCNeckAnchor', 'getEnemyMonsterType', 'getMonsterSpriteDirection', 'getMonsterSpriteFrame', 'drawMonsterSprite', 'addBiomeAtmosphere', 'getBiomeStyle']) vm.runInContext(extract(game, `function ${name}(`), scope);
 for (const name of ['drawScenicPropOne', 'drawBiomeFloorDecoration']) vm.runInContext(extract(game, `function ${name}(`), scope);
 vm.runInContext(extract(game, 'const DestructibleSystem =') + ';globalThis.destructibleSystem=DestructibleSystem;', scope);
 vm.runInContext(game.match(/const BOSS_SPRITE_TYPES_BY_FRAME\s*=\s*\[[^;]+;/)[0], scope);
 vm.runInContext('globalThis.heroConfig=HERO_SPRITE_CONFIG;globalThis.monsterConfig=MONSTER_SPRITE_CONFIG;globalThis.monsterFrames=MONSTER_FRAMES;globalThis.bossFrames=BOSS_FRAMES;', scope);
+assert.equal(scope.heroConfig.renderSize, scope.actorRenderSize, 'hero uses the normalized actor height');
+assert.equal(scope.monsterConfig.renderSize, scope.actorRenderSize, 'monsters use the normalized actor height');
+assert.match(game, /const renderH = ACTOR_RENDER_SIZE;/, 'NPCs use the normalized actor height');
+const movingActor = {};
+const movingPose = scope.getPaperdollMotionPose(movingActor, true, 0.125);
+assert.ok(Math.abs(movingPose.chestScaleY - 1) >= 0.05, 'walking torso motion stays visible');
+assert.strictEqual(scope.getPaperdollMotionPose(movingActor, true, 0.1), movingPose, 'actor pose object is reused between frames');
+const idlePose = scope.getPaperdollMotionPose({ lastWalkTime: 0 }, false, 0.75);
+assert.ok(Math.abs(idlePose.chestScaleY - 1) >= 0.035, 'idle breathing remains visible');
+assert.match(game, /const chestOffsetX = cal\.body\.offsetX \|\| 0;/, 'player chest overlay stays centered');
+assert.match(game, /chestLayer\.offsetX = 0;/, 'NPC chest overlay stays centered');
+assert.match(game, /chestLayer\.offsetY = renderH \* chestRatio - chestLayer\.drawH;/, 'NPC chest overlay stays anchored at the waist');
+assert.equal(scope.activeMotionProfile, 'anime', 'anime profile is active for comparison');
+assert.equal(scope.motionProfiles.anime.breathFrequency, scope.motionProfiles.standard.breathFrequency, 'anime profile preserves standard breathing cadence');
+assert.ok(scope.motionProfiles.anime.walkChestY > scope.motionProfiles.standard.walkChestY, 'anime profile exaggerates walk motion');
+const lastBodyCell = scope.getNPCSpriteCellRect({ width: 1295, height: 1295 }, 3, 3);
+assert.deepEqual({ x: lastBodyCell.x, y: lastBodyCell.y, width: lastBodyCell.width, height: lastBodyCell.height },
+    { x: 971, y: 971, width: 324, height: 324 }, 'fractional atlas cells use rounded edges without accumulated drift');
+const neckPixels = new Uint8ClampedArray(20 * 20 * 4);
+for (let y = 4; y < 7; y++) for (let x = 9; x < 11; x++) neckPixels[(y * 20 + x) * 4 + 3] = 255;
+const neckAnchor = scope.findNPCNeckAnchor(neckPixels, 20, 20, 2);
+assert.equal(neckAnchor.x, 0.5, 'neck attachment is centered in its opaque band');
+assert.equal(neckAnchor.y, 0.25, 'neck attachment chooses stable rows matching head neck width');
+const headNeckPixels = new Uint8ClampedArray(20 * 20 * 4);
+for (let y = 18; y < 20; y++) for (let x = 8; x < 12; x++) headNeckPixels[(y * 20 + x) * 4 + 3] = 255;
+const headNeck = scope.getNPCHeadNeckProfile(headNeckPixels, 20, 20);
+assert.equal(headNeck.width, 4, 'head attachment measures neck width at the lower border');
+assert.match(game, /const desiredBodyWidth = headNeck\.width \* headScale \/ bodyScale;/, 'body neck anchor matches the rendered head neck width');
+assert.match(game, /const neckY = chestLayer\.offsetY \+ neckAnchor\.y \* bodyRect\.height \* chestScaleY;/, 'head anchor follows the animated torso overlay');
+assert.match(game, /headLayer\.anchorY = neckY;/, 'NPC head bottom stays joined to the torso neck');
 function assertFrame(frame, key, row, col, monster=false) {
     assert.ok(frame, `${key} 缺少帧`);
     const expected = scope.art.frame(key, row, col);
@@ -59,7 +95,7 @@ function assertFrame(frame, key, row, col, monster=false) {
     assert.ok(frame.x >= 0 && frame.y >= 0 && frame.x + frame.width <= frame.source.width && frame.y + frame.height <= frame.source.height, `${key} 帧越界`);
     const output = createCanvas(180, 180), ctx = output.getContext('2d');
     if(monster)scope.drawMonsterSprite(ctx, frame.source, frame, 90, 128, 128, 128);
-    else scope.drawHeroSprite(ctx, frame.source, frame, 90, 0, 128, 128);
+    else scope.drawActorSprite(ctx, frame.source, frame, 90, 0, 128, 128);
     const pixels = ctx.getImageData(0, 0, 180, 180).data;
     assert.ok(pixels.some((value, index) => index % 4 === 3 && value > 0), `${key} 实际绘制为空`);
 }
@@ -73,9 +109,12 @@ function assertFrame(frame, key, row, col, monster=false) {
         scope.player = { heroAction: action, heroActionTimer: 4 - col, heroActionDuration: 4, animTime: col / scope.heroConfig.fps[action], moving: action === 'walk' };
         const safeDirection = action === 'sit' ? 'front' : direction;
         const diagonal = ['frontLeft', 'frontRight', 'backLeft', 'backRight'];
-        const key = action === 'walk' && diagonal.includes(safeDirection) ? 'herowalkDiagonal' : action === 'hurt' ? 'heroHurt' : `hero${action}`;
-        const row = key === 'herowalkDiagonal' ? diagonal.indexOf(safeDirection) : safeDirection.startsWith('back') ? 1 : ['left', 'frontLeft'].includes(safeDirection) ? 2 : ['right', 'frontRight'].includes(safeDirection) ? 3 : 0;
-        assertFrame(scope.getHeroFrame(direction), key, row, col); heroCases++;
+        const strip = action === 'cast';
+        const key = strip ? 'heroCastSheet' : action === 'walk' && diagonal.includes(safeDirection) ? 'herowalkDiagonal' : action === 'hurt' ? 'heroHurt' : `hero${action}`;
+        const row = strip ? 0 : key === 'herowalkDiagonal' ? diagonal.indexOf(safeDirection) : safeDirection.startsWith('back') ? 1 : ['left', 'frontLeft'].includes(safeDirection) ? 2 : ['right', 'frontRight'].includes(safeDirection) ? 3 : 0;
+        const heroFrame = scope.getHeroFrame(direction);
+        if (strip) assert.equal(heroFrame.flipX, safeDirection.toLowerCase().includes('left'), `cast ${safeDirection} 镜像错误`);
+        assertFrame(heroFrame, key, row, col); heroCases++;
     }
     const types = Object.keys(scope.monsterConfig.types);
     assert.equal(types.length, 15);
@@ -96,7 +135,7 @@ function assertFrame(frame, key, row, col, monster=false) {
             const elapsed=(col+.1)*collapse/4;
             scope.player={isDead:true,deathTimer:elapsed,heroAction:'attack',heroActionTimer:1};
             const frame=type==='hero'?scope.getHeroFrame(right?'right':'left'):scope.getMonsterSpriteFrame({monsterType:type,isBoss:boss,dead:true,deathVisualDuration:duration,deathVisualTimer:duration-elapsed,facingDirection:right?'right':'left'});
-            assertFrame(frame,`death${group}`,row,col,type!=='hero');
+            assertFrame(frame,type==='hero'?'heroDeathSheet':'death'+group,type==='hero'?0:row,col,type!=='hero');
             assert.equal(frame.flipX,right);
             if(scale!==undefined)assert.equal(frame.renderScale,scale,'横卧不能单帧放大');
             scale=frame.renderScale;

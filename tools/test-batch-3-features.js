@@ -57,7 +57,7 @@ for (const lang of ['es', 'en', 'zh']) {
 }
 const gameCode = fs.readFileSync('game.js', 'utf8');
 assert.ok(gameCode.includes('const NPC_NAME_KEYS ='), 'NPC map labels must resolve names through localized NPC types');
-assert.ok(gameCode.includes('ctx.fillText(npcDisplayName, nx, ny - 70)'), 'NPC map labels must draw the localized name');
+assert.match(gameCode, /ctx\.fillText\(npcDisplayName,\s*nx,\s*npcLabelY\)/, 'NPC map labels must draw the localized name');
 console.log('✓ Test 2 Passed: i18n dictionary validates for Spanish, English, and Chinese');
 
 // 3. Load and test ShareCardSystem

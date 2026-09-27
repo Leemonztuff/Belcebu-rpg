@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 const assert = require('assert/strict');
 const fs = require('fs');
 const vm = require('vm');
@@ -63,17 +63,17 @@ assert.equal(byteLimited.getStats().entries, 1); assert.equal(byteLimited.getSta
 // 实际主角/怪物入口保持锚点和翻转，并支持新图集 frame.source 覆盖默认图集。
 context.HeroTintCache = renderer.createTintCache();
 context.MonsterTintCache = renderer.createTintCache();
-for (const name of ['drawHeroSprite', 'drawMonsterSprite']) {
+for (const name of ['drawActorSprite', 'drawMonsterSprite']) {
     const start = game.indexOf(`function ${name}(`), end = game.indexOf('\n}', start);
     vm.runInContext(game.slice(start, end + 2), context);
     const canvas = createCanvas(8, 8), ctx = canvas.getContext('2d');
     context[name](ctx, otherSource, { x: 0, y: 0, width: 8, height: 8, flipX: true, source: fixture }, 4,
-        name === 'drawHeroSprite' ? 0 : 8, 8, 8);
+        name === 'drawActorSprite' ? 0 : 8, 8, 8);
     assert.deepEqual([...ctx.getImageData(0, 0, 1, 1).data], [255, 0, 255, 255]);
     assert.deepEqual([...ctx.getImageData(7, 0, 1, 1).data], [255, 255, 255, 255]);
     assert.equal(ctx.getImageData(6, 1, 1, 1).data[3], pixelCtx.getImageData(1, 1, 1, 1).data[3]);
     context[name](ctx, otherSource, { ...frame, source: fixture }, 2,
-        name === 'drawHeroSprite' ? 0 : 4, 4, 4, 'ice');
-    assert.equal(context[name === 'drawHeroSprite' ? 'HeroTintCache' : 'MonsterTintCache'].getStats().entries, 1);
+        name === 'drawActorSprite' ? 0 : 4, 4, 4, 'ice');
+    assert.equal(context[name === 'drawActorSprite' ? 'HeroTintCache' : 'MonsterTintCache'].getStats().entries, 1);
 }
 console.log('PASS: RGBA direct load, frame crop, source identity, LRU and byte budgets');

@@ -1212,13 +1212,14 @@ const heroSpriteSheet = new Image();
 let heroSpritesLoaded = false;
 let processedHeroSprites = null;
 const HeroTintCache = SpriteRenderer.createTintCache();
+const ACTOR_RENDER_SIZE = 88;
 
 const HERO_SPRITE_CONFIG = {
     cols: 4,
     rows: 22,
     frameWidth: 128,
     frameHeight: 128,
-    renderSize: 88,
+    renderSize: ACTOR_RENDER_SIZE,
     fps: { idle: 3, walk: 7, attack: 10, cast: 8, sit: 2, hurt: 8 },
     rowsByAction: {
         idle: {
@@ -1965,7 +1966,7 @@ function drawEliteAffixAuras(ctx, enemy, x, y) {
     const auraIds = getEliteAffixAuraIds(enemy);
     if (auraIds.length === 0) return;
 
-    const baseScale = enemy.isBoss ? 1.32 : (enemy.rarity > 0 ? 0.92 : 0.78);
+    const baseScale = (enemy.isBoss ? 1.32 : (enemy.rarity > 0 ? 0.92 : 0.78)) * (ACTOR_RENDER_SIZE / 76);
     const now = Date.now() / 1000;
     for (let i = 0; i < auraIds.length; i++) {
         drawLoopingVfxEffect(ctx, auraIds[i], x, y + 2, baseScale * (1 + i * 0.08), i * 0.2, now + i * 0.17);
@@ -2365,7 +2366,7 @@ const MONSTER_SPRITE_CONFIG = {
     rows: 116,
     frameWidth: 128,
     frameHeight: 128,
-    renderSize: 76,
+    renderSize: ACTOR_RENDER_SIZE,
     fps: { idle: 3, walk: 6, attack: 8, hurt: 8 },
     types: {
         melee: {
@@ -3594,9 +3595,74 @@ function getCurrentHeroAction() {
     return 'idle';
 }
 
+const PAPERDOLL_MOTION_PROFILES = Object.freeze({
+    standard: Object.freeze({
+        walkFrequency: 4, walkBounce: 1.2, walkChestY: 0.055, walkChestX: 0.025,
+        settleDuration: 0.28, settleFrequency: 25, settleBounce: 0.65, settleChestY: 0.018, settleChestX: 0.009,
+        breathFrequency: 0.68, breathChestY: 0.04, breathChestX: 0.018,
+        headWalkFollow: 0.4, headBounceFollow: 0.2
+    }),
+    anime: Object.freeze({
+        walkFrequency: 4, walkBounce: 1.8, walkChestY: 0.085, walkChestX: 0.04,
+        settleDuration: 0.34, settleFrequency: 19, settleBounce: 0.9, settleChestY: 0.03, settleChestX: 0.014,
+        breathFrequency: 0.68, breathChestY: 0.04, breathChestX: 0.018,
+        headWalkFollow: 0.75, headBounceFollow: 0.36
+    })
+});
+const ACTIVE_PAPERDOLL_MOTION_PROFILE = 'anime';
+
+function getPaperdollMotionPose(actor, isWalking, animTime) {
+    const profile = PAPERDOLL_MOTION_PROFILES[ACTIVE_PAPERDOLL_MOTION_PROFILE];
+    const pose = actor === player
+        ? (PaperdollSystem.motionPose || (PaperdollSystem.motionPose = {}))
+        : (actor.paperdollMotionPose || (actor.paperdollMotionPose = {}));
+    pose.chestScaleY = 1;
+    pose.chestScaleX = 1;
+    pose.bounceY = 0;
+    let bounceY = 0;
+    const walkPhase = isWalking ? Math.sin((animTime || 0) * profile.walkFrequency * Math.PI) : 0;
+
+    if (isWalking) {
+        bounceY = walkPhase * profile.walkBounce;
+        pose.chestScaleY = 1 + walkPhase * profile.walkChestY;
+        pose.chestScaleX = 1 - walkPhase * profile.walkChestX;
+        actor.lastWalkTime = Date.now();
+    } else {
+        const timeSinceWalk = (Date.now() - (actor.lastWalkTime || 0)) / 1000;
+        if (timeSinceWalk < profile.settleDuration) {
+            const settleFactor = 1 - timeSinceWalk / profile.settleDuration;
+            const settlePhase = Math.sin(timeSinceWalk * profile.settleFrequency) * settleFactor;
+            bounceY = settlePhase * profile.settleBounce;
+            pose.chestScaleY = 1 + settlePhase * profile.settleChestY;
+            pose.chestScaleX = 1 - settlePhase * profile.settleChestX;
+        } else {
+            const breathCycle = Math.sin((animTime || 0) * Math.PI * profile.breathFrequency);
+            pose.chestScaleY = 1 + breathCycle * profile.breathChestY;
+            pose.chestScaleX = 1 + breathCycle * profile.breathChestX;
+        }
+    }
+
+    pose.bounceY = bounceY;
+    pose.headWalkOffset = walkPhase * profile.headWalkFollow;
+    pose.headBounceOffset = bounceY * profile.headBounceFollow;
+    return pose;
+}
+
 function getHeroFrame(direction) {
     const action = getCurrentHeroAction();
     const safeDirection = action === 'sit' ? 'front' : normalizeHeroDirection(direction);
+    const progress = player.heroActionDuration > 0
+        ? Math.max(0, Math.min(0.999, 1 - player.heroActionTimer / player.heroActionDuration)) : 0;
+
+    // ========== 施法/倒地专用 4 帧条带 ==========
+    // 必须早于纸娃娃分支：纸娃娃没有施法与倒地帧，会把两种状态都画成静止站姿。
+    if (typeof ArtSamples !== 'undefined' && (action === 'cast' || action === 'death')) {
+        // 倒地带右向镜像以沿用原有约定；施法条带只朝前，左向镜像区分左右。
+        const strip = action === 'death'
+            ? ArtSamples.heroSheetFrame('heroDeathSheet', Math.min(3, Math.floor((player.deathTimer || 0) / 0.9 * 4)), safeDirection.toLowerCase().includes('right'))
+            : ArtSamples.heroSheetFrame('heroCastSheet', Math.floor(progress * 4), safeDirection.toLowerCase().includes('left'));
+        if (strip) return strip;
+    }
 
     // ========== 4x4 Paperdoll (Body & Head Calibrated Layering) ==========
     if (typeof PaperdollSystem !== 'undefined' && PaperdollSystem.enabled) {
@@ -3616,6 +3682,7 @@ function getHeroFrame(direction) {
 
             const layers = [];
             let headOffsetY = dirOffset.y;
+            const motionPose = getPaperdollMotionPose(player, action === 'walk', player.animTime);
 
             if (bodyImg) {
                 const bW = Math.floor(bodyImg.width / 4);
@@ -3634,51 +3701,17 @@ function getHeroFrame(direction) {
                 });
 
                 if (action === 'idle' || action === 'walk') {
-                    const isWalk = action === 'walk';
-
-                    // Física de deformación / elasticidad
-                    let chestScaleY = 1.0;
-                    let chestScaleX = 1.0;
-                    let bounceY = 0;
-
-                    if (isWalk) {
-                        // Movimiento elástico natural y sutil en sincronía con la pisada
-                        const stepFreq = 7.5;
-                        const walkPhase = Math.sin((player.animTime || 0) * stepFreq * Math.PI);
-                        bounceY = walkPhase * 1.3;              // Rebote sutil de 1.3px
-                        chestScaleY = 1 + (walkPhase * 0.04);   // 4% elasticidad vertical
-                        chestScaleX = 1 - (walkPhase * 0.02);   // 2% compresión horizontal
-                        player.lastWalkTime = Date.now();
-                        player.lastWalkPhase = walkPhase;
-                    } else {
-                        // Inercia de desaceleración suave tras detenerse (Inertia Settlement)
-                        const timeSinceWalk = (Date.now() - (player.lastWalkTime || 0)) / 1000;
-                        if (timeSinceWalk < 0.28) {
-                            const settleFactor = 1 - (timeSinceWalk / 0.28);
-                            const settlePhase = Math.sin(timeSinceWalk * 25) * settleFactor;
-                            bounceY = settlePhase * 0.8;
-                            chestScaleY = 1 + (settlePhase * 0.025);
-                            chestScaleX = 1 - (settlePhase * 0.012);
-                        } else {
-                            // Respiración suave y realista en reposo
-                            const breathCycle = Math.sin((player.animTime || 0) * Math.PI * 1.8);
-                            bounceY = 0;
-                            chestScaleY = 1 + breathCycle * 0.015;
-                            chestScaleX = 1 + breathCycle * 0.008;
-                        }
-                    }
-
                     // 2. CAPA SUPERIOR DE BUSTO / PECHO (Overlay dinámico sobre el cuerpo sólido)
                     // Solamente en vista frontal y laterales (row 0, 1, 2), no en espalda (row 3)
                     if (row !== 3) {
                         const chestRatio = 0.44; // Zona superior del Pecho / Busto (44%)
                         const topSrcH = Math.floor(bH * chestRatio);
-                        const topDrawH = (drawH * chestRatio) * chestScaleY;
-                        const topDrawW = drawH * chestScaleX;
+                        const topDrawH = (drawH * chestRatio) * motionPose.chestScaleY;
+                        const topDrawW = drawH * motionPose.chestScaleX;
 
                         // Posicionar overlay centrado en el pecho con offset de rebote
-                        const chestOffsetX = (cal.body.offsetX || 0) + (drawH - topDrawW) / 2;
-                        const chestOffsetY = (cal.body.offsetY || 0) + bounceY;
+                        const chestOffsetX = cal.body.offsetX || 0;
+                        const chestOffsetY = (cal.body.offsetY || 0) + drawH * chestRatio - topDrawH;
 
                         layers.push({
                             type: 'body_chest',
@@ -3692,8 +3725,7 @@ function getHeroFrame(direction) {
                     }
 
                     // Ligero movimiento de cabeza sincronizado
-                    const headWalkPhase = isWalk ? Math.sin((player.animTime || 0) * 7.5 * Math.PI) : 0;
-                    headOffsetY = dirOffset.y + (headWalkPhase * 0.6) + (bounceY * 0.2);
+                    headOffsetY = dirOffset.y + motionPose.headWalkOffset + motionPose.headBounceOffset;
                 }
             }
             if (headImg) {
@@ -3728,8 +3760,6 @@ function getHeroFrame(direction) {
             const death = ArtSamples.deathFrame('hero', player.deathTimer, 0.9, safeDirection.toLowerCase().includes('right'));
             if (death) return death;
         }
-        const progress = player.heroActionDuration > 0
-            ? Math.max(0, Math.min(0.999, 1 - player.heroActionTimer / player.heroActionDuration)) : 0;
         const transient = ['hurt', 'attack', 'cast'].includes(action);
         const sample = ArtSamples.heroFrame(action, safeDirection, transient ? Math.floor(progress * 4)
             : Math.floor((player.animTime || 0) * HERO_SPRITE_CONFIG.fps[action]) % 4);
@@ -3778,7 +3808,136 @@ function getHeroFrame(direction) {
     };
 }
 
-function drawHeroSprite(ctx, source, frame, centerX, topY, drawW, drawH, tint = null) {
+let npcNeckAnchorCanvas = null;
+const npcSpriteCellRectCache = new WeakMap();
+const NPC_HEAD_ALPHA_COVERAGE_LIMIT = 0.9;
+const NPC_FALLBACK_NECK_ANCHOR = Object.freeze({ x: 0.5, y: 0.2445, headX: 0.5 });
+
+function getNPCSpriteCellRect(image, row, col) {
+    let cells = npcSpriteCellRectCache.get(image);
+    if (!cells) {
+        cells = Array.from({ length: 4 }, (_, cellRow) => Array.from({ length: 4 }, (_, cellCol) => {
+            const x = Math.round(cellCol * image.width / 4);
+            const nextX = Math.round((cellCol + 1) * image.width / 4);
+            const y = Math.round(cellRow * image.height / 4);
+            const nextY = Math.round((cellRow + 1) * image.height / 4);
+            return { x, y, width: nextX - x, height: nextY - y };
+        }));
+        npcSpriteCellRectCache.set(image, cells);
+    }
+    return cells[row][col];
+}
+
+function getNPCAlphaRowBounds(alphaData, width, y, bandStart = 0, bandEnd = width) {
+    let left = bandEnd;
+    let right = bandStart - 1;
+    for (let x = bandStart; x < bandEnd; x++) {
+        if (alphaData[(y * width + x) * 4 + 3] <= 24) continue;
+        left = Math.min(left, x);
+        right = Math.max(right, x);
+    }
+    return right < left ? null : { left, right, width: right - left + 1 };
+}
+
+function getNPCHeadAlphaCoverage(alphaData, width, height) {
+    let opaque = 0;
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            if (alphaData[(y * width + x) * 4 + 3] > 24) opaque++;
+        }
+    }
+    return opaque / (width * height);
+}
+
+function getNPCHeadNeckProfile(alphaData, width, height) {
+    const bandStart = Math.floor(width * 0.18);
+    const bandEnd = Math.ceil(width * 0.82);
+    let contentBottom = -1;
+    for (let y = height - 1; y >= 0; y--) {
+        if (getNPCAlphaRowBounds(alphaData, width, y, bandStart, bandEnd)) {
+            contentBottom = y;
+            break;
+        }
+    }
+    if (contentBottom < 0) return null;
+    const sampleCount = Math.max(2, Math.round(height * 0.02));
+    const samples = [];
+    for (let y = Math.max(0, contentBottom - sampleCount + 1); y <= contentBottom; y++) {
+        const bounds = getNPCAlphaRowBounds(alphaData, width, y, bandStart, bandEnd);
+        if (bounds) samples.push({ width: bounds.width, center: (bounds.left + bounds.right + 1) / 2 });
+    }
+    if (samples.length === 0) return null;
+    samples.sort((a, b) => a.width - b.width);
+    return samples[Math.floor(samples.length / 2)];
+}
+
+function findNPCNeckAnchor(alphaData, width, height, targetWidth) {
+    if (!(targetWidth > 0) || !Number.isFinite(targetWidth)) return null;
+    const bandStart = Math.floor(width * 0.25);
+    const bandEnd = Math.ceil(width * 0.75);
+    const scanEnd = Math.max(3, Math.floor(height * 0.35));
+    let bestScore = Infinity;
+    let bestAnchor = null;
+
+    for (let y = 0; y < scanEnd - 2; y++) {
+        const first = getNPCAlphaRowBounds(alphaData, width, y, bandStart, bandEnd);
+        const second = getNPCAlphaRowBounds(alphaData, width, y + 1, bandStart, bandEnd);
+        const third = getNPCAlphaRowBounds(alphaData, width, y + 2, bandStart, bandEnd);
+        if (!first || !second || !third) continue;
+        const meanWidth = (first.width + second.width + third.width) / 3;
+        const score = Math.abs(meanWidth - targetWidth);
+        if (score >= bestScore) continue;
+        bestScore = score;
+        bestAnchor = {
+            x: ((first.left + first.right + second.left + second.right + third.left + third.right + 3) / 6) / width,
+            y: (y + 1) / height,
+            width: meanWidth
+        };
+    }
+    return bestAnchor;
+}
+
+function getNPCNeckAnchor(npc, bodyImage, headImage, row, col, bodyRenderW, headRenderW) {
+    if (!npc.neckAnchorCache) npc.neckAnchorCache = Array.from({ length: 4 }, () => []);
+    if (npc.neckAnchorCache[row][col]) return npc.neckAnchorCache[row][col];
+
+    const bodyRect = getNPCSpriteCellRect(bodyImage, row, col);
+    const headRect = getNPCSpriteCellRect(headImage, row, col);
+    if (!npcNeckAnchorCanvas) npcNeckAnchorCanvas = document.createElement('canvas');
+    if (npcNeckAnchorCanvas.width !== bodyRect.width || npcNeckAnchorCanvas.height !== bodyRect.height) {
+        npcNeckAnchorCanvas.width = bodyRect.width;
+        npcNeckAnchorCanvas.height = bodyRect.height;
+    }
+    const anchorCtx = npcNeckAnchorCanvas.getContext('2d', { willReadFrequently: true });
+    anchorCtx.clearRect(0, 0, bodyRect.width, bodyRect.height);
+    anchorCtx.drawImage(bodyImage, bodyRect.x, bodyRect.y, bodyRect.width, bodyRect.height, 0, 0, bodyRect.width, bodyRect.height);
+    const bodyAlpha = anchorCtx.getImageData(0, 0, bodyRect.width, bodyRect.height).data;
+
+    if (npcNeckAnchorCanvas.width !== headRect.width || npcNeckAnchorCanvas.height !== headRect.height) {
+        npcNeckAnchorCanvas.width = headRect.width;
+        npcNeckAnchorCanvas.height = headRect.height;
+    }
+    anchorCtx.clearRect(0, 0, headRect.width, headRect.height);
+    anchorCtx.drawImage(headImage, headRect.x, headRect.y, headRect.width, headRect.height, 0, 0, headRect.width, headRect.height);
+    const headAlpha = anchorCtx.getImageData(0, 0, headRect.width, headRect.height).data;
+    const headCoverage = getNPCHeadAlphaCoverage(headAlpha, headRect.width, headRect.height);
+    let anchor = null;
+    if (headCoverage < NPC_HEAD_ALPHA_COVERAGE_LIMIT) {
+        const headNeck = getNPCHeadNeckProfile(headAlpha, headRect.width, headRect.height);
+        if (headNeck) {
+            const bodyScale = bodyRenderW / bodyRect.width;
+            const headScale = headRenderW / headRect.width;
+            const desiredBodyWidth = headNeck.width * headScale / bodyScale;
+            const bodyNeck = findNPCNeckAnchor(bodyAlpha, bodyRect.width, bodyRect.height, desiredBodyWidth);
+            if (bodyNeck) anchor = { ...bodyNeck, headX: headNeck.center / headRect.width };
+        }
+    }
+    if (!anchor) anchor = { ...NPC_FALLBACK_NECK_ANCHOR, width: 0 };
+    npc.neckAnchorCache[row][col] = anchor;
+    return anchor;
+}
+
+function drawActorSprite(ctx, source, frame, centerX, topY, drawW, drawH, tint = null) {
     if (frame.layers && frame.layers.length > 0) {
         if (frame.renderScale) {
             topY += drawH * (1 - frame.renderScale);
@@ -3788,9 +3947,13 @@ function drawHeroSprite(ctx, source, frame, centerX, topY, drawW, drawH, tint = 
             if (layer.source) {
                 const lW = layer.drawW || drawW;
                 const lH = layer.drawH || drawH;
-                const lX = centerX - lW / 2 + (layer.offsetX || 0);
+                const lX = layer.anchorX !== undefined
+                    ? centerX + layer.anchorX - lW / 2
+                    : centerX - lW / 2 + (layer.offsetX || 0);
                 const baseBodyH = layer.drawW || drawH;
-                const lY = layer.anchorBottom
+                const lY = layer.anchorY !== undefined
+                    ? topY + layer.anchorY - lH
+                    : layer.anchorBottom
                     ? (topY + baseBodyH - lH + (layer.offsetY || 0))
                     : (topY + (layer.offsetY || 0));
 
@@ -3798,7 +3961,10 @@ function drawHeroSprite(ctx, source, frame, centerX, topY, drawW, drawH, tint = 
                     ctx.save();
                     ctx.translate(centerX, topY);
                     ctx.scale(-1, 1);
-                    SpriteRenderer.drawFrame(ctx, layer.source, layer.frame, -lW / 2 + (layer.offsetX || 0), lY - topY, lW, lH, tint, HeroTintCache);
+                    const localX = layer.anchorX !== undefined
+                        ? layer.anchorX - lW / 2
+                        : -lW / 2 + (layer.offsetX || 0);
+                    SpriteRenderer.drawFrame(ctx, layer.source, layer.frame, localX, lY - topY, lW, lH, tint, HeroTintCache);
                     ctx.restore();
                 } else {
                     SpriteRenderer.drawFrame(ctx, layer.source, layer.frame, lX, lY, lW, lH, tint, HeroTintCache);
@@ -4110,7 +4276,7 @@ function drawPlayerDisciplineAura(ctx, x, y) {
     ctx.translate(x, y + 2);
     ctx.scale(1, 0.42);
 
-    const radius = 31 + pulse * 5;
+    const radius = 40 + pulse * 6;
     const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, radius);
     glow.addColorStop(0, profile.color);
     glow.addColorStop(0.55, profile.color);
@@ -4125,7 +4291,7 @@ function drawPlayerDisciplineAura(ctx, x, y) {
     ctx.strokeStyle = profile.stroke;
     ctx.lineWidth = 1.3;
     ctx.beginPath();
-    ctx.arc(0, 0, 23 + pulse * 3, 0, Math.PI * 2);
+    ctx.arc(0, 0, 30 + pulse * 4, 0, Math.PI * 2);
     ctx.stroke();
 
     if (profile.setColor) {
@@ -4133,7 +4299,7 @@ function drawPlayerDisciplineAura(ctx, x, y) {
         ctx.strokeStyle = profile.setColor;
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.arc(0, 0, 34 + pulse * 4, 0, Math.PI * 2);
+        ctx.arc(0, 0, 43 + pulse * 5, 0, Math.PI * 2);
         ctx.stroke();
     }
     ctx.restore();
@@ -4391,7 +4557,7 @@ function drawEnemyActor(ctx, e) {
         ctx.restore();
     } else if (spritesLoaded && processedSpriteSheet && e.frameIndex !== undefined) {
         const frame = e.isBoss ? getBossFrame(e.frameIndex) : getMonsterFrame(e.frameIndex);
-        const renderHeight = e.isBoss ? 66 : 44;
+        const renderHeight = ACTOR_RENDER_SIZE * (e.isBoss ? 1.6 : e.isElite ? 1.12 : 1);
         const renderWidth = renderHeight * frame.width / frame.height;
 
         let source = processedSpriteSheet;
@@ -9715,12 +9881,12 @@ function draw() {
 
     drawDungeonLightSources(ctx, activeBiome);
 
-
     // 渲染 NPC (每个 NPC 拥有独立 4 方向动态 spritesheet，与玩家 Paperdoll 解耦)
     for (let ni = 0, nLen = npcs.length; ni < nLen; ni++) {
         const n = npcs[ni];
         const nx = Math.round(n.x);
         const ny = Math.round(n.y);
+        const npcLabelY = ny - ACTOR_RENDER_SIZE - 32;
         drawContactShadow(ctx, nx, ny - 2, 32, 8, 0.24);
 
         const { body: npcBodyImg, head: npcHeadImg } = (typeof NPCSpriteSystem !== 'undefined')
@@ -9731,48 +9897,94 @@ function draw() {
             const rowMap = { 'front': 0, 'frontLeft': 1, 'frontRight': 2, 'left': 1, 'backLeft': 1, 'right': 2, 'backRight': 2, 'back': 3 };
             const nDir = n.dir || n.defaultDir || 'front';
             const row = rowMap[nDir] !== undefined ? rowMap[nDir] : 0;
-            const col = n.isMoving ? Math.floor(((n.animTime || 0) * 6) % 4) : 0;
-
-            const bW = Math.floor(npcBodyImg.width / 4);
-            const bH = Math.floor(npcBodyImg.height / 4);
-            const renderH = 72;
+            const col = n.isMoving ? Math.floor(((n.animTime || 0) * 8) % 4) : 0;
+            const motionPose = getPaperdollMotionPose(n, !!n.isMoving, n.animTime);
+            const bodyRect = getNPCSpriteCellRect(npcBodyImg, row, col);
+            const renderH = ACTOR_RENDER_SIZE;
             const renderW = renderH;
 
-            // 站立时呼吸起伏
-            let breathY = 0;
-            if (!n.isMoving) {
-                const bCycle = Math.sin((n.animTime || 0) * Math.PI * 1.8);
-                breathY = -bCycle * 0.8;
+            const headLoaded = npcHeadImg && npcHeadImg.complete && npcHeadImg.naturalWidth > 0;
+            const headRect = headLoaded ? getNPCSpriteCellRect(npcHeadImg, row, col) : { x: 0, y: 0, width: 0, height: 0 };
+            const headCalibration = n.headCalibration || PaperdollSystem.calibration.head;
+            const neckAnchor = headLoaded
+                ? (n.headNeckAnchors?.[row]?.[col] || getNPCNeckAnchor(n, npcBodyImg, npcHeadImg, row, col, renderW, renderH * (headCalibration.directionalScales?.[nDir] || headCalibration.scale || 0.54)))
+                : NPC_FALLBACK_NECK_ANCHOR;
+            const headDirectionalOffset = headCalibration.directionalOffsets?.[nDir] || { x: 0, y: -35 };
+            const baseHeight = PaperdollSystem.calibration.baseHeight || 96;
+            const scaleRatio = renderH / baseHeight;
+            const headRenderH = renderH *
+                (headCalibration.directionalScales?.[nDir] || headCalibration.scale || 0.54);
+            const directionalHeadOffsetX = (headDirectionalOffset.x || 0) * scaleRatio;
+            const actorFrame = n.renderCompositeFrame || (n.renderCompositeFrame = {
+                layers: [
+                    { source: npcBodyImg, frame: { ...bodyRect }, drawW: renderW, drawH: renderH, anchorBottom: true },
+                    { source: null, frame: { x: bodyRect.x, y: bodyRect.y, width: bodyRect.width, height: Math.floor(bodyRect.height * 0.44) }, drawW: renderW, drawH: renderH * 0.44 },
+                    { source: null, frame: { ...headRect }, drawW: headRenderH, drawH: headRenderH, anchorX: 0, anchorY: 0 }
+                ]
+            });
+            const bodyLayer = actorFrame.layers[0];
+            bodyLayer.source = npcBodyImg;
+            bodyLayer.frame.x = bodyRect.x;
+            bodyLayer.frame.y = bodyRect.y;
+            bodyLayer.frame.width = bodyRect.width;
+            bodyLayer.frame.height = bodyRect.height;
+            bodyLayer.drawW = renderW;
+            bodyLayer.drawH = renderH;
+
+            const chestLayer = actorFrame.layers[1];
+            chestLayer.source = row === 3 ? null : npcBodyImg;
+            if (row !== 3) {
+                const chestRatio = 0.44;
+                const topSrcH = Math.floor(bodyRect.height * chestRatio);
+                chestLayer.frame.x = bodyRect.x;
+                chestLayer.frame.y = bodyRect.y;
+                chestLayer.frame.width = bodyRect.width;
+                chestLayer.frame.height = topSrcH;
+                chestLayer.drawH = renderH * chestRatio * motionPose.chestScaleY;
+                chestLayer.drawW = renderH * motionPose.chestScaleX;
+                chestLayer.offsetX = 0;
+                chestLayer.offsetY = renderH * chestRatio - chestLayer.drawH;
             }
 
-            // 1. 绘制独立 NPC 身体 (独立 spritesheet，绝不随玩家装备变动)
-            ctx.drawImage(npcBodyImg, col * bW, row * bH, bW, bH, nx - renderW / 2, ny - renderH + breathY, renderW, renderH);
-
-            // 2. 绘制独立 NPC 头部 (拥有独立发型与五官，完美对齐颈部，完全独立于玩家 Paperdoll)
-            if (npcHeadImg && npcHeadImg.complete && npcHeadImg.naturalWidth > 0) {
-                const hW = Math.floor(npcHeadImg.width / 4);
-                const hH = Math.floor(npcHeadImg.height / 4);
-                const headRenderH = renderH * 0.54;
-                const headRenderW = headRenderH;
-                const headOffsetX = (row === 1 ? 1 : (row === 2 ? -1 : 0));
-                ctx.drawImage(
-                    npcHeadImg,
-                    col * hW, row * hH, hW, hH,
-                    nx - headRenderW / 2 + headOffsetX, ny - renderH - 26 + breathY, headRenderW, headRenderH
-                );
+            const headLayer = actorFrame.layers[2];
+            headLayer.source = headLoaded ? npcHeadImg : null;
+            if (headLoaded) {
+                headLayer.frame.x = headRect.x;
+                headLayer.frame.y = headRect.y;
+                headLayer.frame.width = headRect.width;
+                headLayer.frame.height = headRect.height;
+                headLayer.drawW = headRenderH;
+                headLayer.drawH = headRenderH;
+                if (chestLayer.source) {
+                    const chestRatio = 0.44;
+                    const sourceChestHeight = Math.floor(bodyRect.height * chestRatio);
+                    const chestScaleX = chestLayer.drawW / bodyRect.width;
+                    const chestScaleY = chestLayer.drawH / sourceChestHeight;
+                    const neckX = chestLayer.offsetX + (neckAnchor.x - 0.5) * chestLayer.drawW;
+                    const neckY = chestLayer.offsetY + neckAnchor.y * bodyRect.height * chestScaleY;
+                    headLayer.anchorX = neckX + (0.5 - neckAnchor.headX) * headRenderH + directionalHeadOffsetX;
+                    headLayer.anchorY = neckY;
+                } else {
+                    headLayer.anchorX = (neckAnchor.x - 0.5) * renderW + (0.5 - neckAnchor.headX) * headRenderH + directionalHeadOffsetX;
+                    headLayer.anchorY = neckAnchor.y * renderH;
+                }
             }
+
+            // NPC body/head y jugador Paperdoll comparten el mismo compositor de capas.
+            drawActorSprite(ctx, null, actorFrame, nx, ny - renderH, renderW, renderH);
         } else {
             const paintedNpc = EnvironmentArt.npc(n.type);
             if (paintedNpc) {
                 const b = paintedNpc.contentBounds;
-                const h = 52, w = h * b.sw / b.sh;
-                ctx.drawImage(paintedNpc.source, b.sx, b.sy, b.sw, b.sh, nx - w / 2, ny - h, w, h);
+                const h = ACTOR_RENDER_SIZE, w = h * b.sw / b.sh;
+                const frame = n.renderFallbackFrame || (n.renderFallbackFrame = { x: b.sx, y: b.sy, width: b.sw, height: b.sh });
+                frame.x = b.sx; frame.y = b.sy; frame.width = b.sw; frame.height = b.sh;
+                drawActorSprite(ctx, paintedNpc.source, frame, nx, ny - h, w, h);
             } else if (spritesLoaded && processedSpriteSheet && n.frameIndex !== undefined) {
                 const frame = getNPCFrame(n.frameIndex);
-                const renderHeight = 52;
+                const renderHeight = ACTOR_RENDER_SIZE;
                 const renderWidth = renderHeight * frame.width / frame.height;
-                ctx.drawImage(processedSpriteSheet, frame.x, frame.y, frame.width, frame.height,
-                    nx - renderWidth / 2, ny - renderHeight, renderWidth, renderHeight);
+                drawActorSprite(ctx, processedSpriteSheet, frame, nx, ny - renderHeight, renderWidth, renderHeight);
             } else {
                 ctx.fillStyle = COLORS.npc; ctx.beginPath(); ctx.arc(nx, ny, 15, 0, Math.PI * 2); ctx.fill();
             }
@@ -9781,16 +9993,16 @@ function draw() {
         // Quest Indicators (above name)
         if (n.type === 'healer') {
             if (player.questState === 0) {
-                ctx.fillStyle = '#ffff00'; ctx.font = '20px Arial'; ctx.fillText("!", nx, ny - 80);
+                ctx.fillStyle = '#ffff00'; ctx.font = '20px Arial'; ctx.fillText("!", nx, npcLabelY - 18);
             } else if (player.questState === 2) {
-                ctx.fillStyle = '#ffff00'; ctx.font = '20px Arial'; ctx.fillText("?", nx, ny - 80);
+                ctx.fillStyle = '#ffff00'; ctx.font = '20px Arial'; ctx.fillText("?", nx, npcLabelY - 18);
             }
         }
 
         // Name (above character)
         const npcNameKey = NPC_NAME_KEYS[n.type];
         const npcDisplayName = npcNameKey && typeof I18N !== 'undefined' ? I18N.t(npcNameKey) : n.name;
-        ctx.fillStyle = '#fff'; ctx.font = '12px Cinzel'; ctx.textAlign = 'center'; ctx.fillText(npcDisplayName, nx, ny - 70);
+        ctx.fillStyle = '#fff'; ctx.font = '12px Cinzel'; ctx.textAlign = 'center'; ctx.fillText(npcDisplayName, nx, npcLabelY);
 
         // 深渊守卫特殊显示：本周王者
         if (n.type === 'difficulty' && typeof AbyssSystem !== 'undefined') {
@@ -9800,7 +10012,7 @@ function draw() {
             ctx.fillStyle = '#ff8800';
             ctx.shadowColor = '#ff4400';
             ctx.shadowBlur = 8;
-            ctx.fillText(`🔥 本周王者: ${champion}`, nx, ny - 85);
+            ctx.fillText(`🔥 本周王者: ${champion}`, nx, npcLabelY - 18);
             ctx.restore();
         }
     }
@@ -9890,7 +10102,7 @@ function draw() {
     if ((heroFrame && heroFrame.layers && heroFrame.layers.length > 0) || heroFrame.source || (heroSpritesLoaded && processedHeroSprites) || (spritesLoaded && processedSpriteSheet)) {
         const frame = heroFrame;
         const useHeroSheet = (frame.layers && frame.layers.length > 0) || !!frame.source || (heroSpritesLoaded && processedHeroSprites && frame.animated);
-        const renderHeight = useHeroSheet ? HERO_SPRITE_CONFIG.renderSize : 48;
+        const renderHeight = useHeroSheet ? HERO_SPRITE_CONFIG.renderSize : ACTOR_RENDER_SIZE;
         const renderWidth = renderHeight * frame.width / frame.height;
         const scale = useHeroSheet ? 1 : 1 + player.attackAnim * 0.2;
 
@@ -9911,14 +10123,14 @@ function draw() {
         if (!isPlayerStalling && !player.isDead) drawPlayerDisciplineAura(ctx, px, py);
 
         if (typeof MarketSystem !== 'undefined' && MarketSystem.isStalling) {
-            drawHeroSprite(ctx, source, frame, px, py - renderHeight / (frame.source ? 1 : 2) + (frame.offsetY || 0), renderWidth, renderHeight, tint);
+            drawActorSprite(ctx, source, frame, px, py - renderHeight / (frame.source ? 1 : 2) + (frame.offsetY || 0), renderWidth, renderHeight, tint);
         } else if (scale === 1) {
-            drawHeroSprite(ctx, source, frame, px, py - renderHeight + (frame.offsetY || 0), renderWidth, renderHeight, tint);
+            drawActorSprite(ctx, source, frame, px, py - renderHeight + (frame.offsetY || 0), renderWidth, renderHeight, tint);
         } else {
             ctx.save();
             ctx.translate(px, py - renderHeight / 2 + (frame.offsetY || 0));
             ctx.scale(scale, scale);
-            drawHeroSprite(ctx, source, frame, 0, -renderHeight / 2, renderWidth, renderHeight, tint);
+            drawActorSprite(ctx, source, frame, 0, -renderHeight / 2, renderWidth, renderHeight, tint);
             ctx.restore();
         }
         drawPlayerShieldFront(ctx, px, py);
@@ -9973,7 +10185,7 @@ function draw() {
         ctx.fillStyle = config.color;
 
         // 渲染称号文字
-        ctx.fillText(titleText, px, py - 55);
+        ctx.fillText(titleText, px, py - HERO_SPRITE_CONFIG.renderSize - 10);
 
         ctx.restore();
     }

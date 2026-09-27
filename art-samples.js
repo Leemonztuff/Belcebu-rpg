@@ -11,6 +11,9 @@ const ArtSamples = (() => {
         ranged: { file: 'monster-archer-painted.png', cols: 8, rows: 4 },
         ruins: { file: 'ruins-props-painted.png', cols: 2, rows: 3 }
     };
+    // 施法与倒地的 4 帧单向运行时条带：不走烘焙图集清单，加载时按 alpha 直接归一化。
+    definitions.heroCastSheet = { file: 'public/spritesheets/Npc-06_cast_animation.webp', cols: 4, rows: 1, raw: true };
+    definitions.heroDeathSheet = { file: 'public/spritesheets/Npc-06-death.webp', cols: 4, rows: 1, raw: true };
     for (const action of ['idle', 'walk', 'attack', 'cast', 'sit', 'walkDiagonal']) {
         definitions[`hero${action}`] = { file: `hero-${action}-painted.png`, cols: 4, rows: 4 };
     }
@@ -50,6 +53,20 @@ const ArtSamples = (() => {
         const row = direction.startsWith('back') ? 1 : direction.endsWith('Left') || direction === 'left' ? 2
             : direction.endsWith('Right') || direction === 'right' ? 3 : 0;
         return frame(action === 'hurt' ? 'heroHurt' : `hero${action}`, row, frameIndex);
+    }
+
+    // 单向 4 帧条带取帧。条带自带 source，可绕过旧图集直接绘制。
+    // 倒地沿用与 deathFrame 相同的失衡首帧身体标尺，跪倒/横卧不逐帧放大。
+    function heroSheetFrame(key, frameIndex, flipX = false) {
+        if (!atlases.has(key)) return null;
+        const sample = frame(key, 0, frameIndex, flipX);
+        if (!sample) return null;
+        if (key === 'heroDeathSheet') {
+            const living = frame('heroidle', 0, 0);
+            const first = frame(key, 0, 0);
+            if (living && first) return { ...sample, death: true, renderScale: living.contentBounds.sh * 0.92 / first.contentBounds.sh };
+        }
+        return sample;
     }
 
     function deathFrame(type, elapsed, collapseDuration, flipX = false) {
@@ -163,11 +180,12 @@ const ArtSamples = (() => {
     function assetPath(file) {
         if (typeof ArtAtlasManifest === 'undefined') return file;
         const entry=ArtAtlasManifest[file];
-        return entry.runtimeFile || entry.file;
+        return entry ? (entry.runtimeFile || entry.file) : file;
     }
     function prepareSource(image, definition) {
-        if (typeof ArtAtlasManifest === 'undefined') return normalizeAtlas(image, definition.cols, definition.rows, definition.calibration);
-        const entry = ArtAtlasManifest[definition.file];
+        // 清单里有条目就直接复用烘焙结果；raw 条带没有条目，按 alpha 在运行时归一化。
+        const entry = typeof ArtAtlasManifest === 'undefined' ? null : ArtAtlasManifest[definition.file];
+        if (!entry) return normalizeAtlas(image, definition.cols, definition.rows, definition.calibration);
         if (image.width !== entry.width || image.height !== entry.height || entry.contentBounds.length !== definition.cols * definition.rows) {
             throw new Error(`预处理图集与清单不匹配：${definition.file}`);
         }
@@ -199,7 +217,7 @@ const ArtSamples = (() => {
     function ensureMonsters(types) {
         return ensure(types.flatMap(type=>[type,deaths[type].key]));
     }
-    const ready = ensure([...Object.keys(heroCalibration),'death0','ruins']);
+    const ready = ensure([...Object.keys(heroCalibration),'death0','ruins','heroCastSheet','heroDeathSheet']);
     ready.catch(error => console.error('[美术图集] 验收失败', error));
-    return { frame, heroFrame, deathFrame, normalizeAtlas, prepareSource, assetPath, definitions, ready, ensure, ensureMonsters, isLoaded:key=>atlases.has(key), get pending(){return pending;}, get loadError(){return loadError;} };
+    return { frame, heroFrame, heroSheetFrame, deathFrame, normalizeAtlas, prepareSource, assetPath, definitions, ready, ensure, ensureMonsters, isLoaded:key=>atlases.has(key), get pending(){return pending;}, get loadError(){return loadError;} };
 })();
