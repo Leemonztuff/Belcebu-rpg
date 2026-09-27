@@ -1,5 +1,5 @@
-import fs from 'node:fs';
-import assert from 'node:assert/strict';
+const fs = require('node:fs');
+const assert = require('node:assert/strict');
 
 console.log('=== RUNNING BATCH 3 LONG-TERM RETENTION & SOCIAL SYSTEM TESTS ===\n');
 

@@ -14,6 +14,7 @@ function extract(name) {
 const noop = () => {};
 const sounds = [];
 const ctx = vm.createContext({console, Math, Set, Map, WeakMap,
+    I18N: {t: key => key, tOr: (key, fallback = '') => fallback || key, tr: (ns, key, fallback = '') => fallback || key, trPath: (ns, key, field, fallback = '') => fallback || key},
     player: {}, enemies: [], projectiles: [], particles: [], mouse: {worldX: 100, worldY: 0, rightDown: false}, touchState: {isLongPress: false},
     ProjectilePool: {acquire: p => p}, AutoBattle: {enabled: false,onPlayerDamaged:noop}, setTimeout:noop,
     COMBAT_FEEDBACK_VFX:{}, getTalentEffect:()=>0, spawnPlayerDamageVfx:noop, combo:{},updateUI:noop,checkPlayerDeath:noop,
@@ -122,7 +123,10 @@ test('真实受伤入口中天使无敌阻断伤害并按时结束',()=>{setup('
 test('火球分支击碎桶时仍对周围怪物爆炸',()=>{
     setup('fireball','explosion');const e=enemy(150);cast('fireball');ctx.p=ctx.projectiles[0];ctx.p.x=100;ctx.p.y=0;
     ctx.hitTarget=null;ctx.destructibles=[{x:100,y:0,radius:12,broken:false}];
-    const start=game.indexOf('// 检测可破坏物体碰撞');const end=game.indexOf('// 火球爆炸效果',start);
+    // Extract the destructible-collision branch by brace balance, not by comment text.
+    const start=game.indexOf('if (!hitTarget && p.life > 0 && !p.meteorTarget) {');
+    let depth=0,end=start;
+    for(let i=game.indexOf('{',start);i<game.length;i++){if(game[i]==='{')depth++;if(game[i]==='}'&&!--depth){end=i+1;break;}}
     vm.runInContext(game.slice(start,end),ctx);assert.equal(ctx.destructibles[0].broken,true);assert.ok(e.hp<10000);
 });
 test('守护破盾同帧先治疗再承受下一击',()=>{setup('holy_shield','guard');ctx.player.hp=50;cast('holy_shield');ctx.playerTakeDamage(28,null);close(ctx.player.hp,62);ctx.playerTakeDamage(20,null);close(ctx.player.hp,42);});

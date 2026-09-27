@@ -1,7 +1,7 @@
 // Validation script for Achievement Notification Slide-in CSS Animation & Queue Logic
-import assert from 'assert';
-import fs from 'fs';
-import vm from 'vm';
+const assert = require('assert');
+const fs = require('fs');
+const vm = require('vm');
 
 console.log('=== RUNNING ACHIEVEMENT SLIDE-IN NOTIFICATION TESTS ===');
 
@@ -155,6 +155,9 @@ const sandbox = {
             if (key === 'achievement_unlocked') return '¡Logro Desbloqueado!';
             if (key === 'achievement_points') return 'Puntos';
             return key;
+        },
+        tOr(key, fallback = '') {
+            return this.t(key) === key ? fallback : this.t(key);
         }
     },
     AudioSys: {

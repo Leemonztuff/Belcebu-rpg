@@ -1,7 +1,7 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),path=require('node:path');
 const source=fs.readFileSync(path.join(__dirname,'../game.js'),'utf8');
 function extract(name,text=source){const start=text.indexOf(`function ${name}(`);assert(start>=0);let depth=0;for(let i=text.indexOf('{',start);i<text.length;i++){if(text[i]==='{')depth++;if(text[i]==='}'&&!--depth)return text.slice(start,i+1);}}
-const scope=vm.createContext({player:{x:500,y:500,graphicsQuality:'high'},particles:[],ParticlePool:{acquire:p=>p},COLORS:{poison:'#66bb44'},getParticleConfig:()=>({maxParticles:100}),getEnemyMonsterType:e=>e.monsterType,createDamageNumber(){},VFX_SPRITE_CONFIG:{effects:{}},vfxEffects:[]});
+const scope=vm.createContext({player:{x:500,y:500,graphicsQuality:'high'},particles:[],ParticlePool:{acquire:p=>p},COLORS:{poison:'#66bb44'},getParticleConfig:()=>({maxParticles:100}),getEnemyMonsterType:e=>e.monsterType,createDamageNumber(){},VFX_SPRITE_CONFIG:{effects:{}},vfxEffects:[],I18N:{t:key=>key,tOr:(key,fallback='')=>fallback||key,tr:(ns,key,fallback='')=>fallback||key,trPath:(ns,key,field,fallback='')=>fallback||key}});
 for(const fn of ['emitDriftingVeil','drawDriftingVeil','drawParticleSliver','createImpactParticles','getMonsterImpactProfile','spawnEnemyDeathVfx','emitMummyDeathCloud','spawnVfxEffect'])vm.runInContext(extract(fn),scope);
 scope.emitMummyDeathCloud({x:0,y:0,monsterType:'mummy',dmg:100});
 assert.equal(scope.particles.length,1);assert.equal(scope.particles[0].type,'drifting_veil');assert.equal(scope.particles[0].size,95);assert(!scope.player.poisoned);
@@ -30,7 +30,7 @@ vm.runInContext(source.slice(loop,end),scope);assert.equal(scope.particles.lengt
 scope.slowMotion={};scope.damageNumbers=[];scope.triggerScreenShake=()=>{};
 const sounds=[];scope.AudioSys={play:type=>sounds.push(type)};
 vm.runInContext(extract('triggerEliteDeathEffect'),scope);
-vm.runInContext(extract('triggerBossDeathEffect',fs.readFileSync(path.join(__dirname,'../enemy-system.js'),'utf8')),scope);
+vm.runInContext(`${extract('stripBossDifficultyPrefix',fs.readFileSync(path.join(__dirname,'../enemy-system.js'),'utf8'))}\n${extract('bossDisplayName',fs.readFileSync(path.join(__dirname,'../enemy-system.js'),'utf8'))}\n${extract('triggerBossDeathEffect',fs.readFileSync(path.join(__dirname,'../enemy-system.js'),'utf8'))}`,scope);
 for(const fn of ['triggerEliteDeathEffect','triggerBossDeathEffect']){
  scope.particles=[];scope[fn]({x:0,y:0,name:'测试怪物'},100);
  assert.equal(scope.particles.length,1,'精英/Boss不再额外叠加粒子群');assert.equal(scope.particles[0].type,'drop_beam');

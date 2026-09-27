@@ -4,7 +4,9 @@ const assert = require('node:assert/strict');
 const context = { console, Set, Date, Math, player: { gold: 100, inventory: [null, null] },
   OnlineSystem: { userId: 'buyer', nickname: '测试' },
   SaveSystem: { save: async () => true }, showNotification() {}, updateStats() {}, renderInventory() {},
-  document: { getElementById: () => null }, pb: { send: async (url, options) => {
+  document: { getElementById: () => null },
+  I18N: { tr: (ns, key, fallback = '') => fallback || key },
+  pb: { send: async (url, options) => {
     if (url.endsWith('/protocol')) return { version: 2 };
     context.player.inventory[0] = { id: 'loot' };
     return { ok: true, requestId: options.body.requestId, item: { id: 'bought' }, totalPrice: 11 };

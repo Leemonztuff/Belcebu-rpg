@@ -1,3 +1,6 @@
+# Build output (Vercel)
+dist/
+
 # Dependencies
 node_modules/
 package-lock.json.bak

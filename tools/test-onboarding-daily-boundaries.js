@@ -27,14 +27,17 @@ const context = vm.createContext({Date: Clock, window: {}, console: {log() {}},
     SaveSystem: {save() {}}, showDailyLoginPanel: () => shown++,
     TUTORIAL_TOWN_STEPS: Array(5), cachedUI: {}, panelManager:{panels:{inventory:{opened:false},skills:{opened:false},shop:{opened:false}}},
     showNotification() {}, AudioSys: {play() {}}, updateMenuIndicators() {}, updateUI() {},
-    createDamageNumber() {}, checkLevelUp() {}
+    createDamageNumber() {}, checkLevelUp() {},
+    // Only the countdown string matters here, so expose the raw HH:MM:SS value.
+    I18N: { t: (key, params) => (key === 'dq_reset_in' && params ? params.time : key),
+        tr: (ns, key, fallback = '') => fallback || key, trPath: (ns, key, field, fallback = '') => fallback || key }
 });
 vm.runInContext(`${extract('getTodayDateString')}\n${dailySource}\nglobalThis.daily = DailyQuestSystem;`, context);
 let failures = 0;
 function test(name, fn) { try { fn(); console.log(`PASS ${name}`); } catch (e) { failures++; console.error(`FAIL ${name}: ${e.message}`); } }
 test('本地午夜更换日期且倒计时一致', () => {
     assert.equal(context.daily.getTodayStr(), '2026-09-06');
-    assert.equal(context.daily.getResetTime(), '00:00:01 后重置');
+    assert.equal(context.daily.getResetTime(), '00:00:01');
     now += 1000;
     assert.equal(context.daily.getTodayStr(), '2026-09-07');
 });

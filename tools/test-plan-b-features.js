@@ -1,5 +1,5 @@
-import fs from 'node:fs';
-import assert from 'node:assert/strict';
+const fs = require('node:fs');
+const assert = require('node:assert/strict');
 
 console.log('=== RUNNING PLAN B RETENTION & REPLAY FEATURES REGRESSION TESTS ===');
 
