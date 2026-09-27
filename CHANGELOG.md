@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Test Suite Green (Suite de tests en verde)
+- Added `tools/package.json` with `"type": "commonjs"` so the CommonJS test suite runs under the ESM root `package.json`. The game itself is loaded via classic `<script>` tags, so this only scopes the module type to `tools/`.
+- Converted the 6 remaining ESM test files (`achievement-slide-in`, `batch-3-features`, `paperdoll-set-bonus`, `plan-b-features`, `release-data-integrity`, `runes-and-sockets`) to `require`.
+- Added the missing `I18N` stubs to the `vm` sandboxes in `test-market-delivery`, `test-onboarding-daily-boundaries`, `test-release-data-integrity`, `test-skill-branch-behavior` and `test-status-death-feedback`; the game code calls `I18N.tr`/`tOr` in the paths these tests exercise.
+- Extracted `stripBossDifficultyPrefix` and `bossDisplayName` into the `test-status-death-feedback` scope.
+- Replaced the source-slice-by-comment marker in `test-skill-branch-behavior` with brace-balanced extraction; the comment now sits mid-block, so slicing on it produced an `Illegal break statement`.
+- Updated stale zh literals left over from the i18n migration: `armor_布甲` → `armor_Cloth Armor` in `test-paperdoll-set-bonus`, the specter AI marker in `test-specter-wall-retreat`, and the save/cloud error messages asserted in `test-release-data-integrity`.
+- Declared the missing `sharp` devDependency used by `test-runtime-art` and the art build tools.
+- `test-baked-art` now allows a 0.05% pixel budget (per-channel delta ≤ 2) when re-deriving atlases. The committed atlas SHA is still asserted exactly; the loose pixel check only compensates for non-bit-identical `@napi-rs/canvas` resampling between the machine that baked the atlases and other environments. A real art regression shifts whole frames and exceeds the budget by orders of magnitude.
+
 ### Full English Codebase Migration (Migración completa del código a inglés)
 - Migrated every remaining Chinese code comment to English across all JS, CSS and HTML files (0 Han characters left in comments).
 - Promoted English to the canonical i18n key language for items and affixes: `i18n.js` tables now key by EN names with `{es,en,zh}` values, keeping zh aliases for legacy saves.

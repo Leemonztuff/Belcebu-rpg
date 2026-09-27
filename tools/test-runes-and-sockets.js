@@ -1,7 +1,7 @@
 // ========== 符文与镶嵌系统自动化测试 (Runes & Sockets Automated Tests) ==========
-import fs from 'node:fs';
-import vm from 'node:vm';
-import assert from 'node:assert';
+const fs = require('node:fs');
+const vm = require('node:vm');
+const assert = require('node:assert');
 
 console.log('=== RUNNING RUNES AND SOCKETS SYSTEM REGRESSION TESTS ===');
 

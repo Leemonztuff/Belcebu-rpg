@@ -1,7 +1,7 @@
 // Validation script for Paperdoll set bonus rendering logic and NPC decoupling
-import assert from 'assert';
-import fs from 'fs';
-import vm from 'vm';
+const assert = require('assert');
+const fs = require('fs');
+const vm = require('vm');
 
 class MockImage {
     constructor() {
@@ -85,11 +85,11 @@ assert.strictEqual(PaperdollSystem.currentBodyKey, 'default', "Test 1 Failed: Wi
 console.log("✓ Test 1 Passed: Unarmored player body defaults to 'default'");
 
 // 2. Base non-set armor equipped
-const clothArmor = BASE_ITEMS.find(i => i.name === '布甲');
+const clothArmor = BASE_ITEMS.find(i => i.name === 'Cloth Armor');
 player.equipment.body = { ...clothArmor };
 PaperdollSystem.updateEquipmentBody(player.equipment.body);
-assert.strictEqual(PaperdollSystem.currentBodyKey, 'armor_布甲', "Test 2 Failed: Base armor should update body key");
-console.log("✓ Test 2 Passed: Base armor (布甲) updates body spritesheet to 'armor_布甲'");
+assert.strictEqual(PaperdollSystem.currentBodyKey, 'armor_Cloth Armor', "Test 2 Failed: Base armor should update body key");
+console.log("✓ Test 2 Passed: Base armor (Cloth Armor) updates body spritesheet to 'armor_Cloth Armor'");
 
 // 3. Conditional Logic: 1 piece of a Set equipped (the body armor itself)
 const talBody = { ...SET_ITEMS['tals_set'].pieces.body, setId: 'tals_set' };

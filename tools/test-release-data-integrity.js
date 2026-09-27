@@ -1,8 +1,9 @@
-import fs from 'node:fs';
-import vm from 'node:vm';
-import assert from 'node:assert/strict';
+const fs = require('node:fs');
+const vm = require('node:vm');
+const assert = require('node:assert/strict');
 const source = fs.readFileSync('online.js', 'utf8');
-const c = vm.createContext({ console, player: {}, window: {}, localStorage: { getItem: () => null, setItem() {} }, pb: {}, setTimeout, clearTimeout });
+const c = vm.createContext({ console, player: {}, window: {}, localStorage: { getItem: () => null, setItem() {} }, pb: {}, setTimeout, clearTimeout,
+    I18N: { tr: (ns, key, fallback = '') => fallback || key, t: key => key, trPath: (ns, key, field, fallback = '') => fallback || key } });
 vm.runInContext(source.slice(source.indexOf('const CloudSync'), source.indexOf('const ChatSystem')) + ';globalThis.cloud=CloudSync;globalThis.online=OnlineSystem;', c);
 (async () => {
     let local = { lvl: 20, gold: 100, lastPlayed: 100 };
@@ -21,15 +22,16 @@ vm.runInContext(source.slice(source.indexOf('const CloudSync'), source.indexOf('
     let tx;
     c.db = { transaction() { tx = { objectStore: () => ({ get: () => ({}), put() {}, delete() {} }) }; return tx; } };
     const restoring = c.cloud.applyCloudSave({ slot_1: remote });
-    tx.onerror(); await assert.rejects(restoring, /恢复失败/);
+    tx.onerror(); await assert.rejects(restoring, /sync_restore_write_failed/);
     let bound = false, errorShown = false;
     c.cloud._pendingCloudRecord = { slot_1: remote };
-    c.cloud.applyCloudSave = async () => { throw new Error('恢复失败'); };
+    c.cloud.applyCloudSave = async () => { throw new Error('sync_restore_write_failed'); };
     c.cloud.completeBinding = () => bound = true;
     c.cloud.showErrorMessage = () => errorShown = true;
     await c.cloud.resolveRestoreConflict('code', 'record');
     assert.equal(bound, false); assert.equal(errorShown, true); assert.ok(c.cloud._pendingCloudRecord);
     console.log('PASS 同级云同步、旧档与跨设备覆盖保护、恢复失败保留入口');
+
 
     let week = 100;
     c.online.getWeekStart = () => week;
@@ -51,13 +53,13 @@ vm.runInContext(source.slice(source.indexOf('const CloudSync'), source.indexOf('
     assert.equal(query.sort, '-week_kills'); assert.equal(query.filter, 'week_start = 200');
     console.log('PASS 旧档周成绩基线、周增量、跨周清零、服务端周榜排序');
 
-    const s = vm.createContext({ console, window: {}, Settings: {} });
+    const s = vm.createContext({ console, window: {}, Settings: {}, I18N: { tr: (ns, key, fallback = '') => fallback || key, t: key => key } });
     vm.runInContext(fs.readFileSync('save-system.js', 'utf8') + ';globalThis.save=SaveSystem;', s);
     const req = {}; const readTx = { objectStore: () => ({ get: () => req }) };
     s.readTx = readTx; vm.runInContext('db={transaction:()=>readTx}', s);
     const loading = s.save.loadSlot(1); req.onerror();
-    await assert.rejects(loading, /读取存档失败/);
+    await assert.rejects(loading, /Could not read the save/);
     const aborted = s.save.loadSlot(1); readTx.onabort();
-    await assert.rejects(aborted, /读取存档失败/);
+    await assert.rejects(aborted, /Could not read the save/);
     console.log('PASS 读取错误和事务中止均结束等待');
 })().catch(error => { console.error(error); process.exitCode = 1; });
