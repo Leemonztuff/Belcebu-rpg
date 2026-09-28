@@ -451,6 +451,18 @@ window.VFX_SPRITE_MANIFEST = {
             pivotX: 64,
             pivotY: 88,
             blend: 'lighter'
+        },
+        spark: {
+            row: 41,
+            frameWidth: 64,
+            frameHeight: 64,
+            frameCount: 8,
+            fps: 24,
+            renderSize: 48,
+            pivotX: 32,
+            pivotY: 32,
+            blend: 'lighter',
+            life: 1
         }
     }
 };

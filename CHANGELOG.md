@@ -1,7 +1,5 @@
 # CHANGELOG
 
-## Unreleased
-
 ### Corrige la animación de muerte inflada: una sola escala para los 4 frames
 - **El corpse se veía enorme al morir.** La causa era que cada frame se reescalaba a una **altura constante**, y en `death` eso se va al revés: el cuerpo se tumba y la silueta pasa de 242x475 a 497x184 en el asset. Cuanto más bajo está el cuerpo, más grande había que escalarlo, así que el frame tumbado acababa dibujándose a **266px de ancho** contra los ~63px del cuerpo de `idle`: **4.2x** más ancho de lo que debía.
 
@@ -518,6 +516,12 @@ La constante `STR_DAMAGE_SCALE` (0.6) es la palanca: subirla suaviza el nerf a c
 - 提高每层初始怪物数量、动态刷新上限和刷新频率，让刷怪刷宝节奏更连续。
 - 动态刷新点改为多次重试寻找合法位置，避免一次随机位置太近导致整轮不刷怪。
 
+## Unreleased
+
+### 死亡动画与特效生命周期修复
+- **垂死扭曲修正：** 清理了 `drawActorSprite` 在层级路径中因 `renderScale` 造成的绝对 `topY` 偏移。波浪/死亡条带已改为图层（`buildHeroStripLayers` 自带 `drawW/drawH` 与 `offsetY`），不再叠加全局下沉，倒地 torso 正确对齐身体标尺。
+- **特效生命周期：** 增加 `vfx-manifest.js` 的 `spark` 条目，并在 `spawnVfxEffect` 投射 `life`（优先取 manifest `life`/`maxLife`，其次 `frameCount / fps`）；渲染循环额外检测 `life <= 0` 并移除，确保特效按生命结束清理。
+- **存档初始化顺序：** 修正 `tools/test-art-coverage.js`，在 `PaperdollSystem.initDefaults()` 前先给 `player` 初始化完整字段，避免 paperdoll 分支引用未赋值的 `player`。验证均为 `PASS`。
 ## v7.11 - 2026-05-07
 
 ### Added

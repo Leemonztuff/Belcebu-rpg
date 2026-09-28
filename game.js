@@ -1853,7 +1853,8 @@ function spawnVfxEffect(effectId, x, y, scale = 1, rotation = 0) {
         scale,
         rotation,
         age: 0,
-        duration: effect.frameCount / effect.fps
+        duration: effect.frameCount / effect.fps,
+        life: effect.life ?? effect.maxLife ?? (effect.frameCount / effect.fps)
     });
 }
 
@@ -4105,10 +4106,9 @@ function getNPCNeckAnchor(npc, bodyImage, headImage, row, col, bodyRenderW, head
 
 function drawActorSprite(ctx, source, frame, centerX, topY, drawW, drawH, tint = null) {
     if (frame.layers && frame.layers.length > 0) {
-        if (frame.renderScale) {
-            topY += drawH * (1 - frame.renderScale);
-            drawW *= frame.renderScale; drawH *= frame.renderScale;
-        }
+        // 条带/纸娃娃图层（cast/death）已在 buildHeroStripLayers 内携带各自 drawW/drawH 与
+        // offsetY，按本帧标尺完整描述自身几何。renderScale 只在单图帧路径生效，层级路径不做
+        // 绝对 topY 平移，避免排骨/倒地时整组图层被额外下沉，与身体标尺分离。
         for (const layer of frame.layers) {
             if (layer.source) {
                 const lW = layer.drawW || drawW;
@@ -9508,7 +9508,10 @@ function update(dt) {
     for (let i = vfxEffects.length - 1; i >= 0; i--) {
         const fx = vfxEffects[i];
         fx.age += dt;
-        if (fx.age >= fx.duration) {
+        // life 来源 vfx-manifest effects.{life} / {maxLife} / {frameCount/fps}，随时间降低；
+        // 小于等于 0 时清理，避免无限存活的特效。
+        fx.life -= dt;
+        if (fx.life <= 0 || fx.age >= fx.duration) {
             vfxEffects.splice(i, 1);
         }
     }
