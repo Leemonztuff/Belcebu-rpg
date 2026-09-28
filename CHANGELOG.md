@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+### Renderizado estandarizado del protagonista: una sola regla de tamaño para caminar, castear y morir
+- **La animación de cast se veía más grande y sin cabeza.** `idle`/`walk` usan el paperdoll (cuerpo + capa de cabeza), pero `cast`/`death` devolvían una tira única y se saltaban el paperdoll por completo. Medido por el camino real de dibujo (`getHeroFrame` -> `drawActorSprite`, píxel a píxel):
+
+| Acción | Antes | Ahora |
+|---|---|---|
+| idle (cuerpo) | 118-120px, pies 96-98 | sin cambios |
+| cast | 120px de silueta **sin cabeza**, cuerpo ~20% más grande | **igual que idle**, con cabeza |
+| death | **50px**, pies en 85 (13px de diferencia) | frame 0 igual que idle, pies alineados |
+
+- **La causa del tamaño:** la tira de cast se escalaba contra la silueta *compuesta* (cuerpo + cabeza). Como la tira **ya trae la cabeza horneada**, al medirla contra un marco que también suma la cabeza, el cuerpo quedaba ~20% más grande que el de `idle`.
+- **La causa de `death`:** estaba anclado al atlas viejo de `heroidle` (80px) y no al paperdoll, por eso salía diminuto y con los pies 13px por encima de la línea de suelo.
+
+**Qué cambió:**
+
+1. `getHeroBodyGauge()` reemplaza la regla que era sólo de cast: mide la **capa de cuerpo** del paperdoll (no la silueta compuesta) y la usan **todas** las acciones, así que caminar, castear y morir comparten un único criterio de tamaño.
+2. `buildHeroStripLayers()` convierte cast y death en **capas**, igual que `idle`/`walk`: la tira aporta el cuerpo y la **capa de cabeza se dibuja encima**. Antes esas dos acciones se veían sin cabeza al cambiar de acción.
+3. `death` usa **una sola escala para los 4 frames**, medida en el frame de pie. Es una animación de caída: si cada frame se escalara por separado para igualar la estatura, el cuerpo se vería reducirse en el sitio en vez de caerse.
+4. Las tiras ahora llevan calibración propia en `art-samples.js` (antes `death` no tenía ninguna y caía en el escalado genérico de respaldo).
+
+**Verificación:** `tools/test-hero-cast-scale.js` mide la silueta por el camino de dibujo real y exige, en las 8 direcciones y los 4 frames de cada acción, la misma altura y la misma línea de pies que `idle` (tolerancia 2px), además de que exista capa de cabeza. Se comprobó que **falla sin el arreglo**: sin capa de cabeza reporta `debe tener capa de cabeza`, y sin la regla compartida `91px vs 120px`. 49/49 tests en verde.
+
 ### La progresión estaba rota: curva de nivel polinomial, niveles infinitos viables
 - **El juego era injugable pasado el nivel ~30.** La barra de XP requerida multiplicaba **1.38 por nivel** mientras el XP de monstruo solo crecía **linealmente** con el piso (`20 + piso*5`). Como un monstruo adecuado está en `nivel*2`, los kills necesarios por nivel explotaban:
 

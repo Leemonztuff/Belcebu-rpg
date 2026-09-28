@@ -44,9 +44,10 @@ const ArtSamples = (() => {
     for (const [key,[bodyHeight,footX]] of Object.entries(heroCalibration)) {
         definitions[key].calibration = {bodyHeight,targetHeight:80,footX};
     }
-// 施法条带同样是主角身体：手动量出它在 320px 原图里的身高占比，让 4 帧共用一把身体标尺。
-// 少了这把标尺就会退回通用缩放（按最大边压到 88px），cast 帧只有约 60px，切换时会整个人缩小一圈。
-    definitions.heroCastSheet.calibration = {bodyHeight:250/320,targetHeight:120,footX:[0.5,0.5,0.5,0.5]};
+// 施法/死亡条带同样是主角整身图：整段共用一把尺子，避免逐帧缩放造成抖动。
+// 精确对齐到纸娃娃身体由 game.js 依 contentBounds 完成，这里只保证整段能塞进 128px 单元格。
+    definitions.heroCastSheet.calibration = {bodyHeight:248/320,targetHeight:100,footX:[0.5,0.5,0.5,0.5]};
+    definitions.heroDeathSheet.calibration = {bodyHeight:475/512,targetHeight:100,footX:[0.5,0.5,0.5,0.5]};
 
     function heroFrame(action, direction, frameIndex) {
         const diagonals = ['frontLeft', 'frontRight', 'backLeft', 'backRight'];
@@ -64,11 +65,7 @@ const ArtSamples = (() => {
         if (!atlases.has(key)) return null;
         const sample = frame(key, 0, frameIndex, flipX);
         if (!sample) return null;
-        if (key === 'heroDeathSheet') {
-            const living = frame('heroidle', 0, 0);
-            const first = frame(key, 0, 0);
-            if (living && first) return { ...sample, death: true, renderScale: living.contentBounds.sh * 0.92 / first.contentBounds.sh };
-        }
+        if (key === 'heroDeathSheet') return { ...sample, death: true };
         return sample;
     }
 

@@ -51,7 +51,9 @@ vm.runInContext('globalThis.motionProfiles = PAPERDOLL_MOTION_PROFILES; globalTh
 for (const name of ['HERO_SPRITE_CONFIG', 'MONSTER_SPRITE_CONFIG', 'SPRITE_CONFIG']) vm.runInContext(extract(game, `const ${name} =`) + ';', scope);
 for (const name of ['MONSTER_FRAMES', 'BOSS_FRAMES']) vm.runInContext(extract(enemySource, `const ${name} =`) + ';', scope);
 vm.runInContext(game.match(/const HERO_SPRITE_CONTENT_CACHE\s*=\s*new WeakMap\(\);/)[0], scope);
-for (const name of ['getSpriteCellContentRows', 'getHeroBodyDrawBox', 'fitCastStripToHeroBody', 'normalizeHeroDirection', 'getCurrentHeroAction', 'getPaperdollMotionPose', 'getHeroFrame', 'drawActorSprite', 'getNPCSpriteCellRect', 'getNPCAlphaRowBounds', 'getNPCHeadNeckProfile', 'findNPCNeckAnchor', 'getEnemyMonsterType', 'getMonsterSpriteDirection', 'getMonsterSpriteFrame', 'drawMonsterSprite', 'addBiomeAtmosphere', 'getBiomeStyle']) vm.runInContext(extract(game, `function ${name}(`), scope);
+vm.runInContext(game.match(/const HERO_DEATH_STRIP_SCALE\s*=\s*new Map\(\);/)[0], scope);
+vm.runInContext(game.match(/const HERO_STRIP_HEAD_ROW\s*=\s*\{[^}]*\};/)[0], scope);
+for (const name of ['getSpriteCellContentRows', 'getHeroBodyGauge', 'fitStripToHeroBody', 'fitDeathStripToHeroBody', 'buildHeroStripLayers', 'normalizeHeroDirection', 'getCurrentHeroAction', 'getPaperdollMotionPose', 'getHeroFrame', 'drawActorSprite', 'getNPCSpriteCellRect', 'getNPCAlphaRowBounds', 'getNPCHeadNeckProfile', 'findNPCNeckAnchor', 'getEnemyMonsterType', 'getMonsterSpriteDirection', 'getMonsterSpriteFrame', 'drawMonsterSprite', 'addBiomeAtmosphere', 'getBiomeStyle']) vm.runInContext(extract(game, `function ${name}(`), scope);
 for (const name of ['drawScenicPropOne', 'drawBiomeFloorDecoration']) vm.runInContext(extract(game, `function ${name}(`), scope);
 vm.runInContext(extract(game, 'const DestructibleSystem =') + ';globalThis.destructibleSystem=DestructibleSystem;', scope);
 vm.runInContext(game.match(/const BOSS_SPRITE_TYPES_BY_FRAME\s*=\s*\[[^;]+;/)[0], scope);
