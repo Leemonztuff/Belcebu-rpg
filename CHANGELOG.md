@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### Corrige la animación de muerte inflada: una sola escala para los 4 frames
+- **El corpse se veía enorme al morir.** La causa era que cada frame se reescalaba a una **altura constante**, y en `death` eso se va al revés: el cuerpo se tumba y la silueta pasa de 242x475 a 497x184 en el asset. Cuanto más bajo está el cuerpo, más grande había que escalarlo, así que el frame tumbado acababa dibujándose a **266px de ancho** contra los ~63px del cuerpo de `idle`: **4.2x** más ancho de lo que debía.
+
+| Frame | Factor anterior | Ancho antes | Ancho ahora |
+|---|---|---|---|
+| f0 (de pie) | 0.986 | 50px | 50px |
+| f1 (cae) | 1.092 | 77px | 69px |
+| f2 (tumbado) | 1.935 | 183px | 93px |
+| f3 (en el suelo) | **2.545** | **266px** | **103px** |
+
+- **El bug estaba en dos sitios.** `fitDeathStripToHeroBody()` ya calculaba bien la constante (cacheada desde el frame de pie), pero `buildHeroStripLayers()` la volvía a derivar por frame desde la altura del contenido de cada una — justo lo que el fitter evita. Ahora la capa respeta la constante que le pasa el fitter.
+- **Segundo bug, encontrado al medir:** al pasar a escala constante el cuerpo se hunde en el suelo, y una cabeza anclada a la línea de pies quedaba **flotando ~109px** por encima del cuerpo tumbado. La cabeza ahora se ancla al borde superior del contenido de cada frame, así que sigue al cuerpo mientras se desploma (solapamiento constante de ~17px en los 4 frames).
+
+**Verificación:** `tools/test-hero-cast-scale.js` ahora comprueba, en las 8 direcciones, que los 4 frames de muerte comparten un único `drawSize` y que **el ancho del frame tumbado coincide con el que dicta la escala del frame de pie**. Se comprobó que falla sin el arreglo: `四帧必须共用一把缩放常数，实际为 125.7 / 139.1 / 245.7 / 322.3` y, con esa aserción desactivada, la de ancho por sí sola da `身体宽 264px，按站立尺子应为 103.2px`. `test-art-coverage.js` pasó a validar el `drawSize` de la capa del cuerpo en lugar de `renderScale`, que ya no era la variable que decidía el tamaño en pantalla. 49/49 tests en verde.
+
 ### Renderizado estandarizado del protagonista: una sola regla de tamaño para caminar, castear y morir
 - **La animación de cast se veía más grande y sin cabeza.** `idle`/`walk` usan el paperdoll (cuerpo + capa de cabeza), pero `cast`/`death` devolvían una tira única y se saltaban el paperdoll por completo. Medido por el camino real de dibujo (`getHeroFrame` -> `drawActorSprite`, píxel a píxel):
 
