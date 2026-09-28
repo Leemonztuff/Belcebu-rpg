@@ -559,13 +559,38 @@ const GAME_CONFIG = {
     PICKUP_MOVE_RANGE: 40,              // Distance to move to an item for pickup
 
     // autosave
-    AUTO_SAVE_INTERVAL: 30,             // Autosave interval (seconds)
-
-// Item despawn time
+    AUTO_SAVE_INTERVAL: 30,             // Autosave interval (seconds)// Item despawn time
     ITEM_DESPAWN_SET: 10 * 60 * 1000,   // Set items 10 minutes
     ITEM_DESPAWN_UNIQUE: 3 * 60 * 1000, // Unique items 3 minutes
-    ITEM_DESPAWN_RARE: 2 * 60 * 1000,   // Rare items 2 minutes
+    ITEM_DESPAWN_RARE: 2 * 60 * 1000,  // Rare items 2 minutes
     ITEM_DESPAWN_COMMON: 1 * 60 * 1000, // Normal items 1 minute
+
+// ===== Attribute curve =====
+// Single source of truth for how str/dex/vit/ene turn into combat stats.
+// updateStats() only reads these; tools/test-attribute-curve.js locks them.
+//
+// STR damage is a concave power curve: STR_DAMAGE_SCALE * str ^ STR_DAMAGE_EXP.
+// The exponent is below 1, so every point is worth slightly less than the last
+// (diminishing returns) while still growing without a hard ceiling. It used to
+// be (str / 5) * (1 + str * 0.05), whose multiplier compounded and made STR the
+// only stat worth taking. Gear's dmgPct now carries the multiplicative growth.
+    ATTRIBUTE_CURVE: {
+        START: { str: 15, dex: 15, vit: 20, ene: 10 },
+        POINTS_PER_LEVEL: 5,
+        STR_DAMAGE_SCALE: 0.6,           // weapon damage += 0.6 * str ^ 0.9
+        STR_DAMAGE_EXP: 0.9,             // < 1 gives diminishing returns
+        VIT_HP_PER_POINT: 5,             // max hp = vit * 5
+        ENE_MP_PER_POINT: 3,             // max mp = ene * 3
+        DEX_ARMOR_PER_POINT: 1,          // armor += dex
+        DEX_CRIT_PER_POINT: 0.5,         // crit chance += dex * 0.5
+        CRIT_BASE: 5,                    // crit chance floor before dex
+        CRIT_CAP: 100,                   // crit chance hard cap
+        // Crit chance stops scaling at dex 190, so the points past it used to be
+        // dead. Only the overflow converts, and only into crit damage:
+        // builds at or under 190 dex keep exactly the stats they had before.
+        DEX_CRIT_DAMAGE_PER_POINT: 0.2,  // crit damage += (dex - 190) * 0.2
+        DEX_CRIT_DAMAGE_CAP: 100         // matches the best 4-piece set bonus
+    },
 
     // visualeffect
     LOW_HP_THRESHOLD: 0.2,              // Low-HP warning threshold 20%
