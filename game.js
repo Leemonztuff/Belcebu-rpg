@@ -5531,14 +5531,19 @@ const OfflineRewards = {
         // 2. grantXP
         const oldLvl = player.lvl;
         player.xp += rewards.xp;
+        let gainedLevels = 0;
         while (player.xp >= player.xpNext) {
             player.xp -= player.xpNext;
-            player.lvl++;
-            player.points += 5;
-            player.skillPoints += 1;
-            player.xpNext = Math.floor(100 * Math.pow(1.15, player.lvl - 1));
+            const nextLevel = player.lvl + 1;
+            player.xpNext = GAME_CONFIG.LEVEL_CURVE.getXpForLevel(nextLevel);
+            grantLevelRewards(nextLevel, true);
+            gainedLevels++;
         }
-        const leveledUp = player.lvl > oldLvl;
+        const leveledUp = gainedLevels > 0;
+        if (leveledUp) {
+            // The per-level burst is suppressed above, so state the payoff once.
+            showNotification(`Level ${player.lvl}! +${gainedLevels * 5} stats, +${gainedLevels} skill point${gainedLevels > 1 ? 's' : ''}`);
+        }
 
 // 3. Grant gear (converts to gold if the inventory is full)
         let itemsReceived = 0;
@@ -6449,14 +6454,18 @@ function startGame() {
             player.activatedWaypoints.unshift(0);
         }
         if (isNaN(player.xp)) player.xp = 0;
-        if (isNaN(player.xpNext) || player.xpNext <= 0) player.xpNext = 100 * Math.pow(1.38, player.lvl - 1);
-// v4.8 save migration: fix the legacy 1.5x XP requirement being too high while keeping progress ratio
-        const expectedXpNext = Math.floor(100 * Math.pow(1.38, player.lvl - 1));
-        if (player.xpNext > expectedXpNext * 1.5) {
-            const progress = player.xp / player.xpNext;  // Save the current progress ratio
-            console.log(`[Save migration] xpNext fixed from ${player.xpNext} to ${expectedXpNext}, progress ${(progress * 100).toFixed(1)}%`);
+// Save migration: rescale any old bar onto the current curve, keeping the
+// progress ratio. The old check only fixed bars that were too HIGH, so a
+// save whose bar had been collapsed by the offline claim stayed collapsed
+// forever; now both directions are corrected.
+        const expectedXpNext = GAME_CONFIG.LEVEL_CURVE.getXpForLevel(player.lvl);
+        if (!isFinite(player.xpNext) || player.xpNext <= 0) {
             player.xpNext = expectedXpNext;
-            player.xp = Math.floor(expectedXpNext * progress);  // Scale xp by the ratio
+        } else if (player.xpNext !== expectedXpNext) {
+            const progress = Math.min(1, Math.max(0, player.xp / player.xpNext));
+            console.log(`[Save migration] xpNext ${player.xpNext} -> ${expectedXpNext}, progress ${(progress * 100).toFixed(1)}%`);
+            player.xpNext = expectedXpNext;
+            player.xp = Math.floor(expectedXpNext * progress);
         }
 // Back-compat: legacy saves lack maxFloor/lastFloor
         if (player.maxFloor === undefined) player.maxFloor = player.floor || 0;
@@ -16471,6 +16480,19 @@ function updateStats() {
     // Attribute curve: GAME_CONFIG.ATTRIBUTE_CURVE is the single source of truth,
     // and tools/test-attribute-curve.js locks every coefficient used here.
     const CURVE = GAME_CONFIG.ATTRIBUTE_CURVE;
+    // Level curve: GAME_CONFIG.LEVEL_CURVE is the single source of truth for
+    // what a level is worth, and tools/test-level-curve.js locks it. Every
+    // term is (level - 1) based, so a fresh level-1 character is unchanged.
+    //
+    // Levelling used to grant no HP or MP at all: checkLevelUp() did
+    // `maxHp += 10`, but this function recomputed both from vit/ene and
+    // overwrote it before anything could read it. So a level-up was worth
+    // only the points you spend yourself.
+    const LEVEL_CURVE = GAME_CONFIG.LEVEL_CURVE;
+    const level = Math.max(1, player.lvl || 1);
+    const levelDamage = LEVEL_CURVE.DAMAGE_PER_LEVEL * (level - 1);
+    const levelHp = LEVEL_CURVE.HP_PER_LEVEL * (level - 1);
+    const levelMp = LEVEL_CURVE.MP_PER_LEVEL * (level - 1);
     // Concave power curve: diminishing returns, no ceiling. Replaces the old
     // (str / 5) * (1 + str * 0.05), whose multiplier compounded.
     const strDamage = CURVE.STR_DAMAGE_SCALE * Math.pow(str, CURVE.STR_DAMAGE_EXP);
@@ -16481,11 +16503,11 @@ function updateStats() {
     critDamage += Math.min(CURVE.DEX_CRIT_DAMAGE_CAP,
         Math.max(0, dex - dexAtCritCap) * CURVE.DEX_CRIT_DAMAGE_PER_POINT);
     player.damage = [
-        Math.floor((baseDmg + strDamage) * finalDmgMultiplier),
-        Math.floor((baseDmg + 3 + strDamage) * finalDmgMultiplier)
+        Math.floor((baseDmg + strDamage + levelDamage) * finalDmgMultiplier),
+        Math.floor((baseDmg + 3 + strDamage + levelDamage) * finalDmgMultiplier)
     ];
-    player.maxHp = vit * CURVE.VIT_HP_PER_POINT + bonusHp;  // base + gear/setbonus
-    player.maxMp = ene * CURVE.ENE_MP_PER_POINT + bonusMp;  // base + gear/setbonus
+    player.maxHp = vit * CURVE.VIT_HP_PER_POINT + bonusHp + levelHp;  // base + level + gear/setbonus
+    player.maxMp = ene * CURVE.ENE_MP_PER_POINT + bonusMp + levelMp;  // base + level + gear/setbonus
     player.armor = armor + dex * CURVE.DEX_ARMOR_PER_POINT;
     player.lifeSteal = ls;
     player.attackSpeed = ias;
@@ -16894,57 +16916,57 @@ function updateSkillsUI() {
     });
 }
 
+// Everything a single level-up grants, in one place.
+// The offline reward claim used to carry a stripped-down copy of this that
+// skipped HP/MP, the level-up VFX, achievements and Divine Blessings, so
+// levelling offline paid out differently from levelling in game.
+// Pass silent=true to grant the rewards without the per-level visual burst,
+// which is what the offline claim needs when it grants many levels at once.
+function grantLevelRewards(level, silent = false) {
+    player.lvl = level;
+    if (player.lvl > player.personalBest.maxLevel) {
+        player.personalBest.maxLevel = player.lvl;
+    }
+    trackAchievement('reach_level', { level: player.lvl });
+    if (!silent && player.lvl % 10 === 0 && typeof OnlineSystem !== 'undefined') {
+        OnlineSystem.announce('level_milestone', String(player.lvl));
+    }
+    player.points += 5;
+    player.skillPoints += 1;
+    // HP/MP come from LEVEL_CURVE inside updateStats(); do not add to them here.
+    updateStats();
+    player.hp = player.maxHp;
+    player.mp = player.maxMp;
+    if (!silent) triggerLevelUpEffect(player.lvl);
+    if (player.lvl % 5 === 0 && player.lvl > player.lastBlessingLevel && player.lvl <= 100) {
+        player.lastBlessingLevel = player.lvl;
+        if (player.divineBlessing.pending < 3) {
+            player.divineBlessing.pending++;
+            updateDivineBlessingHUD();
+            if (!silent) createDamageNumber(player.x, player.y - 100, "Gained a Divine Blessing!", '#ffd700');
+        } else if (!silent) {
+            createDamageNumber(player.x, player.y - 100, "Blessing slots full, claim one first", '#ff8800');
+        }
+    }
+    if (!silent && typeof OnlineSystem !== 'undefined') {
+        OnlineSystem.submitScore({
+            level: player.lvl,
+            kills: player.kills,
+            maxFloor: player.isInHell ? (player.maxHellFloor || player.hellFloor) + 10 : player.maxFloor,
+            isHell: player.isInHell,
+            gold: player.gold || 0
+        });
+    }
+}
+
 function checkLevelUp() {
     while (player.xp >= player.xpNext) {
-        player.lvl++;
-
-// Achievement tracking: level reached
-        if (player.lvl > player.personalBest.maxLevel) {
-            player.personalBest.maxLevel = player.lvl;
-        }
-
-// Server announce: level milestones (10/20/30...)
-        trackAchievement('reach_level', { level: player.lvl });
-
-// Trigger the fancy level-up VFX
-        if (player.lvl % 10 === 0 && typeof OnlineSystem !== 'undefined') {
-            OnlineSystem.announce('level_milestone', String(player.lvl));
-        }
-
+        const nextLevel = player.lvl + 1;
         player.xp -= player.xpNext;
-        player.xpNext = Math.floor(player.xpNext * 1.38);
-        player.points += 5;
-        player.skillPoints += 1;
-        player.maxHp += 10;
-        player.maxMp += 5;
-        player.hp = player.maxHp;
-        player.mp = player.maxMp;
-
-// ========== Divine Blessing trigger check ==========
-        triggerLevelUpEffect(player.lvl);
-
-// Submit to the leaderboard
-        if (player.lvl % 5 === 0 && player.lvl > player.lastBlessingLevel && player.lvl <= 100) {
-            player.lastBlessingLevel = player.lvl;
-            if (player.divineBlessing.pending < 3) {
-                player.divineBlessing.pending++;
-                createDamageNumber(player.x, player.y - 100, "Gained a Divine Blessing!", '#ffd700');
-                updateDivineBlessingHUD();
-            } else {
-                createDamageNumber(player.x, player.y - 100, "Blessing slots full, claim one first", '#ff8800');
-            }
-        }
-
-// togglePanel moved to ui-panels.js
-        if (typeof OnlineSystem !== 'undefined') {
-            OnlineSystem.submitScore({
-                level: player.lvl,
-                kills: player.kills,
-                maxFloor: player.isInHell ? (player.maxHellFloor || player.hellFloor) + 10 : player.maxFloor,
-                isHell: player.isInHell,
-                gold: player.gold || 0
-            });
-        }
+        // Closed form from the shared curve, not a running product, so the bar
+        // can never drift depending on which code path levelled the player.
+        player.xpNext = GAME_CONFIG.LEVEL_CURVE.getXpForLevel(nextLevel);
+        grantLevelRewards(nextLevel);
     }
     updateStatsUI(); updateSkillsUI(); updateMenuIndicators();
     SaveSystem.save();

@@ -2,6 +2,43 @@
 
 ## Unreleased
 
+### La progresión estaba rota: curva de nivel polinomial, niveles infinitos viables
+- **El juego era injugable pasado el nivel ~30.** La barra de XP requerida multiplicaba **1.38 por nivel** mientras el XP de monstruo solo crecía **linealmente** con el piso (`20 + piso*5`). Como un monstruo adecuado está en `nivel*2`, los kills necesarios por nivel explotaban:
+
+| Nivel | XP requerido (antes) | Kills para subir | vs. nivel 20 |
+|---|---|---|---|
+| 20 | 45.467 | 650 | 1x |
+| 30 | 1.138.920 | 11.989 | 18x |
+| 40 | 28.528.856 | 237.741 | 366x |
+| 50 | 714.620.110 | **4.928.415** | 7.582x |
+
+- **Bug de exploit:** existían **dos curvas de XP en pugna**. `checkLevelUp()` (en juego) usaba `xpNext * 1.38`; `OfflineSystem.claim()` recalculaba con `100 * 1.15^(nivel-1)`. Reclamar recompensas offline **reducía la barra de forma permanente** (×7.584 en el nivel 50, ×69 millones en el 100), y la migración de guardado sólo corregía barras **demasiado altas**, nunca demasiado bajas: el exploit no tenía vuelta atrás.
+- **Bug de recompensa:** el reclamo offline pagaba una versión recortada del level-up: daba puntos y skill points pero **no** daba `+10 maxHp`, `+5 maxMp`, ni VFX, ni logros `reach_level`, ni Bendiciones Divinas cada 5 niveles.
+
+**Qué cambió:**
+
+1. `GAME_CONFIG.LEVEL_CURVE` es ahora la **única fuente de verdad** (`constants.js`), con el mismo patrón que ya usaba `ATTRIBUTE_CURVE`. La XP es **polinomial**: `100 + 60n + 3.75n²` (n = nivel−1). Una barra cuadrática sobre ingreso lineal da una grind lineal, que sigue siendo viable en el infinito.
+2. `grantLevelRewards()` centraliza **todo** lo que otorga un nivel. `checkLevelUp()` y el reclamo offline la comparten, así que no pueden volver a divergir. El offline la llama con `silent=true` para no disparar el estallido de pantalla una vez por nivel.
+3. La migración de guardado ahora **resincroniza cualquier `xpNext`** que no sea el de la curva, **en ambas direcciones**, conservando el porcentaje de progreso.
+
+| Nivel | XP requerido (ahora) | Kills para subir | vs. nivel 20 |
+|---|---|---|---|
+| 20 | 2.593 | 38 | 1x |
+| 50 | 12.043 | 84 | 2.2x |
+| 100 | 42.793 | 159 | 4.2x |
+| 1000 | 3.802.543 | 1.509 | 39.7x |
+
+En el nivel 50 se pasa de **4.928.415 kills a 84**: ×58.672 más rápido, y la curva ya no tiene techo.
+
+### Subir de nivel ahora da poder real aunque no gastes un solo punto
+- `checkLevelUp()` hacía `player.maxHp += 10`, pero `updateStats()` recalcula `maxHp = vit*5 + bonusHp` y **lo pisaba antes de que nadie lo leyera**. O sea: **subir de nivel no daba ni un punto de vida ni de maná**. El único premio eran los puntos que el jugador tiene que gastar a mano.
+- Ahora la bonificación por nivel vive en `updateStats()`, leyendo `LEVEL_CURVE`: **+10 HP, +5 MP y +0.4 de daño base por nivel**. Todos los términos son `(nivel − 1)`, así que **un personaje recién creado queda exactamente igual**.
+- En el nivel 50 eso son **+490 HP, +245 MP y +20 de daño** sin gastar nada. Los atributos siguen siendo la Palanca principal (5 puntos por nivel); el nivel aporta la base garantizada.
+
+**Impacto:** la economía de progresión cambia por completo (es el punto), pero no se tocan las mecánicas de combate, el botín ni los coeficientes de la curva de atributos. Un personaje nuevo empieza idéntico. Guardados existentes: se reescalan conservando el porcentaje de progreso en la barra.
+
+**Tests:** `tools/test-level-curve.js` (nuevo, 8 checks) fija la curva, la paridad offline/en línea y la viability infinita. Verificado que **falla** si se reintroduce la curva divergente. `test-attribute-curve.js` sigue verde sin cambios.
+
 ### Corregido: el hechizo (cast) se dibujaba un 30% más chico que caminar y estar quieto
 - El síntoma era un salto de tamaño en el frame exacto en que el jugador lanzaba un hechizo: el personaje se encogía de golpe y volvía a su tamaño al terminar.
 - La causa no era la tira en sí sino que **cast e idle/walk no comparten la misma escala**. `idle` y `walk` usan el paperdoll (cuerpo `Npc-06.webp` + capa de cabeza `base_head_spritesheet.png`), que mide 120px en pantalla; `cast` usa la tira cruda `Npc-06_cast_animation.webp`, que entra por la vía `raw: true` y se saltaba la calibración, cayendo en el escalado genérico de respaldo (comprimir el lado mayor a 88px) y dejando el cuerpo en ~60px.

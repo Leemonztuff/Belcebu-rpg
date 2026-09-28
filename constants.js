@@ -592,6 +592,36 @@ const GAME_CONFIG = {
         DEX_CRIT_DAMAGE_CAP: 100         // matches the best 4-piece set bonus
     },
 
+// ===== Level curve =====
+// Single source of truth for what a level costs and what it gives back.
+// updateStats(), checkLevelUp(), the offline reward claim and the save
+// migration all read this, so they cannot drift apart again.
+//
+// XP is polynomial, not exponential. It used to compound by 1.38 per level
+// while monster XP only grew linearly with the floor (20 + floor * 5), so the
+// kills needed per level exploded: ~650 at level 20, ~12k at 30, ~4.9M at 50.
+// The game was effectively unplayable past level 30. A quadratic requirement
+// divided by a linear income gives a linear grind, which stays viable forever.
+//
+// Every per-level term is (level - 1) based, so a fresh level-1 character
+// gets exactly 0 and early game is untouched.
+    LEVEL_CURVE: {
+        XP_BASE: 100,          // XP to go from level 1 to 2
+        XP_LINEAR: 60,         // + per level
+        XP_QUADRATIC: 3.75,    // + per level squared
+        DAMAGE_PER_LEVEL: 0.4, // weapon damage += 0.4 per level above 1
+        HP_PER_LEVEL: 10,      // max hp += 10 per level above 1
+        MP_PER_LEVEL: 5,       // max mp += 5 per level above 1
+
+        // XP required to leave `level` and reach level + 1.
+        // Closed form, not a running product: claiming offline rewards used to
+        // recompute this with a 1.15 curve and permanently collapse the bar.
+        getXpForLevel(level) {
+            const n = Math.max(0, (Math.floor(level) || 1) - 1);
+            return Math.floor(this.XP_BASE + this.XP_LINEAR * n + this.XP_QUADRATIC * n * n);
+        }
+    },
+
     // visualeffect
     LOW_HP_THRESHOLD: 0.2,              // Low-HP warning threshold 20%
     CAMERA_SMOOTH: 0.1                  // Camera smoothing factor
