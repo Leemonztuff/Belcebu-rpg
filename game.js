@@ -3707,6 +3707,11 @@ function getHeroBodyGauge(direction) {
     };
 }
 
+// 条带内容按 drawSize 映射到屏幕后的实际高度（单元格内的内容占比 * 绘制尺寸）。
+function contentHeightOnScreen(bounds, drawSize) {
+    return bounds.sh * drawSize / 128;
+}
+
 // cast 条带是 4 帧站立施法姿态，4 帧身高本就一致：逐帧按纸娃娃身体标尺等比缩放，
 // 并把脚底钉到同一条地面线上，起手瞬间与 idle/walk 同一尺寸，帧间也不跳变。
 function fitStripToHeroBody(frame, direction) {
@@ -3716,7 +3721,8 @@ function fitStripToHeroBody(frame, direction) {
     const cell = 128;
     const renderScale = gauge.height * cell / (bounds.sh * ACTOR_RENDER_SIZE);
     const feetFraction = (bounds.sy + bounds.sh) / cell;
-    return { ...frame, renderScale, offsetY: gauge.feet + ACTOR_RENDER_SIZE * renderScale * (1 - feetFraction) };
+    return { ...frame, renderScale, referenceHeight: bounds.sh,
+        offsetY: gauge.feet + ACTOR_RENDER_SIZE * renderScale * (1 - feetFraction) };
 }
 
 // death 是"站立→倒地"的塌陷动画：人物越倒越矮是动画本身，不能逐帧各自缩放去追平身高，
@@ -3728,17 +3734,18 @@ function fitDeathStripToHeroBody(frame, direction) {
     const gauge = getHeroBodyGauge(direction);
     if (!bounds || !(bounds.sh > 0) || !gauge || !(gauge.height > 0)) return frame;
     const cell = 128;
-    let renderScale = HERO_DEATH_STRIP_SCALE.get(direction);
-    if (!renderScale) {
+    let cached = HERO_DEATH_STRIP_SCALE.get(direction);
+    if (!cached) {
         const standing = typeof ArtSamples !== 'undefined' && ArtSamples.isLoaded('heroDeathSheet')
             ? ArtSamples.frame('heroDeathSheet', 0, 0) : null;
         const standingBounds = standing && standing.contentBounds;
         const referenceHeight = standingBounds && standingBounds.sh > 0 ? standingBounds.sh : bounds.sh;
-        renderScale = gauge.height * cell / (referenceHeight * ACTOR_RENDER_SIZE);
-        HERO_DEATH_STRIP_SCALE.set(direction, renderScale);
+        cached = { renderScale: gauge.height * cell / (referenceHeight * ACTOR_RENDER_SIZE), referenceHeight };
+        HERO_DEATH_STRIP_SCALE.set(direction, cached);
     }
     const feetFraction = (bounds.sy + bounds.sh) / cell;
-    return { ...frame, renderScale, offsetY: gauge.feet + ACTOR_RENDER_SIZE * renderScale * (1 - feetFraction) };
+    return { ...frame, renderScale: cached.renderScale, referenceHeight: cached.referenceHeight,
+        offsetY: gauge.feet + ACTOR_RENDER_SIZE * cached.renderScale * (1 - feetFraction) };
 }
 
 // cast/death 条带只画身体：和 idle/walk 一样，条带当"身体层"，再把头饰层叠在上面。
@@ -3747,7 +3754,9 @@ function fitDeathStripToHeroBody(frame, direction) {
 const HERO_STRIP_HEAD_ROW = { cast: 'front', death: 'right' };
 
 // 把已按身体标尺定位好的条带包成与纸娃娃同构的图层：条带当身体层，头饰叠在上面。
-function buildHeroStripLayers(frame, action, direction) {
+// referenceHeight 是 fitter 用来定标的那一帧内容高度：cast 用本帧，death 用站立帧。
+// 整段共用同一个 drawSize——按每帧自身高度重算会把横卧帧撑大（越矮放得越大）。
+function buildHeroStripLayers(frame, action, direction, referenceHeight) {
     const bounds = frame && frame.contentBounds;
     const gauge = getHeroBodyGauge(direction);
     const headImage = typeof PaperdollSystem !== 'undefined' && PaperdollSystem.enabled
@@ -3756,21 +3765,28 @@ function buildHeroStripLayers(frame, action, direction) {
     if (!headImage) return frame;
 
     const cell = 128;
-    // 单元格整体映射到屏幕：让条带内容高度等于纸娃娃身体高度。
-    const drawSize = cell * gauge.height / bounds.sh;
+    const reference = referenceHeight > 0 ? referenceHeight : bounds.sh;
+    // 单元格整体映射到屏幕：内容高度 = 纸娃娃身体高度 * (本帧内容高 / 参考帧内容高)。
+    const drawSize = cell * gauge.height / reference;
     // drawActorSprite 已把单元格居中画在 centerX 上，源矩形又是 frame.x 那一格，
     // 所以横向修正要相对"本格中心"，且每帧独立，不能跨帧累加。
     const contentCentre = (bounds.sx + bounds.sw / 2) - frame.x;
     const contentTop = bounds.sy;
+    const contentBottom = bounds.sy + bounds.sh;
+    // 站立帧（cast 四帧与 death 首帧）内容顶边与纸娃娃身体顶边重合；倒地帧内容更低，
+    // 身体沿地面塌下，脚不能离开地面线，所以对齐的是内容底边。
+    const standing = Math.abs(contentHeightOnScreen(bounds, drawSize) - gauge.height) < 1;
+    const bodyOffsetY = standing
+        ? gauge.top + ACTOR_RENDER_SIZE - (contentTop / cell) * drawSize
+        : gauge.feet + ACTOR_RENDER_SIZE - (contentBottom / cell) * drawSize;
     const layers = [{
         type: 'body_base',
         source: frame.source,
         frame: { x: frame.x, y: frame.y, width: cell, height: cell },
         drawW: drawSize,
         drawH: drawSize,
-        // 内容上沿对齐纸娃娃身体上沿，脚底自然落在同一条地面线。
         offsetX: drawSize * (0.5 - contentCentre / cell),
-        offsetY: gauge.top + ACTOR_RENDER_SIZE - (contentTop / cell) * drawSize
+        offsetY: bodyOffsetY
     }];
 
     const calibration = PaperdollSystem.calibration;
@@ -3788,10 +3804,12 @@ function buildHeroStripLayers(frame, action, direction) {
         drawW: headDraw,
         drawH: headDraw,
         offsetX: dirOffset.x,
-        offsetY: dirOffset.y
+        // 头饰跟着身体走：倒地时人物整体下沉，头不能留在站立高度浮在半空。
+        // 以本帧身体内容顶边为基准，加上纸娃娃里头饰相对身体顶边的固定偏移。
+        offsetY: bodyOffsetY + (contentTop / cell) * drawSize + dirOffset.y
     });
 
-    return { x: 0, y: 0, width: cell, height: cell, animated: true, flipX: !!frame.flipX, layers, renderScale: 1 };
+    return { x: 0, y: 0, width: cell, height: cell, animated: true, flipX: !!frame.flipX, layers, renderScale: 1, drawSize };
 }
 
 function getHeroFrame(direction) {
@@ -3809,7 +3827,7 @@ function getHeroFrame(direction) {
             : ArtSamples.heroSheetFrame('heroCastSheet', Math.floor(progress * 4), safeDirection.toLowerCase().includes('left'));
         if (!strip) return null;
         const fitted = action === 'cast' ? fitStripToHeroBody(strip, safeDirection) : fitDeathStripToHeroBody(strip, safeDirection);
-        return buildHeroStripLayers(fitted, action, safeDirection);
+        return buildHeroStripLayers(fitted, action, safeDirection, fitted.referenceHeight);
     }
 
     // ========== 4x4 Paperdoll (Body & Head Calibrated Layering) ==========

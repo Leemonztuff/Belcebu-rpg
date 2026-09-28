@@ -53,7 +53,9 @@ for (const name of ['MONSTER_FRAMES', 'BOSS_FRAMES']) vm.runInContext(extract(en
 vm.runInContext(game.match(/const HERO_SPRITE_CONTENT_CACHE\s*=\s*new WeakMap\(\);/)[0], scope);
 vm.runInContext(game.match(/const HERO_DEATH_STRIP_SCALE\s*=\s*new Map\(\);/)[0], scope);
 vm.runInContext(game.match(/const HERO_STRIP_HEAD_ROW\s*=\s*\{[^}]*\};/)[0], scope);
-for (const name of ['getSpriteCellContentRows', 'getHeroBodyGauge', 'fitStripToHeroBody', 'fitDeathStripToHeroBody', 'buildHeroStripLayers', 'normalizeHeroDirection', 'getCurrentHeroAction', 'getPaperdollMotionPose', 'getHeroFrame', 'drawActorSprite', 'getNPCSpriteCellRect', 'getNPCAlphaRowBounds', 'getNPCHeadNeckProfile', 'findNPCNeckAnchor', 'getEnemyMonsterType', 'getMonsterSpriteDirection', 'getMonsterSpriteFrame', 'drawMonsterSprite', 'addBiomeAtmosphere', 'getBiomeStyle']) vm.runInContext(extract(game, `function ${name}(`), scope);
+// 主角条带依赖纸娃娃拿真实屏幕尺寸与头饰层，必须连 PaperdollSystem 一起加载
+vm.runInContext(extract(game, 'const PaperdollSystem =') + ';globalThis.pd=PaperdollSystem;', scope);
+for (const name of ['getSpriteCellContentRows', 'getHeroBodyGauge', 'contentHeightOnScreen', 'fitStripToHeroBody', 'fitDeathStripToHeroBody', 'buildHeroStripLayers', 'normalizeHeroDirection', 'getCurrentHeroAction', 'getPaperdollMotionPose', 'getHeroFrame', 'drawActorSprite', 'getNPCSpriteCellRect', 'getNPCAlphaRowBounds', 'getNPCHeadNeckProfile', 'findNPCNeckAnchor', 'getEnemyMonsterType', 'getMonsterSpriteDirection', 'getMonsterSpriteFrame', 'drawMonsterSprite', 'addBiomeAtmosphere', 'getBiomeStyle']) vm.runInContext(extract(game, `function ${name}(`), scope);
 for (const name of ['drawScenicPropOne', 'drawBiomeFloorDecoration']) vm.runInContext(extract(game, `function ${name}(`), scope);
 vm.runInContext(extract(game, 'const DestructibleSystem =') + ';globalThis.destructibleSystem=DestructibleSystem;', scope);
 vm.runInContext(game.match(/const BOSS_SPRITE_TYPES_BY_FRAME\s*=\s*\[[^;]+;/)[0], scope);
@@ -90,13 +92,31 @@ assert.match(game, /const neckY = chestLayer\.offsetY \+ neckAnchor\.y \* bodyRe
 assert.match(game, /headLayer\.anchorY = neckY;/, 'NPC head bottom stays joined to the torso neck');
 function assertFrame(frame, key, row, col, monster=false) {
     assert.ok(frame, `${key} 缺少帧`);
+    const output = createCanvas(180, 180), ctx = output.getContext('2d');
+    // 主角 idle/walk 与 cast/death 走纸娃娃图层：条带当身体层 + 头饰层，
+    // 屏幕上真正决定尺寸的是图层 drawW，所以校验图层而不是图集裁切矩形。
+    if(frame.layers && frame.layers.length>0) {
+        const body=frame.layers.find(layer=>layer.type==='body_base');
+        assert.ok(body && body.source, `${key} 缺少身体层`);
+        assert.ok(frame.layers.some(layer=>layer.type==='head'), `${key} 缺少头饰层`);
+        assert.ok(body.drawW>0 && body.drawH>0, `${key} 身体层尺寸无效`);
+        for(const layer of frame.layers) {
+            assert.ok(layer.source && layer.frame, `${key} 图层缺少来源`);
+            assert.ok(layer.frame.x>=0 && layer.frame.y>=0
+                && layer.frame.x+layer.frame.width<=layer.source.width
+                && layer.frame.y+layer.frame.height<=layer.source.height, `${key} 图层帧越界`);
+        }
+        scope.drawActorSprite(ctx, null, frame, 90, 0, 128, 128);
+        const pixels=ctx.getImageData(0,0,180,180).data;
+        assert.ok(pixels.some((value,index)=>index%4===3&&value>0), `${key} 实际绘制为空`);
+        return;
+    }
     const expected = scope.art.frame(key, row, col);
     assert.ok(expected, `${key} 实际图集未加载`);
     assert.equal(frame.source, expected.source, `${key} 应使用新图集，不能悄悄回退旧图`);
     assert.equal(frame.x, col * 128);
     assert.equal(frame.y, row * 128);
     assert.ok(frame.x >= 0 && frame.y >= 0 && frame.x + frame.width <= frame.source.width && frame.y + frame.height <= frame.source.height, `${key} 帧越界`);
-    const output = createCanvas(180, 180), ctx = output.getContext('2d');
     if(monster)scope.drawMonsterSprite(ctx, frame.source, frame, 90, 128, 128, 128);
     else scope.drawActorSprite(ctx, frame.source, frame, 90, 0, 128, 128);
     const pixels = ctx.getImageData(0, 0, 180, 180).data;
@@ -105,6 +125,12 @@ function assertFrame(frame, key, row, col, monster=false) {
 (async () => {
     await scope.art.ensure(Object.keys(scope.art.definitions));
     await Promise.all(ready);
+    // 主角条带现在走纸娃娃图层才能拿到真正的屏幕尺寸；不初始化就没有 body/head 图层。
+    scope.pd.initDefaults();
+    for (let attempt = 0; attempt < 200 && !(scope.pd.getBodyImage() && scope.pd.getHeadImage()); attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 25));
+    }
+    assert.ok(scope.pd.getBodyImage() && scope.pd.getHeadImage(), '纸娃娃身体/头饰图未能加载');
     assert.deepEqual(errors, [], '实际素材不可被透明/分帧校验拒绝');
     const directions = ['front', 'back', 'left', 'right', 'frontLeft', 'frontRight', 'backLeft', 'backRight'];
     let heroCases = 0, monsterCases = 0;
@@ -140,8 +166,13 @@ function assertFrame(frame, key, row, col, monster=false) {
             const frame=type==='hero'?scope.getHeroFrame(right?'right':'left'):scope.getMonsterSpriteFrame({monsterType:type,isBoss:boss,dead:true,deathVisualDuration:duration,deathVisualTimer:duration-elapsed,facingDirection:right?'right':'left'});
             assertFrame(frame,type==='hero'?'heroDeathSheet':'death'+group,type==='hero'?0:row,col,type!=='hero');
             assert.equal(frame.flipX,right);
-            if(scale!==undefined)assert.equal(frame.renderScale,scale,'横卧不能单帧放大');
-            scale=frame.renderScale;
+            // 主角条带已经改走图层，真正决定屏幕上尺寸的是图层的 drawSize；
+            // 怪物仍是单图，用 renderScale 校验。两边都必须整段恒定，横卧不能单帧放大。
+            const size=type==='hero'
+                ? frame.layers.find(layer=>layer.type==='body_base').drawW
+                : frame.renderScale;
+            if(scale!==undefined)assert.equal(size,scale,'横卧不能单帧放大');
+            scale=size;
             assert.equal(scope.art.deathFrame(type,99,collapse).x,3*128,'倒地结束不循环站起来');
             deathCases++;
         }
