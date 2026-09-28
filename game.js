@@ -16388,16 +16388,28 @@ function updateStats() {
 
 // Includes percentage bonuses from gear and sets
     const finalDmgMultiplier = 1 + dmgPct / 100;  // Base + gear/set bonuses
+    // Attribute curve: GAME_CONFIG.ATTRIBUTE_CURVE is the single source of truth,
+    // and tools/test-attribute-curve.js locks every coefficient used here.
+    const CURVE = GAME_CONFIG.ATTRIBUTE_CURVE;
+    // Concave power curve: diminishing returns, no ceiling. Replaces the old
+    // (str / 5) * (1 + str * 0.05), whose multiplier compounded.
+    const strDamage = CURVE.STR_DAMAGE_SCALE * Math.pow(str, CURVE.STR_DAMAGE_EXP);
+    // Crit chance caps at dex 190, so the points past it used to do nothing.
+    // Only the overflow converts, and only into crit damage, so every build at
+    // or under the cap keeps the exact stats it had before.
+    const dexAtCritCap = (CURVE.CRIT_CAP - CURVE.CRIT_BASE) / CURVE.DEX_CRIT_PER_POINT;
+    critDamage += Math.min(CURVE.DEX_CRIT_DAMAGE_CAP,
+        Math.max(0, dex - dexAtCritCap) * CURVE.DEX_CRIT_DAMAGE_PER_POINT);
     player.damage = [
-        Math.floor((baseDmg + Math.floor(str / 5)) * (1 + str * 0.05) * finalDmgMultiplier),
-        Math.floor((baseDmg + 3 + Math.floor(str / 5)) * (1 + str * 0.05) * finalDmgMultiplier)
+        Math.floor((baseDmg + strDamage) * finalDmgMultiplier),
+        Math.floor((baseDmg + 3 + strDamage) * finalDmgMultiplier)
     ];
-    player.maxHp = vit * 5 + bonusHp;  // base + gear/setbonus
-    player.maxMp = ene * 3 + bonusMp;  // base + gear/setbonus
-    player.armor = armor + dex;
+    player.maxHp = vit * CURVE.VIT_HP_PER_POINT + bonusHp;  // base + gear/setbonus
+    player.maxMp = ene * CURVE.ENE_MP_PER_POINT + bonusMp;  // base + gear/setbonus
+    player.armor = armor + dex * CURVE.DEX_ARMOR_PER_POINT;
     player.lifeSteal = ls;
     player.attackSpeed = ias;
-    player.critChance = Math.min(100, 5 + dex * 0.5 + bonusCritChance);
+    player.critChance = Math.min(CURVE.CRIT_CAP, CURVE.CRIT_BASE + dex * CURVE.DEX_CRIT_PER_POINT + bonusCritChance);
 
 // Update special stats
     const talentSpeedPct = typeof getTalentEffect !== 'undefined' ? getTalentEffect('speedPct', 0) : 0;

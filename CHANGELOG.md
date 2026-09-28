@@ -2,6 +2,44 @@
 
 ## Unreleased
 
+### str deja de ser super-lineal (rendimientos decrecientes)
+- La fórmula de daño era `(baseDmg + str / 5) * (1 + str * 0.05)`. El factor multiplicativo **compilaba**, así que cada punto de str rendía más que el anterior y volcar 499 puntos en str era siempre la única jugada óptima.
+- Ahora es una **curva cóncava**: `STR_DAMAGE_SCALE * str ^ STR_DAMAGE_EXP` con exponente `0.9` (< 1). Cada punto vale un poco menos que el anterior, y **no hay techo duro**, así que no se crea una nueva zona muerta como la que tenía dex.
+- Ganancias medidas por bloques de 50 puntos: `35, 34, 33, 31, 30, 30, 30, 30, 29` — decrecientes de principio a fin.
+- El crecimiento acumulado entre nivel 1 y nivel 100 baja de **347x a 20.9x**.
+- El multiplicativo ahora lo aporta el **equipo** (`dmgPct` de los sets, hasta 120%), no los puntos de atributo. Con `dmgPct` 120%, str 514 pasa de 167 a 367 de daño.
+
+**Impacto en personajes existentes (sin equipo, all-in str):**
+
+| Nivel | str | Daño antes | Daño ahora | Cambio |
+|---|---|---|---|---|
+| 36 | 190 | 420 | 69 | x6.1 nerf |
+| 50 | 260 | 756 | 91 | x8.3 nerf |
+| 80 | 410 | 1806 | 136 | x13.3 nerf |
+| 100 | 510 | 2756 | 166 | x16.6 nerf |
+| 120 | 610 | 3906 | 194 | x20.1 nerf |
+
+El nerf **crece con el nivel**: un personaje recién creado apenas lo nota (el golpe bajo sigue dando 8 igual que antes; el alto baja de 14 a 11), pero un veteran de nivel 100 pierde el 94% de su daño base. La brecha entre nuevo y veteran se comprime, que es el objetivo, pero es un **reset duro para quien ya tiene nivel alto**.
+
+La constante `STR_DAMAGE_SCALE` (0.6) es la palanca: subirla suaviza el nerf a costa de pisar el daño inicial. Con la curva ya centralizada y pineada por tests, reajustar es un cambio de una línea.
+
+**Lo que esto NO arregla:** la brecha STR vs DEX baja de **132x a 12.7x**, pero sigue siendo grande, porque `vit`, `ene` y `dex` no aportan **ningún** daño plano: dan vida, maná, crítico y armadura. Aplanar `str` reduce la ventaja, no la elimina. Para que las otras opciones sean realmente viables falta que algnas aporten daño oConversiones, que es un paso aparte.
+
+### dex deja de ser un atributo muerto a partir de 190
+- `critChance = min(100, 5 + dex * 0.5)` topaba en 100 al llegar a **dex 190**. Como se ganan 5 puntos por nivel, desde el **nivel 36** (175 puntos) cualquier punto invertido en dex era tirar dinero: solo sumaba +1 de armadura plana.
+- Ahora **solo el exceso sobre el tope** se convierte en daño crítico: `(dex - 190) * 0.2`, con tope de 100 para que nunca supere al mejor set de 4 piezas.
+- **Builds con 190 dex o menos no cambian ni un punto**: sus estadísticas son exactamente las mismas. Solo los personajes que ya-tenían puntos perdidos en dex empiezan a cobrar algo por ellos.
+- El punto muerto se **deriva** de `CRIT_CAP / CRIT_BASE / DEX_CRIT_PER_POINT` en vez de escribir 190 a mano, así que si algún día se mueve el tope de crítico el overflow se mueve con él.
+- Tests实际: cobertura para todo el rango bajo el tope (15/40/100/150/189/190 deben dar 0 daño crítico), el rango sobre el tope, el tope de seguridad y el invariante de que ningún otro atributo se filtra al daño crítico.
+
+**Pendiente, sigue sin arreglar**: `str` sigue siendo super-lineal (`(1 + str * 0.05)` compounding), así que un build all-in en `str` al nivel 100 sigue dando 2776 de daño contra las 8 de un build all-in en `dex`. dex ya no pierde puntos, pero todavía no es una alternativa viable a str. Ese es el paso 3.
+
+### Curva de atributos centralizada (sin cambios de balance)
+- Los coeficientes que convierten `str/dex/vit/ene` en stats de combate vivían sueltos dentro de `updateStats` (`vit * 5`, `ene * 3`, `dex * 0.5`, `str * 0.05`, `str / 5`). Ahora están en `GAME_CONFIG.ATTRIBUTE_CURVE` y `updateStats` solo los lee.
+- **Sin cambio de balance**: los valores son los mismos. Todo player existente, existente y con save guardado obtiene exactamente las mismas estadísticas.
+- Nuevo `tools/test-attribute-curve.js`: ejecuta el `updateStats` real en un sandbox y fija los números que hoy sostiene el balance, más dos invariantes (cada atributo solo mueve lo que le corresponde) y los dos defectos conocidos que quedan pendientes de corregir (ver abajo).
+- Deuda documentada y ahora vigilada por tests: `dex` deja de aportar crítico en 190 (topo 100%), y `str` es super-lineal porque el factor `(1 + str * 0.05)` compila, así que volcar todo en `str` es siempre la jugada óptima. Son el siguiente paso, no este.
+
 ### GitHub Pages workflow y limpieza del pipeline de i18n
 - `.github/workflows/deploy.yml` publicaba `path: '.'`, es decir las 253 MB del repositorio incluyendo `node_modules/` y `.git/`. Ahora ejecuta `tools/vercel-build.cjs` —el mismo build que usa Vercel— y sube solo `dist/`, de modo que ambos hostings sirven un sitio idéntico y el upload entra en el presupuesto de Pages.
 - `cancel-in-progress: true` evita publicar un deploy construido desde un commit ya superado.
