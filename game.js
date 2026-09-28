@@ -3648,6 +3648,86 @@ function getPaperdollMotionPose(actor, isWalking, animTime) {
     return pose;
 }
 
+// 角色在某张精灵图某个格子里的实际透明边界（上下沿，按格子高度的比例）。装备/头饰换图会重算一次，
+// 之后按图缓存，避免每帧扫描像素。
+const HERO_SPRITE_CONTENT_CACHE = new WeakMap();
+function getSpriteCellContentRows(image, row, col, cols, rows) {
+    if (!image || !image.width || !image.height) return null;
+    let perImage = HERO_SPRITE_CONTENT_CACHE.get(image);
+    if (!perImage) { perImage = new Map(); HERO_SPRITE_CONTENT_CACHE.set(image, perImage); }
+    const key = row + ':' + col + ':' + cols + ':' + rows;
+    if (perImage.has(key)) return perImage.get(key);
+    let result = null;
+    try {
+        const cellW = Math.floor(image.width / cols), cellH = Math.floor(image.height / rows);
+        const scan = document.createElement('canvas');
+        scan.width = cellW; scan.height = cellH;
+        const context = scan.getContext('2d');
+        context.drawImage(image, col * cellW, row * cellH, cellW, cellH, 0, 0, cellW, cellH);
+        const alpha = context.getImageData(0, 0, cellW, cellH).data;
+        let top = -1, bottom = -1;
+        for (let y = 0; y < cellH && top < 0; y++) {
+            for (let x = 0; x < cellW; x++) {
+                if (alpha[(y * cellW + x) * 4 + 3] > 24) { top = y; break; }
+            }
+        }
+        for (let y = cellH - 1; y >= 0 && bottom < 0; y--) {
+            for (let x = 0; x < cellW; x++) {
+                if (alpha[(y * cellW + x) * 4 + 3] > 24) { bottom = y; break; }
+            }
+        }
+        if (top >= 0 && bottom >= top) result = { top: top / cellH, bottom: (bottom + 1) / cellH };
+    } catch (error) {
+        result = null;
+    }
+    perImage.set(key, result);
+    return result;
+}
+
+// idle/walk 在屏幕上真正占的高度与脚底线：纸娃娃身体加上头饰层的合成外框。
+// 施法条带是自带头部的整身图，必须对齐这个合成框，否则起手瞬间角色会整体缩小一圈。
+function getHeroBodyDrawBox(direction) {
+    if (typeof PaperdollSystem === 'undefined' || !PaperdollSystem.enabled) return null;
+    const bodyImage = PaperdollSystem.getBodyImage();
+    if (!bodyImage) return null;
+    const calibration = PaperdollSystem.calibration || {};
+    const body = calibration.body || {};
+    const baseHeight = calibration.baseHeight || 96;
+    const bodyScale = (body.directionalScales && body.directionalScales[direction]) || body.scale || 1.02;
+    const bodyHeight = baseHeight * bodyScale;
+    const row = (PaperdollSystem.rowMap && PaperdollSystem.rowMap[direction]) || 0;
+    const bodyRows = getSpriteCellContentRows(bodyImage, row, 0, PaperdollSystem.cols, PaperdollSystem.rows);
+    if (!bodyRows) return null;
+    const bodyTop = -ACTOR_RENDER_SIZE + bodyRows.top * bodyHeight;
+    let top = bodyTop;
+    let feet = -ACTOR_RENDER_SIZE + bodyRows.bottom * bodyHeight;
+    const headImage = PaperdollSystem.getHeadImage();
+    if (headImage) {
+        const headCal = PaperdollSystem.getHeadCalibration(PaperdollSystem.currentHeadKey);
+        const headScale = (headCal.directionalScales && headCal.directionalScales[direction]) || headCal.scale || 0.54;
+        const headHeight = baseHeight * headScale;
+        const headOffset = (headCal.directionalOffsets && headCal.directionalOffsets[direction]) || { x: 0, y: 0 };
+        const headRows = getSpriteCellContentRows(headImage, row, 0, PaperdollSystem.cols, PaperdollSystem.rows);
+        if (headRows) {
+            top = Math.min(top, -ACTOR_RENDER_SIZE + (headOffset.y || 0) + headRows.top * headHeight);
+            feet = Math.max(feet, -ACTOR_RENDER_SIZE + (headOffset.y || 0) + headRows.bottom * headHeight);
+        }
+    }
+    return { height: feet - top, feet };
+}
+
+// 施法条带走的是 128px 单元格通道，idle/walk 走纸娃娃身体：两者若不同标尺，起手瞬间人物会整体缩小一圈。
+// 把条带缩放到纸娃娃身体同样的高度，并把脚底对齐到同一条地面线，切换帧时尺寸就不再跳变。
+function fitCastStripToHeroBody(frame, direction) {
+    const bounds = frame && frame.contentBounds;
+    const box = getHeroBodyDrawBox(direction);
+    if (!bounds || !(bounds.sh > 0) || !box || !(box.height > 0)) return frame;
+    const cell = 128;
+    const renderScale = box.height * cell / (bounds.sh * ACTOR_RENDER_SIZE);
+    const feetFraction = (bounds.sy + bounds.sh) / cell;
+    return { ...frame, renderScale, offsetY: box.feet + ACTOR_RENDER_SIZE * renderScale * (1 - feetFraction) };
+}
+
 function getHeroFrame(direction) {
     const action = getCurrentHeroAction();
     const safeDirection = action === 'sit' ? 'front' : normalizeHeroDirection(direction);
@@ -3661,7 +3741,7 @@ function getHeroFrame(direction) {
         const strip = action === 'death'
             ? ArtSamples.heroSheetFrame('heroDeathSheet', Math.min(3, Math.floor((player.deathTimer || 0) / 0.9 * 4)), safeDirection.toLowerCase().includes('right'))
             : ArtSamples.heroSheetFrame('heroCastSheet', Math.floor(progress * 4), safeDirection.toLowerCase().includes('left'));
-        if (strip) return strip;
+        if (strip) return action === 'cast' ? fitCastStripToHeroBody(strip, safeDirection) : strip;
     }
 
     // ========== 4x4 Paperdoll (Body & Head Calibrated Layering) ==========
