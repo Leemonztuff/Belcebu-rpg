@@ -44,6 +44,9 @@ const ArtSamples = (() => {
     for (const [key,[bodyHeight,footX]] of Object.entries(heroCalibration)) {
         definitions[key].calibration = {bodyHeight,targetHeight:80,footX};
     }
+// 施法条带同样是主角身体：手动量出它在 320px 原图里的身高占比，让 4 帧共用一把身体标尺。
+// 少了这把标尺就会退回通用缩放（按最大边压到 88px），cast 帧只有约 60px，切换时会整个人缩小一圈。
+    definitions.heroCastSheet.calibration = {bodyHeight:250/320,targetHeight:120,footX:[0.5,0.5,0.5,0.5]};
 
     function heroFrame(action, direction, frameIndex) {
         const diagonals = ['frontLeft', 'frontRight', 'backLeft', 'backRight'];

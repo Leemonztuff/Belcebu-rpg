@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Corregido: el hechizo (cast) se dibujaba un 30% más chico que caminar y estar quieto
+- El síntoma era un salto de tamaño en el frame exacto en que el jugador lanzaba un hechizo: el personaje se encogía de golpe y volvía a su tamaño al terminar.
+- La causa no era la tira en sí sino que **cast e idle/walk no comparten la misma escala**. `idle` y `walk` usan el paperdoll (cuerpo `Npc-06.webp` + capa de cabeza `base_head_spritesheet.png`), que mide 120px en pantalla; `cast` usa la tira cruda `Npc-06_cast_animation.webp`, que entra por la vía `raw: true` y se saltaba la calibración, cayendo en el escalado genérico de respaldo (comprimir el lado mayor a 88px) y dejando el cuerpo en ~60px.
+- Ahora `heroCastSheet` tiene calibración propia (`bodyHeight 250/320`, `targetHeight 120`) en `art-samples.js`, y además `fitCastStripToHeroBody()` mide la silueta compuesta (cuerpo **más** el vuelo de la capa de cabeza) y escala cada frame de cast a esa misma altura, con el pie anclado a la misma línea de suelo.
+- Las 4 frames de cast ahora miden **120px con el pie en +10**, idéntico a `idle` (antes 84px). Verificado frame por frame en los 8 sentidos por el camino real de dibujo, no a ojo.
+- La medición de píxeles se cachea por imagen con un `WeakMap`, así que el ajuste no cuesta un escaneo de píxeles por frame.
+
+**Impacto:** puramente visual. No cambia daño, cooldown, maná, alcance ni ninguna otra mecánica. Cubierto por el test de regresión nuevo `tools/test-hero-cast-scale.js`.
+
 ### str deja de ser super-lineal (rendimientos decrecientes)
 - La fórmula de daño era `(baseDmg + str / 5) * (1 + str * 0.05)`. El factor multiplicativo **compilaba**, así que cada punto de str rendía más que el anterior y volcar 499 puntos en str era siempre la única jugada óptima.
 - Ahora es una **curva cóncava**: `STR_DAMAGE_SCALE * str ^ STR_DAMAGE_EXP` con exponente `0.9` (< 1). Cada punto vale un poco menos que el anterior, y **no hay techo duro**, así que no se crea una nueva zona muerta como la que tenía dex.
