@@ -520,7 +520,7 @@ La constante `STR_DAMAGE_SCALE` (0.6) es la palanca: subirla suaviza el nerf a c
 
 ### 死亡动画与特效生命周期修复
 - **垂死扭曲修正：** 清理了 `drawActorSprite` 在层级路径中因 `renderScale` 造成的绝对 `topY` 偏移。波浪/死亡条带已改为图层（`buildHeroStripLayers` 自带 `drawW/drawH` 与 `offsetY`），不再叠加全局下沉，倒地 torso 正确对齐身体标尺。
-- **特效生命周期：** 增加 `vfx-manifest.js` 的 `spark` 条目，并在 `spawnVfxEffect` 投射 `life`（优先取 manifest `life`/`maxLife`，其次 `frameCount / fps`）；渲染循环额外检测 `life <= 0` 并移除，确保特效按生命结束清理。
+- **特效生命周期：** `spawnVfxEffect` 统一投射 `life`（优先取 manifest `life`/`maxLife`，否则等于序列帧时长），帧循环按 `life -= dt` 递减并在 `life <= 0` 时回收，特效结束不再只依赖 `age >= duration` 单一判据。
 - **存档初始化顺序：** 修正 `tools/test-art-coverage.js`，在 `PaperdollSystem.initDefaults()` 前先给 `player` 初始化完整字段，避免 paperdoll 分支引用未赋值的 `player`。验证均为 `PASS`。
 ## v7.11 - 2026-05-07
 
