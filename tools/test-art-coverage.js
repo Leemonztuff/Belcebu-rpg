@@ -125,7 +125,11 @@ function assertFrame(frame, key, row, col, monster=false) {
 (async () => {
     await scope.art.ensure(Object.keys(scope.art.definitions));
     await Promise.all(ready);
-    // 主角条带现在走纸娃娃图层才能拿到真正的屏幕尺寸；不初始化就没有 body/head 图层。
+    // 让纸娃娃先能取到玩家字段，再初始化默认图片，避免 paperdoll 分支引用未赋值的 player
+    scope.player = {
+        heroAction: 'idle', heroActionTimer: 0, heroActionDuration: 1, animTime: 0,
+        moving: false, wasMoving: false, isDead: false, deathTimer: 0, died: false
+    };
     scope.pd.initDefaults();
     for (let attempt = 0; attempt < 200 && !(scope.pd.getBodyImage() && scope.pd.getHeadImage()); attempt++) {
         await new Promise(resolve => setTimeout(resolve, 25));
