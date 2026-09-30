@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const { loadImage } = require('@napi-rs/canvas');
 const root = path.resolve(__dirname, '..');
 async function test() {
-    const game = fs.readFileSync(path.join(root, 'game.js'), 'utf8');
+    const game = fs.readFileSync(path.join(root, 'src/core/game.js'), 'utf8');
     const variant = vm.runInNewContext(`(${game.match(/function getTerrainVariant\([^]*?\n\}/)[0]})`);
     const counts = [0, 0, 0];
     for (let row = 0; row < 60; row++) for (let col = 0; col < 60; col++) {

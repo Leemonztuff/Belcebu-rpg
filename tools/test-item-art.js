@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const {loadImage,createCanvas}=require('@napi-rs/canvas');
-const root=path.resolve(__dirname,'..'),code=fs.readFileSync(path.join(root,'item-system.js'),'utf8');
+const root=path.resolve(__dirname,'..'),code=fs.readFileSync(path.join(root,'src/systems/inventory/item-system.js'),'utf8');
 const context=vm.createContext({itemSpritesLoaded:true,RARITY:{RARE:3},getRarityColor:()=> '#abcdef'});
 vm.runInContext(code.slice(0,code.indexOf('// Stat tracking:'))+';globalThis.frames=ITEM_FRAMES;',context);
 const cases=[

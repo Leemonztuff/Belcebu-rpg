@@ -1,5 +1,5 @@
 const fs=require('node:fs'),vm=require('node:vm'),path=require('node:path'),assert=require('node:assert/strict');
-const game=fs.readFileSync(path.join(__dirname,'../game.js'),'utf8');
+const game=fs.readFileSync(path.join(__dirname,'../src/core/game.js'),'utf8');
 function extract(name){const start=game.indexOf(`function ${name}(`);if(start<0)return null;let depth=0;for(let i=game.indexOf('{',start);i<game.length;i++){if(game[i]==='{')depth++;if(game[i]==='}'&&!--depth)return game.slice(start,i+1);}}
 const scope=vm.createContext({TILE_SIZE:40,MAP_WIDTH:7,MAP_HEIGHT:7,mapData:Array.from({length:7},()=>Array(7).fill(1)),player:{x:100,y:100,radius:12}});
 vm.runInContext(extract('isWall'),scope);

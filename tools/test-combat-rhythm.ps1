@@ -29,7 +29,7 @@ function Assert-NotContains {
     }
 }
 
-$gamePath = Join-Path $Root 'game.js'
+$gamePath = Join-Path $Root 'src/core/game.js'
 $indexPath = Join-Path $Root 'index.html'
 
 $game = Get-Content -LiteralPath $gamePath -Raw
@@ -62,6 +62,6 @@ Assert-NotContains -Text $rangedBlock -Pattern 'if (!hasLineOfSight(attacker.x, 
 Assert-Contains -Text $specterBlock -Pattern "type: 'lightning_ball'" -Message 'FAIL: specter delayed attack does not emit lightning projectiles.'
 # 幽魂退避与墙体边界由 test-specter-wall-retreat.js 行为回放验证。
 Assert-NotContains -Text $specterBlock -Pattern 'if (!hasLineOfSight(attacker.x, attacker.y, player.x, player.y)) return;' -Message 'FAIL: specter delayed impact cancels the lightning shot after windup.'
-Assert-VersionedAsset -Index $index -Root $root -Asset 'game.js'
+Assert-VersionedAsset -Index $index -Root $root -Asset 'src/core/game.js'
 
 Write-Host 'PASS: combat rhythm contract'

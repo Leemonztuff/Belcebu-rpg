@@ -3,7 +3,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const root = path.resolve(__dirname, '..');
-const game = fs.readFileSync(path.join(root, 'game.js'), 'utf8');
+const game = fs.readFileSync(path.join(root, 'src/core/game.js'), 'utf8');
 function extract(name) {
     const start = game.indexOf(`function ${name}(`);
     assert(start >= 0);
@@ -22,7 +22,7 @@ function createWorld() {
         player: { x: 60, y: 60, radius: 12, targetItem: null, skills: { thunder: 0 } }
     });
     vm.runInContext(['isWall', 'canPlayerOccupy', 'movePlayerWithCollision', 'hasLineOfSight'].map(extract).join('\n'), world);
-    vm.runInContext(fs.readFileSync(path.join(root, 'auto-battle.js'), 'utf8') + '\nglobalThis.auto = AutoBattle;', world);
+    vm.runInContext(fs.readFileSync(path.join(root, 'src/systems/combat/auto-battle.js'), 'utf8') + '\nglobalThis.auto = AutoBattle;', world);
     world.tick = () => { now += 1000 / 60; };
     world.auto.hasCachedLineOfSightTo = t => world.hasLineOfSight(world.player.x, world.player.y, t.x, t.y);
     return world;

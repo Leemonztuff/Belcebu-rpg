@@ -3,7 +3,7 @@ const path = require('path');
 const vm = require('vm');
 
 const root = path.resolve(__dirname, '..');
-const source = fs.readFileSync(path.join(root, 'auto-battle.js'), 'utf8');
+const source = fs.readFileSync(path.join(root, 'src/systems/combat/auto-battle.js'), 'utf8');
 
 let skillCalls = 0;
 let moveCalls = 0;

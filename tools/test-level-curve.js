@@ -6,9 +6,9 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
-const gameSource = fs.readFileSync(path.join(root, 'game.js'), 'utf8');
+const gameSource = fs.readFileSync(path.join(root, 'src/core/game.js'), 'utf8');
 const constantsScope = vm.createContext({ console });
-vm.runInContext(fs.readFileSync(path.join(root, 'constants.js'), 'utf8') + '\nthis.cfg = GAME_CONFIG;', constantsScope);
+vm.runInContext(fs.readFileSync(path.join(root, 'src/data/constants.js'), 'utf8') + '\nthis.cfg = GAME_CONFIG;', constantsScope);
 const CURVE = constantsScope.cfg.LEVEL_CURVE;
 const getXpForLevel = n => CURVE.getXpForLevel(n);
 

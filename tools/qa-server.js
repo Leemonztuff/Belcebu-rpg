@@ -34,8 +34,8 @@ const server = http.createServer((request, response) => {
     const url = new URL(request.url, 'http://127.0.0.1');
     if (request.method !== 'GET' && request.method !== 'HEAD') { response.writeHead(405); response.end(); return; }
     function send(body, type='text/javascript') { response.setHeader('Content-Type', `${type}; charset=utf-8`); response.end(request.method === 'HEAD' ? undefined : body); }
-    if (url.pathname === '/online.js') { send(offline); return; }
-    if (url.pathname === '/market.js' || url.pathname === '/pocketbase.umd.js') { send('// 本地 QA：线上服务禁用'); return; }
+    if (url.pathname === '/src/net/online.js') { send(offline); return; }
+    if (url.pathname === '/src/net/market.js' || url.pathname === '/pocketbase.umd.js') { send('// 本地 QA：线上服务禁用'); return; }
     if (url.pathname === '/sw.js') { send("self.addEventListener('activate',()=>self.registration.unregister());"); return; }
     if (url.pathname === '/qa.html') {
         const original = fs.readFileSync(path.join(root, 'index.html'), 'utf8');

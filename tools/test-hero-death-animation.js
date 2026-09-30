@@ -1,5 +1,5 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
-const code=fs.readFileSync(require('node:path').join(__dirname,'../game.js'),'utf8');
+const code=fs.readFileSync(require('node:path').join(__dirname,'../src/core/game.js'),'utf8');
 function extract(name){const start=code.indexOf(`function ${name}(`);assert(start>=0,name);let depth=0;for(let i=code.indexOf('{',start);i<code.length;i++){if(code[i]==='{')depth++;if(code[i]==='}'&&--depth===0)return code.slice(start,i+1);}}
 let shows=0;
 const scope=vm.createContext({hasTalent:()=>false,player:{hp:0,isDead:false,x:0,y:0},SkillBranchSystem:{reset(){}},

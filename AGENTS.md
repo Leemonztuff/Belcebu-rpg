@@ -12,20 +12,22 @@ HTML5 Canvas 与原生 JavaScript ARPG。使用传统脚本和共享全局状态
 
 ## 模块导航
 
+浏览器端源码在 `src/` 下按层组织：`core/` 主循环集成、`data/` 静态数据、`systems/` 玩法系统、`ui/` 面板、`i18n/` 多语言、`graphics/` 渲染特效、`audio/` 音频、`net/` 在线功能；根目录保留 index.html、style.css、入口脚本（server.js、sw.js）和资源文件。目录结构与迁移路线见 ARCHITECTURE.md。
+
 | 文件 | 职责 |
 |---|---|
-| game.js | 主循环、player 状态、地图/楼层、伤害及主流程集成 |
-| constants.js | 品质、技能和游戏配置常量 |
-| enemy-system.js、combat-tactics.js | 敌人/Boss 能力、预警及战术机制 |
-| auto-battle.js | 自动战斗、路径与拾取策略 |
-| save-system.js | IndexedDB 存档和迁移 |
-| item-system.js、items-data.js、set-items.js | 物品、掉落、装备及套装 |
-| skill-branches.js、abyss-system.js、daily-quest.js | 技能分支、深渊和每日任务 |
-| ui-panels.js、index.html、style.css | 面板、页面结构与样式 |
-| audio.js | 音效与背景音乐 |
-| sprite-renderer.js、art/、vfx-manifest.js | 精灵与特效资源 |
-| elemental-3d.js、physical-3d.js、shield-3d.js | 元素、物理和护盾立体效果 |
-| online.js、market.js、pb_hooks/ | 在线功能、市场及服务端钩子 |
+| src/core/game.js | 主循环、player 状态、地图/楼层、伤害及主流程集成 |
+| src/data/constants.js | 品质、技能和游戏配置常量 |
+| src/systems/ai/enemy-system.js、src/systems/combat/combat-tactics.js | 敌人/Boss 能力、预警及战术机制 |
+| src/systems/combat/auto-battle.js | 自动战斗、路径与拾取策略 |
+| src/systems/save/save-system.js | IndexedDB 存档和迁移 |
+| src/systems/inventory/item-system.js、src/data/items-data.js、src/data/set-items.js | 物品、掉落、装备及套装 |
+| src/systems/skill/skill-branches.js、src/systems/progression/abyss-system.js、daily-quest.js | 技能分支、深渊和每日任务 |
+| src/ui/ui-panels.js、index.html、style.css | 面板、页面结构与样式 |
+| src/audio/audio.js | 音效与背景音乐 |
+| src/graphics/sprite-renderer.js、art/、vfx-manifest.js | 精灵与特效资源 |
+| src/graphics/elemental-3d.js、physical-3d.js、shield-3d.js | 元素、物理和护盾立体效果 |
+| src/net/online.js、market.js、pb_hooks/ | 在线功能、市场及服务端钩子 |
 
 按符号搜索实现，例如 gameLoop、enterFloor、takeDamage、SaveSystem、AutoBattle。数值、数据结构和准确位置以当前代码为准，不在指令文件复制。
 

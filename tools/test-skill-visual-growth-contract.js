@@ -3,7 +3,7 @@ const path = require('path');
 const vm = require('vm');
 
 const root = path.resolve(__dirname, '..');
-const source = fs.readFileSync(path.join(root, 'game.js'), 'utf8');
+const source = fs.readFileSync(path.join(root, 'src/core/game.js'), 'utf8');
 
 function extractFunction(name) {
     const start = source.indexOf(`function ${name}(`);

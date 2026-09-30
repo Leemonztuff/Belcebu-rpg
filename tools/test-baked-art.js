@@ -26,7 +26,7 @@ const root = path.resolve(__dirname, '..');
     const manifest = readManifest(root, true);
     const runtime = vm.createContext({console, Image: class {}, ArtAtlasManifest: manifest,
         document: {createElement: () => {throw new Error('预烘焙运行时禁止创建归一化扫描画布');}}});
-    for (const file of ['art-samples.js', 'environment-art.js']) vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), runtime, {filename: file});
+    for (const file of ['src/graphics/art-samples.js', 'src/graphics/environment-art.js']) vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), runtime, {filename: file});
     vm.runInContext('this.art = ArtSamples; this.environment = EnvironmentArt;', runtime);
     assert.deepEqual(Object.keys(manifest).sort(), definitions.map(d => d.file).sort(), '所有实际定义均须烘焙，且清单不能包含过期定义');
     for (const definition of definitions) {
@@ -83,7 +83,7 @@ const root = path.resolve(__dirname, '..');
     // raw 条带必须被烘焙目录排除，并在运行时按 alpha 自行归一化，不得依赖清单。
     const rawScope = vm.createContext({console, Image: class {}, ArtAtlasManifest: manifest,
         document: {createElement: () => createCanvas(1, 1)}});
-    for (const file of ['art-samples.js']) vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), rawScope, {filename: file});
+    for (const file of ['src/graphics/art-samples.js']) vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), rawScope, {filename: file});
     vm.runInContext('this.art = ArtSamples;', rawScope);
     const rawKeys = Object.keys(rawScope.art.definitions).filter(key => rawScope.art.definitions[key].raw);
     assert.deepEqual(rawKeys, ['heroCastSheet', 'heroDeathSheet'], '仅施法/倒地条带标记为 raw');

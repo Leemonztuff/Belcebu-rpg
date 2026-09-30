@@ -13,7 +13,7 @@ const context = { console, Set, Date, Math, player: { gold: 100, inventory: [nul
   } }
 };
 vm.createContext(context);
-vm.runInContext(fs.readFileSync('market.js', 'utf8') + '\nglobalThis.market = MarketSystem;', context);
+vm.runInContext(fs.readFileSync('src/net/market.js', 'utf8') + '\nglobalThis.market = MarketSystem;', context);
 context.market.closeViewPanel = () => {};
 context.market.loadStalls = () => {};
 (async () => {

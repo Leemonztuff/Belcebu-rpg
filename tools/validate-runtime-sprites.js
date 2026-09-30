@@ -10,7 +10,7 @@ const root=process.argv[2]||path.resolve(__dirname,'..');
         assert.equal(size.height,definition.rows*128,definition.key+' height');
         assert(size.hasAlpha,definition.key+' alpha');
     }
-    const scope={window:{}};vm.runInNewContext(fs.readFileSync(path.join(root,'vfx-manifest.js'),'utf8'),scope);
+    const scope={window:{}};vm.runInNewContext(fs.readFileSync(path.join(root,'src/graphics/vfx-manifest.js'),'utf8'),scope);
     const vfx=scope.window.VFX_SPRITE_MANIFEST;
     const size=await sharp(path.join(root,vfx.sheet.split('?')[0])).metadata();
     for(const [name,effect]of Object.entries(vfx.effects)){

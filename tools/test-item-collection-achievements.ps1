@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'assert-versioned-asset.ps1')
 
 $root = Split-Path -Parent $PSScriptRoot
-$itemSystemPath = Join-Path $root 'item-system.js'
+$itemSystemPath = Join-Path $root 'src/systems/inventory/item-system.js'
 $indexPath = Join-Path $root 'index.html'
 $itemSystem = Get-Content -LiteralPath $itemSystemPath -Raw
 $index = Get-Content -LiteralPath $indexPath -Raw
@@ -54,6 +54,6 @@ Assert-NotContains -Text $dropLoot -Pattern "trackAchievement\('collect_unique'\
 Assert-NotContains -Text $dropLoot -Pattern "trackAchievement\('collect_set_item'\)" -Message 'FAIL: set collection achievement still triggers on loot drop.'
 Assert-Contains -Text $addItemToInventory -Pattern "trackAchievement\('collect_unique'\)" -Message 'FAIL: unique collection achievement is not triggered after inventory pickup succeeds.'
 Assert-Contains -Text $addItemToInventory -Pattern "trackAchievement\('collect_set_item'\)" -Message 'FAIL: set collection achievement is not triggered after inventory pickup succeeds.'
-Assert-VersionedAsset -Index $index -Root $root -Asset 'item-system.js'
+Assert-VersionedAsset -Index $index -Root $root -Asset 'src/systems/inventory/item-system.js'
 
 Write-Host 'PASS: item collection achievement contract'

@@ -3,7 +3,7 @@ const vm = require('vm');
 const assert = require('assert/strict');
 const path = require('path');
 const root = path.resolve(__dirname, '..');
-const source = fs.readFileSync(path.join(root, 'ui-panels.js'), 'utf8');
+const source = fs.readFileSync(path.join(root, 'src/ui/ui-panels.js'), 'utf8');
 const elements = new Map();
 const context = { document: { getElementById(id) { return elements.get(id); } }, window: { innerWidth: 1280, innerHeight: 720, addEventListener() {} }, requestAnimationFrame(fn) { fn(); } };
 vm.createContext(context);

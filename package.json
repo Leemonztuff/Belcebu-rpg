@@ -8,7 +8,7 @@
     "dev": "node server.js",
     "start": "node server.js",
     "build": "echo 'Static app ready'",
-    "lint": "node --check game.js && node --check server.js"
+    "lint": "node --check src/core/game.js && node --check server.js"
   },
   "author": "Hardcore Travel <brunolucas.bar@gmail.com>",
   "dependencies": {

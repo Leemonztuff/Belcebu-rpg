@@ -55,17 +55,17 @@ assert.ok(
     'FAIL: index.html missing updated style.css version'
 );
 assert.ok(
-    /game\.js\?v=\d+/.test(indexContent),
+    /src\/core\/game\.js\?v=\d+/.test(indexContent),
     'FAIL: index.html missing updated game.js version'
 );
 assert.ok(
-    /i18n\.js\?v=\d+/.test(indexContent),
+    /src\/i18n\/i18n\.js\?v=\d+/.test(indexContent),
     'FAIL: index.html missing updated i18n.js version'
 );
 console.log('✓ Test 3 Passed: index.html contains notification slots and bumped version assets');
 
 // 3. Validate i18n translations
-const i18nContent = fs.readFileSync('i18n.js', 'utf-8');
+const i18nContent = fs.readFileSync('src/i18n/i18n.js', 'utf-8');
 assert.ok(
     i18nContent.includes('achievement_unlocked: "¡Logro Desbloqueado!"'),
     'FAIL: i18n.js missing Spanish achievement_unlocked'
@@ -197,7 +197,7 @@ const sandbox = {
     clearTimeout: () => {}
 };
 
-const gameCode = fs.readFileSync('game.js', 'utf-8');
+const gameCode = fs.readFileSync('src/core/game.js', 'utf-8');
 
 // Extract the achievement notification and completeAchievement code to run in sandbox
 const funcMatch = gameCode.match(/const achievementNotifyQueue = \[\];[\s\S]*?function completeAchievement\(achievement\) \{[\s\S]*?SaveSystem\.save\(\);\s*\}/);

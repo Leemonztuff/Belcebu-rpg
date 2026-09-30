@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'assert-versioned-asset.ps1')
 
 $root = Split-Path -Parent $PSScriptRoot
-$gamePath = Join-Path $root 'game.js'
+$gamePath = Join-Path $root 'src/core/game.js'
 $indexPath = Join-Path $root 'index.html'
 $stylePath = Join-Path $root 'style.css'
 
@@ -17,6 +17,6 @@ function Assert-Contains {
 
 Assert-Contains -Text $style -Pattern '#notification-area\s*\{[\s\S]*?top:\s*60px;' -Message 'FAIL: notification area top anchor changed; review Boss HUD safe offset.'
 Assert-Contains -Text $game -Pattern 'function drawBossHealthHud\(\)[\s\S]*?const y = 78;' -Message 'FAIL: Boss HUD should be below the top notification area.'
-Assert-VersionedAsset -Index $index -Root $root -Asset 'game.js'
+Assert-VersionedAsset -Index $index -Root $root -Asset 'src/core/game.js'
 
 Write-Host 'PASS: boss HUD position contract'

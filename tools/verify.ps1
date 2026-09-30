@@ -63,12 +63,17 @@ try {
         $checks.Add([pscustomobject]@{ Name = 'dependency:@napi-rs/canvas'; Passed = $false; ExitCode = 1 })
     }
 
-    $productionRoots = @($Root, (Join-Path $Root 'pb_hooks')) | Where-Object { Test-Path -LiteralPath $_ -PathType Container }
-    foreach ($directory in $productionRoots) {
-        foreach ($file in (Get-ChildItem -LiteralPath $directory -Filter '*.js' -File | Sort-Object Name)) {
-            $relativePath = $file.FullName.Substring($Root.Length + 1)
-            Invoke-Check -Name "syntax:$relativePath" -Command $node -Arguments @('--check', $file.FullName)
+    # 语法检查：根目录顶层（server.js/sw.js 等）+ src/ 与 pb_hooks/ 递归
+    $syntaxFiles = @(Get-ChildItem -LiteralPath $Root -Filter '*.js' -File)
+    foreach ($sub in @('src', 'pb_hooks')) {
+        $subPath = Join-Path $Root $sub
+        if (Test-Path -LiteralPath $subPath -PathType Container) {
+            $syntaxFiles += Get-ChildItem -LiteralPath $subPath -Filter '*.js' -File -Recurse
         }
+    }
+    foreach ($file in ($syntaxFiles | Sort-Object FullName)) {
+        $relativePath = $file.FullName.Substring($Root.Length + 1)
+        Invoke-Check -Name "syntax:$relativePath" -Command $node -Arguments @('--check', $file.FullName)
     }
     $toolsRoot = Join-Path $Root 'tools'
     foreach ($test in (Get-ChildItem -LiteralPath $toolsRoot -Filter 'test-*.ps1' -File | Sort-Object Name)) {

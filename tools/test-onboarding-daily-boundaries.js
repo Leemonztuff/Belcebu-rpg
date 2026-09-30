@@ -3,8 +3,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 process.env.TZ = 'Asia/Shanghai';
-const source = fs.readFileSync(path.join(__dirname, '..', 'game.js'), 'utf8');
-const dailySource = fs.readFileSync(path.join(__dirname, '..', 'daily-quest.js'), 'utf8');
+const source = fs.readFileSync(path.join(__dirname, '..', 'src/core/game.js'), 'utf8');
+const dailySource = fs.readFileSync(path.join(__dirname, '..', 'src/systems/progression/daily-quest.js'), 'utf8');
 function extract(name) {
     const start = source.indexOf(`function ${name}(`);
     assert.notEqual(start, -1, name);

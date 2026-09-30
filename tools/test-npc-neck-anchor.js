@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const root = path.resolve(__dirname, '..');
-const game = fs.readFileSync(path.join(root, 'game.js'), 'utf8');
+const game = fs.readFileSync(path.join(root, 'src/core/game.js'), 'utf8');
 
 function extract(source, marker) {
     const start = source.indexOf(marker);

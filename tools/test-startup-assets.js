@@ -1,6 +1,6 @@
 // 启动不得下载已被新图集替代的历史整图。
 const fs=require('node:fs'),assert=require('node:assert/strict');
-const game=fs.readFileSync(require('node:path').join(__dirname,'../game.js'),'utf8');
+const game=fs.readFileSync(require('node:path').join(__dirname,'../src/core/game.js'),'utf8');
 for(const name of ['spriteSheet','heroSpriteSheet','monsterSpriteSheet','envSpriteSheet','destructibleSpriteSheet']) {
     assert(!new RegExp(`\\b${name}\\.src\\s*=`).test(game),`${name} 不应在启动时下载历史整图`);
 }

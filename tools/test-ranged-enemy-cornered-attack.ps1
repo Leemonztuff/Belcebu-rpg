@@ -16,7 +16,7 @@ function Assert-Contains {
     }
 }
 
-$gamePath = Join-Path $Root 'game.js'
+$gamePath = Join-Path $Root 'src/core/game.js'
 $game = Get-Content -LiteralPath $gamePath -Raw
 
 Assert-Contains -Text $game -Pattern 'function startRangedEnemyAttack' -Message 'FAIL: ranged enemies should share one ranged attack entry.'

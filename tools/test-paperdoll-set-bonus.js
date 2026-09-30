@@ -52,11 +52,11 @@ const sandbox = {
 const context = vm.createContext(sandbox);
 
 // Run items-data.js and set-items.js
-vm.runInContext(fs.readFileSync('./items-data.js', 'utf8') + '; globalThis.BASE_ITEMS = BASE_ITEMS; globalThis.BASE_ARMOR_SPRITES = BASE_ARMOR_SPRITES;', context);
-vm.runInContext(fs.readFileSync('./set-items.js', 'utf8') + '; globalThis.SET_ITEMS = SET_ITEMS; globalThis.SET_BODY_SPRITES = SET_BODY_SPRITES;', context);
+vm.runInContext(fs.readFileSync('./src/data/items-data.js', 'utf8') + '; globalThis.BASE_ITEMS = BASE_ITEMS; globalThis.BASE_ARMOR_SPRITES = BASE_ARMOR_SPRITES;', context);
+vm.runInContext(fs.readFileSync('./src/data/set-items.js', 'utf8') + '; globalThis.SET_ITEMS = SET_ITEMS; globalThis.SET_BODY_SPRITES = SET_BODY_SPRITES;', context);
 
 // Extract PaperdollSystem, NPCSpriteSystem, calculateEquippedSets from game.js
-const gameCode = fs.readFileSync('./game.js', 'utf8');
+const gameCode = fs.readFileSync('./src/core/game.js', 'utf8');
 
 const pdStart = gameCode.indexOf('const PaperdollSystem = {');
 const pdEnd = gameCode.indexOf('// ========== NPC Spritesheet System');

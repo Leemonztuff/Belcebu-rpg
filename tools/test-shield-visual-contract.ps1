@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'assert-versioned-asset.ps1')
 
 $root = Split-Path -Parent $PSScriptRoot
-$game = Get-Content -LiteralPath (Join-Path $root 'game.js') -Raw
+$game = Get-Content -LiteralPath (Join-Path $root 'src/core/game.js') -Raw
 $index = Get-Content -LiteralPath (Join-Path $root 'index.html') -Raw
 
 function Assert-Contains {
@@ -33,6 +33,6 @@ Assert-Contains -Text $game -Pattern 'ctx\.arc\(0, -24, 34, Math\.PI \* 0\.10, M
 Assert-Contains -Text $game -Pattern 'backGradient\.addColorStop\(0, ''rgba\(255,255,255,0\)''\);' -Message 'FAIL: shield center should remain transparent.'
 Assert-NotContains -Text $game -Pattern 'const scaleX = 0\.6;' -Message 'FAIL: old flattened oval shield scale is still present.'
 Assert-NotContains -Text $game -Pattern 'innerGlow\.addColorStop\(1, shieldColor \+ pulseAlpha\.toFixed\(2\) \+ ''\)''\);' -Message 'FAIL: old solid shield fill is still present.'
-Assert-VersionedAsset -Index $index -Root $root -Asset 'game.js'
+Assert-VersionedAsset -Index $index -Root $root -Asset 'src/core/game.js'
 
 Write-Host 'PASS: shield visual contract'

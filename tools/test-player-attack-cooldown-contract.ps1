@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 $root = Split-Path -Parent $PSScriptRoot
-$game = Get-Content -LiteralPath (Join-Path $root 'game.js') -Raw
+$game = Get-Content -LiteralPath (Join-Path $root 'src/core/game.js') -Raw
 
 function Assert-Contains {
     param([string]$Text, [string]$Pattern, [string]$Message)

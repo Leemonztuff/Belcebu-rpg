@@ -1,5 +1,5 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),path=require('node:path');
-const game=fs.readFileSync(path.join(__dirname,'../game.js'),'utf8');
+const game=fs.readFileSync(path.join(__dirname,'../src/core/game.js'),'utf8');
 function extract(name){const start=game.indexOf(`function ${name}(`);let d=0;for(let i=game.indexOf('{',start);i<game.length;i++){if(game[i]==='{')d++;if(game[i]==='}'&&!--d)return game.slice(start,i+1);}}
 let now=1000;const scope={Date:{now:()=>now},player:{graphicsQuality:'high'},cachedUI:{},COLORS:{critical:'orange',poison:'green',ice:'blue',lightning:'yellow'},damageNumbers:[],DamageNumberPool:{acquire:p=>p},particles:[],ParticlePool:{acquire:p=>p},getParticleConfig:()=>({maxParticles:200})};vm.createContext(scope);
 for(const name of ['createDamageNumber','shouldUseDomDamageNumber','isPlainDamageNumberValue','createImpactParticles','drawImpactFacet'])vm.runInContext(extract(name),scope);

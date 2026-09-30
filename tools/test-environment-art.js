@@ -5,8 +5,8 @@ const vm = require('node:vm');
 const {createCanvas, loadImage} = require('@napi-rs/canvas');
 const root = path.resolve(__dirname, '..');
 const scope = vm.createContext({console, Image: class {}, document: {createElement: () => createCanvas(1, 1)}});
-vm.runInContext(fs.readFileSync(path.join(root, 'art-samples.js'), 'utf8'), scope);
-vm.runInContext(fs.readFileSync(path.join(root, 'environment-art.js'), 'utf8') + '\nthis.environment = EnvironmentArt;this.art = ArtSamples;', scope);
+vm.runInContext(fs.readFileSync(path.join(root, 'src/graphics/art-samples.js'), 'utf8'), scope);
+vm.runInContext(fs.readFileSync(path.join(root, 'src/graphics/environment-art.js'), 'utf8') + '\nthis.environment = EnvironmentArt;this.art = ArtSamples;', scope);
 const environment = scope.environment;
 assert.ok(environment.visualHeights.town_barrel < 40, '木桶必须低于人物身体高度');
 assert.ok(environment.visualHeights.town_flag > environment.visualHeights.town_bucket * 3, '旗杆和水桶需要不同物理尺度');
@@ -44,7 +44,7 @@ for (const name of Object.keys(environment.scenicFrames)) assert.ok(environment.
         assert.equal(intact.y, broken.y); assert.notEqual(intact.x, broken.x);
     }
     for (const type of Object.keys(environment.floorFrames)) for (const seed of [0, 1, 2, -3, 917.3]) assert.ok(environment.floor(type, seed).contentBounds);
-    const game = fs.readFileSync(path.join(root, 'game.js'), 'utf8');
+    const game = fs.readFileSync(path.join(root, 'src/core/game.js'), 'utf8');
     const scenicConfig = game.slice(game.indexOf('const SCENIC_PROP_LIBRARY'), game.indexOf('function getScenicPropPool'));
     const townStart = game.indexOf('const townDefs =');
     const townConfig = game.slice(townStart, game.indexOf('const occupied =', townStart));

@@ -1,8 +1,8 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict'),path=require('node:path');
-const root=path.join(__dirname,'..'),game=fs.readFileSync(path.join(root,'game.js'),'utf8');
+const root=path.join(__dirname,'..'),game=fs.readFileSync(path.join(root,'src/core/game.js'),'utf8');
 function extract(name){const start=game.indexOf(`function ${name}(`);assert(start>=0);let depth=0;for(let i=game.indexOf('{',start);i<game.length;i++){if(game[i]==='{')depth++;if(game[i]==='}'&&!--depth)return game.slice(start,i+1);}}
 const noop=()=>{},scope={console,player:{x:80,y:0,hp:100,maxHp:100,isDead:false,invincibleTimer:0,resistances:{fire:0,lightning:0}},enemies:[],scheduledMonsterAttacks:[],projectiles:[],particles:[],AudioSys:{play:noop},createDamageNumber:noop,createParticle:noop,updateUI:noop,checkPlayerDeath:noop,showNotification:noop,spawnMonsterAttackTelegraph:noop,triggerMonsterAction:noop,setMonsterFacingToward:noop,spawnVfxEffect:noop,isWall:()=>false,hasLineOfSight:()=>true,resolveEnemyMeleeImpact:()=>{scope.player.hp-=10;return 10;}};
-vm.createContext(scope);vm.runInContext(fs.readFileSync(path.join(root,'combat-tactics.js'),'utf8')+'\nglobalThis.tactics=CombatTactics;',scope);vm.runInContext(fs.readFileSync(path.join(root,'enemy-system.js'),'utf8'),scope);
+vm.createContext(scope);vm.runInContext(fs.readFileSync(path.join(root,'src/systems/combat/combat-tactics.js'),'utf8')+'\nglobalThis.tactics=CombatTactics;',scope);vm.runInContext(fs.readFileSync(path.join(root,'src/systems/ai/enemy-system.js'),'utf8'),scope);
 for(const name of ['createMonsterAttackAim','startMonsterAttack','processScheduledMonsterAttacks'])vm.runInContext(extract(name),scope);
 const t=scope.tactics;
 function enemy(extra={}){const e={x:0,y:0,hp:1000,maxHp:1000,dmg:20,cooldown:0,...extra};scope.enemies.push(e);return e;}

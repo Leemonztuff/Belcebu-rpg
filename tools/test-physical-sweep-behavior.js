@@ -3,7 +3,7 @@ const path = require('path');
 const vm = require('vm');
 
 const root = path.resolve(__dirname, '..');
-const gameSource = fs.readFileSync(path.join(root, 'game.js'), 'utf8');
+const gameSource = fs.readFileSync(path.join(root, 'src/core/game.js'), 'utf8');
 
 function extractFunction(source, name) {
     const start = source.indexOf(`function ${name}(`);
@@ -166,7 +166,7 @@ if (!context.slashEffects.some(s => s.growthStyle === 'halfmoon') || !context.sl
 
 console.log('PASS: physical sweep behavior');
 
-vm.runInContext(fs.readFileSync(path.join(root,'physical-3d.js'),'utf8')+'\nglobalThis.depth=Physical3D;',context);
+vm.runInContext(fs.readFileSync(path.join(root,'src/graphics/physical-3d.js'),'utf8')+'\nglobalThis.depth=Physical3D;',context);
 context.player.graphicsQuality='high';context.createImpactParticles=()=>{};context.slashEffects=[];
 for(let i=0;i<20;i++)context.createPhysicalSweepEffect(0,0,0,3,4,true);
 if(context.slashEffects.length!==6)throw new Error('立体横扫必须限制同时事件数量');

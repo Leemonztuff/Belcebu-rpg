@@ -5,7 +5,7 @@ const path = require('node:path');
 const { createCanvas, loadImage } = require('@napi-rs/canvas');
 const scope = { console, Image: class {}, document: { createElement: () => createCanvas(1, 1) } };
 vm.createContext(scope);
-vm.runInContext(fs.readFileSync(path.join(__dirname, '../art-samples.js'), 'utf8') + ';this.art = ArtSamples;', scope);
+vm.runInContext(fs.readFileSync(path.join(__dirname, '../src/graphics/art-samples.js'), 'utf8') + ';this.art = ArtSamples;', scope);
 const source = createCanvas(80, 40);
 const ctx = source.getContext('2d');
 ctx.fillStyle = '#fff'; ctx.fillRect(10, 10, 10, 20);

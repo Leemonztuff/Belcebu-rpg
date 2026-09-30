@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'assert-versioned-asset.ps1')
 
 $root = Split-Path -Parent $PSScriptRoot
-$autoBattlePath = Join-Path $root 'auto-battle.js'
+$autoBattlePath = Join-Path $root 'src/systems/combat/auto-battle.js'
 $indexPath = Join-Path $root 'index.html'
 
 $autoBattle = Get-Content -LiteralPath $autoBattlePath -Raw
@@ -28,6 +28,6 @@ Assert-NotContains -Text $autoBattle -Pattern 'dist < 70;' -Message 'FAIL: hard-
 Assert-NotContains -Text $autoBattle -Pattern 'target\?\.radius \|\| 12' -Message 'FAIL: target radius fallback hides corrupted enemy data.'
 Assert-NotContains -Text $autoBattle -Pattern 'player\.radius \|\| 15' -Message 'FAIL: player radius fallback hides corrupted player data.'
 Assert-Contains -Text $autoBattle -Pattern 'dist <= this\.getMeleeEngageDistance\(target\)' -Message 'FAIL: exact melee boundary should still attack instead of stalling.'
-Assert-VersionedAsset -Index $index -Root $root -Asset 'auto-battle.js'
+Assert-VersionedAsset -Index $index -Root $root -Asset 'src/systems/combat/auto-battle.js'
 
 Write-Host 'PASS: auto battle boss engage distance contract'

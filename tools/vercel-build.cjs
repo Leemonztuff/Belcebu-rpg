@@ -13,19 +13,10 @@ fs.mkdirSync(out, { recursive: true });
 const files = [
   'index.html', 'manifest.json', 'sw.js', 'bun.lock',
   'style.css', 'skill-art.css',
-  'i18n.js', 'i18n-content-bestiary.js', 'i18n-content-changelog.js',
-  'i18n-content-gear.js', 'i18n-content-progression.js', 'i18n-content-skills.js',
-  'i18n-content-social.js',
-  'changelog.js', 'constants.js', 'items-data.js', 'set-items.js', 'runes-data.js',
-  'item-system.js', 'audio.js', 'daily-quest.js', 'talent-draft.js', 'abyss-system.js',
-  'share-card.js', 'season-system.js', 'return-bonus.js', 'save-system.js',
-  'combat-tactics.js', 'enemy-system.js', 'auto-battle.js', 'vfx-manifest.js',
-  'sprite-renderer.js', 'gsap.min.js', 'gsap-animations.js', 'ui-panels.js',
-  'pixi.min.js', 'pixi-effects.js', 'elemental-3d.js', 'physical-3d.js',
-  'shield-3d.js', 'skill-art.js', 'skill-branches.js', 'environment-art.js',
-  'art-samples.js', 'online.js', 'market.js', 'pocketbase.umd.js', 'game.js'
+  'gsap.min.js', 'pixi.min.js', 'pixi-effects.js', 'pocketbase.umd.js'
 ];
-const dirs = ['art', 'public'];
+// src/ 是全部浏览器端游戏代码，整体复制保持子目录结构
+const dirs = ['art', 'public', 'src'];
 
 for (const f of files) {
   if (fs.existsSync(path.join(root, f))) fs.copyFileSync(path.join(root, f), path.join(out, f));

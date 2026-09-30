@@ -2,11 +2,11 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'assert-versioned-asset.ps1')
 
 $root = Split-Path -Parent $PSScriptRoot
-$game = Get-Content -LiteralPath (Join-Path $root 'game.js') -Raw
+$game = Get-Content -LiteralPath (Join-Path $root 'src/core/game.js') -Raw
 $style = Get-Content -LiteralPath (Join-Path $root 'style.css') -Raw
 $index = Get-Content -LiteralPath (Join-Path $root 'index.html') -Raw
-$online = Get-Content -LiteralPath (Join-Path $root 'online.js') -Raw
-$constants = Get-Content -LiteralPath (Join-Path $root 'constants.js') -Raw
+$online = Get-Content -LiteralPath (Join-Path $root 'src/net/online.js') -Raw
+$constants = Get-Content -LiteralPath (Join-Path $root 'src/data/constants.js') -Raw
 
 function Assert-Contains {
     param([string]$Text, [string]$Pattern, [string]$Message)
@@ -58,8 +58,8 @@ Assert-Contains -Text $game -Pattern "telegraph:\s*'projectile'" -Message 'FAIL:
 Assert-Contains -Text $game -Pattern "telegraph:\s*'melee'" -Message 'FAIL: melee monster attacks should mark melee telegraphs.'
 
 Assert-VersionedAsset -Index $index -Root $root -Asset 'style.css'
-Assert-VersionedAsset -Index $index -Root $root -Asset 'constants.js'
-Assert-VersionedAsset -Index $index -Root $root -Asset 'game.js'
-Assert-VersionedAsset -Index $index -Root $root -Asset 'online.js'
+Assert-VersionedAsset -Index $index -Root $root -Asset 'src/data/constants.js'
+Assert-VersionedAsset -Index $index -Root $root -Asset 'src/core/game.js'
+Assert-VersionedAsset -Index $index -Root $root -Asset 'src/net/online.js'
 
 Write-Host 'PASS: mobile UI and warning contract'

@@ -2,8 +2,8 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'assert-versioned-asset.ps1')
 
 $root = Split-Path -Parent $PSScriptRoot
-$game = Get-Content -LiteralPath (Join-Path $root 'game.js') -Raw
-$enemySystem = Get-Content -LiteralPath (Join-Path $root 'enemy-system.js') -Raw
+$game = Get-Content -LiteralPath (Join-Path $root 'src/core/game.js') -Raw
+$enemySystem = Get-Content -LiteralPath (Join-Path $root 'src/systems/ai/enemy-system.js') -Raw
 $index = Get-Content -LiteralPath (Join-Path $root 'index.html') -Raw
 
 function Assert-Contains {
@@ -23,6 +23,6 @@ Assert-Contains -Text $game -Pattern 'sourceName: p\.sourceName' -Message 'FAIL:
 Assert-Contains -Text $game -Pattern 'sourceName: attacker\.name' -Message 'FAIL: enemy projectiles should snapshot the attacker name when fired.'
 Assert-Contains -Text $game -Pattern 'sourceName: enemy\.name' -Message 'FAIL: scatter volley projectiles should snapshot the enemy name when fired.'
 Assert-Contains -Text $enemySystem -Pattern 'sourceName: boss\.name' -Message 'FAIL: boss tentacle projectiles should snapshot the boss name when fired.'
-Assert-VersionedAsset -Index $index -Root $root -Asset 'enemy-system.js'
+Assert-VersionedAsset -Index $index -Root $root -Asset 'src/systems/ai/enemy-system.js'
 
 Write-Host 'PASS: player damage source contract'

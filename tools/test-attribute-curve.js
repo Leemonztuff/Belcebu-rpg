@@ -4,11 +4,11 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
-const gameSource = fs.readFileSync(path.join(root, 'game.js'), 'utf8');
+const gameSource = fs.readFileSync(path.join(root, 'src/core/game.js'), 'utf8');
 
 // Load constants.js to read GAME_CONFIG.ATTRIBUTE_CURVE directly.
 const constantsScope = vm.createContext({ console });
-vm.runInContext(fs.readFileSync(path.join(root, 'constants.js'), 'utf8') + '\nthis.cfg = GAME_CONFIG;', constantsScope);
+vm.runInContext(fs.readFileSync(path.join(root, 'src/data/constants.js'), 'utf8') + '\nthis.cfg = GAME_CONFIG;', constantsScope);
 const CURVE = constantsScope.cfg.ATTRIBUTE_CURVE;
 
 // Extract the real updateStats so the test locks shipped behaviour, not a copy of the formula.

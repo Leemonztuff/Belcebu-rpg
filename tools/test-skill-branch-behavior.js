@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
-const game = fs.readFileSync(path.join(root, 'game.js'), 'utf8');
+const game = fs.readFileSync(path.join(root, 'src/core/game.js'), 'utf8');
 function extract(name) {
     const start = game.indexOf(`function ${name}(`); let depth = 0;
     for (let i = game.indexOf(') {', start) + 2; i < game.length; i++) {
@@ -32,8 +32,8 @@ const ctx = vm.createContext({console, Math, Set, Map, WeakMap,
     takeDamage(e, dmg) {if(ctx.system)dmg=ctx.system.amplify(e,dmg);const n = typeof dmg === 'number' ? dmg : Object.values(dmg).reduce((a,b) => a+b,0); e.hp -= n; if (e.hp <= 0) e.dead = true;},
     getEnemyAtCursor: () => ctx.enemies[0], getDestructibleAtCursor: () => null
 });
-vm.runInContext(fs.readFileSync(path.join(root, 'constants.js'), 'utf8'), ctx);
-const modulePath = path.join(root, 'skill-branches.js');
+vm.runInContext(fs.readFileSync(path.join(root, 'src/data/constants.js'), 'utf8'), ctx);
+const modulePath = path.join(root, 'src/systems/skill/skill-branches.js');
 if (fs.existsSync(modulePath)) vm.runInContext(fs.readFileSync(modulePath, 'utf8') + '\nglobalThis.system = SkillBranchSystem;', ctx);
 vm.runInContext(extract('castSkill'), ctx);
 vm.runInContext(extract('findNearestEnemy'), ctx);
@@ -144,7 +144,7 @@ test('真实闪避入口不会附加感电麻痹',()=>{setup('thunder','shock');
 test('真实闪避入口不会附加灼烧或传播',()=>{setup('fireball','burn','spread');const e=enemy(),other=enemy(180);e.dodgeChance=1;cast('fireball');hit(ctx.projectiles[0],e);assert.equal(e.hp,10000);assert.equal(s.states.has(e),false);assert.equal(s.states.has(other),false);});
 test('真实护甲入口保持分支箭与基础箭单箭伤害相同',()=>{setup('multishot','pierce');const e=enemy();e.armor=100;ctx.takeDamage(e,80,true);const baseline=10000-e.hp;e.hp=10000;cast('multishot');hit(ctx.projectiles[0],e);assert.equal(10000-e.hp,baseline);});
 ctx.takeDamage=simpleDamage;
-vm.runInContext(fs.readFileSync(path.join(root,'elemental-3d.js'),'utf8')+'\nglobalThis.depthEffects=Elemental3D;',ctx);
+vm.runInContext(fs.readFileSync(path.join(root,'src/graphics/elemental-3d.js'),'utf8')+'\nglobalThis.depthEffects=Elemental3D;',ctx);
 test('立体陨石开关不改变伤害、落地时间、燃烧区域和耗蓝',()=>{
     function run(on){setup('fireball','explosion','meteor');ctx.player.graphicsQuality=on?'high':'low';const target=enemy();cast('fireball');const p=ctx.projectiles[0];p.age=.29;s.projectile(p,.29);assert.equal(target.hp,10000);p.age=.3;s.projectile(p,.01);return {hp:target.hp,mp:ctx.player.mp,life:p.life,areas:s.areas.map(a=>({radius:a.radius,time:a.time,damage:a.damage}))};}
     assert.deepEqual(run(true),run(false));
@@ -156,7 +156,7 @@ test('立体雷暴开关不改变半秒伤害、范围和持续时间',()=>{
 }
 if (failures) process.exitCode=1;
 
-vm.runInContext(fs.readFileSync(path.join(root,'combat-tactics.js'),'utf8')+'\nglobalThis.tactics=CombatTactics;',ctx);
+vm.runInContext(fs.readFileSync(path.join(root,'src/systems/combat/combat-tactics.js'),'utf8')+'\nglobalThis.tactics=CombatTactics;',ctx);
 vm.runInContext(extract('takeDamage'),ctx);
 test('真实受伤入口计算破绽增伤与正面护甲',()=>{
  setup('fireball','explosion');const e=enemy();e.monsterType='skeleton';e.facingDirection='left';e.blockChance=1;

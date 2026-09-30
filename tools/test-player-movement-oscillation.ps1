@@ -2,8 +2,8 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'assert-versioned-asset.ps1')
 
 $root = Split-Path -Parent $PSScriptRoot
-$game = Get-Content -LiteralPath (Join-Path $root 'game.js') -Raw
-$autoBattle = Get-Content -LiteralPath (Join-Path $root 'auto-battle.js') -Raw
+$game = Get-Content -LiteralPath (Join-Path $root 'src/core/game.js') -Raw
+$autoBattle = Get-Content -LiteralPath (Join-Path $root 'src/systems/combat/auto-battle.js') -Raw
 $index = Get-Content -LiteralPath (Join-Path $root 'index.html') -Raw
 
 function Assert-Contains {
@@ -30,6 +30,6 @@ Assert-Contains -Text $game -Pattern 'tryResolvePendingNpcInteraction\(\);' -Mes
 Assert-Contains -Text $autoBattle -Pattern 'player\.targetX = pathPos\.x;' -Message 'FAIL: regression contract should cover AutoBattle path targets.'
 Assert-Contains -Text $autoBattle -Pattern 'player\.targetX = selected\.x;' -Message 'FAIL: regression contract should cover AutoBattle pickup targets.'
 
-Assert-VersionedAsset -Index $index -Root $root -Asset 'game.js'
+Assert-VersionedAsset -Index $index -Root $root -Asset 'src/core/game.js'
 
 Write-Host 'PASS: player movement oscillation contract'

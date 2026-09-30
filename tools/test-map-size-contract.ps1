@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'assert-versioned-asset.ps1')
 
 $root = Split-Path -Parent $PSScriptRoot
-$constants = Get-Content -LiteralPath (Join-Path $root 'constants.js') -Raw
+$constants = Get-Content -LiteralPath (Join-Path $root 'src/data/constants.js') -Raw
 $index = Get-Content -LiteralPath (Join-Path $root 'index.html') -Raw
 
 function Assert-Contains {
@@ -15,6 +15,6 @@ Assert-Contains -Text $constants -Pattern 'const MAP_HEIGHT = 60;' -Message 'FAI
 Assert-Contains -Text $constants -Pattern 'MAX_ENEMIES:\s*80' -Message 'FAIL: smaller maps need a lower monster cap.'
 Assert-Contains -Text $constants -Pattern 'INITIAL_ENEMIES:\s*36' -Message 'FAIL: smaller maps need a scaled initial population.'
 Assert-Contains -Text $constants -Pattern 'AUTO_BATTLE_ENEMY_TARGET:\s*70' -Message 'FAIL: auto battle target should be scaled for smaller maps.'
-Assert-VersionedAsset -Index $index -Root $root -Asset 'constants.js'
+Assert-VersionedAsset -Index $index -Root $root -Asset 'src/data/constants.js'
 
 Write-Host 'PASS: map size contract'

@@ -6,14 +6,14 @@ const assert = require('node:assert');
 console.log('=== RUNNING RUNES AND SOCKETS SYSTEM REGRESSION TESTS ===');
 
 // 1. 测试文件存在性与加载
-const runesDataCode = fs.readFileSync('./runes-data.js', 'utf8');
+const runesDataCode = fs.readFileSync('./src/data/runes-data.js', 'utf8');
 const indexHtml = fs.readFileSync('./index.html', 'utf8');
-const itemSystemCode = fs.readFileSync('./item-system.js', 'utf8');
-const gameCode = fs.readFileSync('./game.js', 'utf8');
+const itemSystemCode = fs.readFileSync('./src/systems/inventory/item-system.js', 'utf8');
+const gameCode = fs.readFileSync('./src/core/game.js', 'utf8');
 const styleCss = fs.readFileSync('./style.css', 'utf8');
 
 // 2. 验证 index.html 引用
-assert(indexHtml.includes('runes-data.js'), 'index.html must include runes-data.js');
+assert(indexHtml.includes('src/data/runes-data.js'), 'index.html must include runes-data.js');
 console.log('✓ Test 1 Passed: index.html correctly includes runes-data.js');
 
 // 3. 构建测试沙箱环境
@@ -94,7 +94,7 @@ console.log('✓ Test 5 Passed: getSocketAndRunewordStats accurately computes to
 
 // 8. 验证样式与死亡保护愤怒Buff逻辑
 assert(styleCss.includes('.slot-sockets-bar') && styleCss.includes('.socket-pip'), 'style.css must have socket bar styles');
-assert(gameCode.includes('player.rageBonus') && gameCode.includes('💢'), 'game.js must implement death protection rageBonus');
+assert(gameCode.includes('player.rageBonus') && gameCode.includes('💢'), 'src/core/game.js must implement death protection rageBonus');
 console.log('✓ Test 6 Passed: style.css and death protection integration verified');
 
 console.log('ALL RUNES AND SOCKETS REGRESSION TESTS PASSED PERFECTLY!');

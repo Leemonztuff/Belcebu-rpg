@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 
 $root = Split-Path -Parent $PSScriptRoot
-$gamePath = Join-Path $root 'game.js'
+$gamePath = Join-Path $root 'src/core/game.js'
 $game = Get-Content -LiteralPath $gamePath -Raw
 
 if ($game -notmatch 'function finalizeEnemyDeath\(') {

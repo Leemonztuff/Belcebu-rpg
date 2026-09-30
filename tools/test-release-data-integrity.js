@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const vm = require('node:vm');
 const assert = require('node:assert/strict');
-const source = fs.readFileSync('online.js', 'utf8');
+const source = fs.readFileSync('src/net/online.js', 'utf8');
 const c = vm.createContext({ console, player: {}, window: {}, localStorage: { getItem: () => null, setItem() {} }, pb: {}, setTimeout, clearTimeout,
     I18N: { tr: (ns, key, fallback = '') => fallback || key, t: key => key, trPath: (ns, key, field, fallback = '') => fallback || key } });
 vm.runInContext(source.slice(source.indexOf('const CloudSync'), source.indexOf('const ChatSystem')) + ';globalThis.cloud=CloudSync;globalThis.online=OnlineSystem;', c);
@@ -54,7 +54,7 @@ vm.runInContext(source.slice(source.indexOf('const CloudSync'), source.indexOf('
     console.log('PASS 旧档周成绩基线、周增量、跨周清零、服务端周榜排序');
 
     const s = vm.createContext({ console, window: {}, Settings: {}, I18N: { tr: (ns, key, fallback = '') => fallback || key, t: key => key } });
-    vm.runInContext(fs.readFileSync('save-system.js', 'utf8') + ';globalThis.save=SaveSystem;', s);
+    vm.runInContext(fs.readFileSync('src/systems/save/save-system.js', 'utf8') + ';globalThis.save=SaveSystem;', s);
     const req = {}; const readTx = { objectStore: () => ({ get: () => req }) };
     s.readTx = readTx; vm.runInContext('db={transaction:()=>readTx}', s);
     const loading = s.save.loadSlot(1); req.onerror();

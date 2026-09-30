@@ -1,5 +1,5 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
-const source=fs.readFileSync(require('node:path').join(__dirname,'../game.js'),'utf8');
+const source=fs.readFileSync(require('node:path').join(__dirname,'../src/core/game.js'),'utf8');
 const begin=source.indexOf("} else if (e.ai === 'specter') {")+"} else if (e.ai === 'specter') {".length;
 const end=source.indexOf('} else {\n            // normalchase AI',begin);
 assert(begin>0&&end>begin);

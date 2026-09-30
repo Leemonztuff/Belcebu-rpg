@@ -4,7 +4,7 @@ const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const path = require('node:path');
 const root = path.resolve(__dirname, '..');
-const game = fs.readFileSync(path.join(root, 'game.js'), 'utf8');
+const game = fs.readFileSync(path.join(root, 'src/core/game.js'), 'utf8');
 function extract(marker) {
     const start = game.indexOf(marker);
     assert(start >= 0, marker);
@@ -17,7 +17,7 @@ function extract(marker) {
 }
 const scope = vm.createContext({console, player:{x:-100,y:0,isDead:false}, AudioSys:{play(){}},
     ArtSamples:{frame:(key,row,col,flipX)=>({key,row,col,flipX})}});
-vm.runInContext(fs.readFileSync(path.join(root,'enemy-system.js'),'utf8'),scope);
+vm.runInContext(fs.readFileSync(path.join(root,'src/systems/ai/enemy-system.js'),'utf8'),scope);
 vm.runInContext(game.match(/const ACTOR_RENDER_SIZE\s*=\s*\d+;/)[0],scope);
 for (const name of ['MONSTER_SPRITE_CONFIG','MONSTER_ACTION_PRIORITY']) vm.runInContext(extract(`const ${name} =`)+';',scope);
 for (const name of ['getEnemyMonsterType','getMonsterActionPriority','triggerMonsterAction','directionFromDelta','setMonsterFacingToward','getMonsterSpriteDirection','getMonsterSpriteFrame']) vm.runInContext(extract(`function ${name}(`),scope);

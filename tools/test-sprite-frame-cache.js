@@ -5,7 +5,7 @@ const vm = require('vm');
 const path = require('path');
 const { createCanvas } = require('@napi-rs/canvas');
 const root = path.resolve(__dirname, '..');
-const game = fs.readFileSync(path.join(root, 'game.js'), 'utf8');
+const game = fs.readFileSync(path.join(root, 'src/core/game.js'), 'utf8');
 const makeCanvas = () => createCanvas(1, 1);
 const document = { createElement: makeCanvas };
 const fixture = createCanvas(8, 8);
@@ -33,7 +33,7 @@ for (const [sheet, processed, loaded] of [
     assert.equal(context.result, fixture, `${sheet} 应直接使用透明源，不重新抠色或复制全图`);
 }
 const context = vm.createContext({ document });
-vm.runInContext(fs.readFileSync(path.join(root, 'sprite-renderer.js'), 'utf8') + '\nthis.api = SpriteRenderer;', context);
+vm.runInContext(fs.readFileSync(path.join(root, 'src/graphics/sprite-renderer.js'), 'utf8') + '\nthis.api = SpriteRenderer;', context);
 const renderer = context.api;
 const cache = renderer.createTintCache({ maxFrames: 2, maxBytes: 128 });
 const frame = { x: 4, y: 0, width: 4, height: 4 };

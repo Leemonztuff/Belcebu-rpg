@@ -1,6 +1,6 @@
 // 使用 draw() 的真实可见实体队列，防止选帧正确但死亡实体在绘制前被过滤。
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
-const code=fs.readFileSync(require('node:path').join(__dirname,'../game.js'),'utf8');
+const code=fs.readFileSync(require('node:path').join(__dirname,'../src/core/game.js'),'utf8');
 const start=code.indexOf('renderEnemies.length = 0;');
 const end=code.indexOf('renderEnemies.sort(',start);
 assert(start>=0&&end>start);

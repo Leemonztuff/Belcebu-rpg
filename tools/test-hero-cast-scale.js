@@ -7,7 +7,7 @@ const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const { createCanvas, Image } = require('@napi-rs/canvas');
 const root = path.resolve(__dirname, '..');
-const game = fs.readFileSync(path.join(root, 'game.js'), 'utf8');
+const game = fs.readFileSync(path.join(root, 'src/core/game.js'), 'utf8');
 function extract(source, marker) {
     const start = source.indexOf(marker);
     assert.ok(start >= 0, `缺少真实代码入口 ${marker}`);
@@ -32,8 +32,8 @@ class LocalImage extends Image {
     }
 }
 const scope = vm.createContext({ console, Image: LocalImage, document: { createElement: () => createCanvas(1, 1) }, player: {} });
-vm.runInContext(fs.readFileSync(path.join(root, 'sprite-renderer.js'), 'utf8') + ';globalThis.HeroTintCache=SpriteRenderer.createTintCache();', scope);
-vm.runInContext(fs.readFileSync(path.join(root, 'art-samples.js'), 'utf8') + ';globalThis.art=ArtSamples;', scope);
+vm.runInContext(fs.readFileSync(path.join(root, 'src/graphics/sprite-renderer.js'), 'utf8') + ';globalThis.HeroTintCache=SpriteRenderer.createTintCache();', scope);
+vm.runInContext(fs.readFileSync(path.join(root, 'src/graphics/art-samples.js'), 'utf8') + ';globalThis.art=ArtSamples;', scope);
 vm.runInContext(game.match(/const ACTOR_RENDER_SIZE\s*=\s*\d+;/)[0], scope);
 vm.runInContext(game.match(/const PAPERDOLL_MOTION_PROFILES = Object\.freeze\(\{[\s\S]*?\n\}\);/)[0], scope);
 vm.runInContext(game.match(/const ACTIVE_PAPERDOLL_MOTION_PROFILE\s*=\s*'[^']+';/)[0], scope);

@@ -1,7 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const fixture=fs.readFileSync(path.join(__dirname,'qa-fixture.js'),'utf8');
-const game=fs.readFileSync(path.join(__dirname,'../game.js'),'utf8');
+const game=fs.readFileSync(path.join(__dirname,'../src/core/game.js'),'utf8');
 const wall=game.match(/function isWall\([^\n]+/)[0];
 const losStart=game.indexOf('function hasLineOfSight('),losEnd=game.indexOf('\n}',losStart);
 const castStart=fixture.indexOf('function cast()');

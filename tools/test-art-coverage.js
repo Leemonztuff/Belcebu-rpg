@@ -5,8 +5,8 @@ const vm = require('node:vm');
 const assert = require('node:assert/strict');
 const { createCanvas, Image } = require('@napi-rs/canvas');
 const root = path.resolve(__dirname, '..');
-const game = fs.readFileSync(path.join(root, 'game.js'), 'utf8');
-const enemySource = fs.readFileSync(path.join(root, 'enemy-system.js'), 'utf8');
+const game = fs.readFileSync(path.join(root, 'src/core/game.js'), 'utf8');
+const enemySource = fs.readFileSync(path.join(root, 'src/systems/ai/enemy-system.js'), 'utf8');
 function extract(source, marker) {
     const start = source.indexOf(marker);
     assert.ok(start >= 0, `缺少真实代码入口 ${marker}`);
@@ -39,9 +39,9 @@ const scope = vm.createContext({
     player: {}, heroSpritesLoaded: true, monsterSpritesLoaded: true,
     processedHeroSprites: createCanvas(512, 2816), processedMonsterSprites: createCanvas(512, 14848)
 });
-vm.runInContext(fs.readFileSync(path.join(root, 'sprite-renderer.js'), 'utf8') + ';globalThis.HeroTintCache=SpriteRenderer.createTintCache();globalThis.MonsterTintCache=SpriteRenderer.createTintCache();', scope);
-vm.runInContext(fs.readFileSync(path.join(root, 'art-samples.js'), 'utf8') + ';globalThis.art=ArtSamples;', scope);
-vm.runInContext(fs.readFileSync(path.join(root, 'environment-art.js'), 'utf8'), scope);
+vm.runInContext(fs.readFileSync(path.join(root, 'src/graphics/sprite-renderer.js'), 'utf8') + ';globalThis.HeroTintCache=SpriteRenderer.createTintCache();globalThis.MonsterTintCache=SpriteRenderer.createTintCache();', scope);
+vm.runInContext(fs.readFileSync(path.join(root, 'src/graphics/art-samples.js'), 'utf8') + ';globalThis.art=ArtSamples;', scope);
+vm.runInContext(fs.readFileSync(path.join(root, 'src/graphics/environment-art.js'), 'utf8'), scope);
 vm.runInContext(game.match(/const ACTOR_RENDER_SIZE\s*=\s*\d+;/)[0], scope);
 vm.runInContext('globalThis.actorRenderSize = ACTOR_RENDER_SIZE;', scope);
 vm.runInContext('const npcSpriteCellRectCache = new WeakMap();', scope);

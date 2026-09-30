@@ -43,13 +43,13 @@
 
     <div id="game-container">
         <canvas id="gameCanvas"></canvas>
-        <div id="art-loading" role="status" aria-live="polite" hidden>Loading area assets…</div>
+        <div id="art-loading" role="status" aria-live="polite" hidden>Loading area assetsâ€¦</div>
         <!-- Low-HP visual warning: red screen edge glow -->
         <div id="low-hp-vignette"></div>
         <div class="ui-layer">
             <div id="floor-display" data-i18n="floor_display_town">Rogue Encampment (Town)</div>
             <button id="quick-lang-btn" class="quick-lang-btn" onclick="toggleQuickLanguage()" title="Cambiar Idioma / Change Language">
-                <span id="quick-lang-text">🌐 ES</span>
+                <span id="quick-lang-text">ðŸŒ ES</span>
             </button>
             <div id="hell-indicator" data-i18n="hell_mode"
                 style="display:none; position: absolute; top: 70px; left: 10px; color: #ff4444; font-weight: bold; font-size: 16px;">
@@ -58,15 +58,15 @@
             <div class="auto-battle-container" onmousedown="event.stopPropagation()">
                 <div id="auto-battle-btn" class="auto-battle-btn" onclick="toggleAutoBattle()" title="Toggle auto battle"
                     data-i18n-title="auto_battle_tip">
-                    <span id="auto-battle-icon">⚔️</span>
+                    <span id="auto-battle-icon">âš”ï¸</span>
                     <span id="auto-battle-text" data-i18n="auto_battle_btn">Auto Battle(F)</span>
                 </div>
                 <div id="auto-battle-settings-btn" class="auto-battle-settings-btn" onclick="togglePanel('auto-battle')"
-                    title="Auto battle settings" data-i18n-title="auto_battle_settings">⚙️</div>
+                    title="Auto battle settings" data-i18n-title="auto_battle_settings">âš™ï¸</div>
                 <!-- Auto battle earnings HUD -->
                 <div id="auto-battle-fee-hud" class="auto-battle-fee-hud">
-                    <div><span data-i18n="auto_battle_earned">Earned:</span><span id="auto-battle-gold">0</span>💰</div>
-                    <div><span data-i18n="auto_battle_fee">Fee:</span><span id="auto-battle-fee">0</span>💰</div>
+                    <div><span data-i18n="auto_battle_earned">Earned:</span><span id="auto-battle-gold">0</span>ðŸ’°</div>
+                    <div><span data-i18n="auto_battle_fee">Fee:</span><span id="auto-battle-fee">0</span>ðŸ’°</div>
                 </div>
             </div>
             <div id="quest-tracker"></div>
@@ -74,9 +74,9 @@
             <!-- World chat box -->
             <div id="chat-box" class="chat-box" onmousedown="event.stopPropagation()">
                 <div class="chat-header" onclick="toggleChatBox()">
-                    <span class="chat-title" data-i18n="world_chat">💬 World Channel</span>
+                    <span class="chat-title" data-i18n="world_chat">ðŸ’¬ World Channel</span>
                     <span class="chat-unread" id="chat-unread"></span>
-                    <span class="chat-toggle" id="chat-toggle-icon">▼</span>
+                    <span class="chat-toggle" id="chat-toggle-icon">â–¼</span>
                 </div>
                 <div class="chat-body" id="chat-body">
                     <div class="chat-messages" id="chat-messages">
@@ -85,13 +85,13 @@
                     <!-- Quick emote panel -->
                     <div id="emote-panel" class="emote-panel" style="display:none;">
                         <div class="emote-row emote-emoji">
-                            <span class="emote-item" data-emote="👍">👍</span>
-                            <span class="emote-item" data-emote="😂">😂</span>
-                            <span class="emote-item" data-emote="💪">💪</span>
-                            <span class="emote-item" data-emote="🎉">🎉</span>
-                            <span class="emote-item" data-emote="😭">😭</span>
-                            <span class="emote-item" data-emote="❤️">❤️</span>
-                            <span class="emote-item" data-emote="👏">👏</span>
+                            <span class="emote-item" data-emote="ðŸ‘">ðŸ‘</span>
+                            <span class="emote-item" data-emote="ðŸ˜‚">ðŸ˜‚</span>
+                            <span class="emote-item" data-emote="ðŸ’ª">ðŸ’ª</span>
+                            <span class="emote-item" data-emote="ðŸŽ‰">ðŸŽ‰</span>
+                            <span class="emote-item" data-emote="ðŸ˜­">ðŸ˜­</span>
+                            <span class="emote-item" data-emote="â¤ï¸">â¤ï¸</span>
+                            <span class="emote-item" data-emote="ðŸ‘">ðŸ‘</span>
                         </div>
                         <div class="emote-row emote-text">
                             <span class="emote-item" data-emote="666" data-i18n="chat_quick_666">666</span>
@@ -103,7 +103,7 @@
                     </div>
                     <div class="chat-input-area">
                         <input type="text" id="chat-input" placeholder="Type a message..." data-i18n-placeholder="chat_placeholder" maxlength="50" autocomplete="off">
-                        <button id="emote-btn" class="emote-btn" onclick="toggleEmotePanel(event)">😀</button>
+                        <button id="emote-btn" class="emote-btn" onclick="toggleEmotePanel(event)">ðŸ˜€</button>
                         <button id="chat-send-btn" onclick="sendChatMessage()" data-i18n="chat_send">Send</button>
                     </div>
                 </div>
@@ -118,9 +118,9 @@
             <div id="start-screen">
                 <!-- Selector de Idioma / Language Selector -->
                 <div class="lang-selector-bar">
-                    <button class="lang-pill-btn" data-lang="es" onclick="I18N.setLanguage('es')">🇪🇸 Español</button>
-                    <button class="lang-pill-btn" data-lang="en" onclick="I18N.setLanguage('en')">🇬🇧 English</button>
-                    <button class="lang-pill-btn" data-lang="zh" onclick="I18N.setLanguage('zh')">🇨🇳 中文</button>
+                    <button class="lang-pill-btn" data-lang="es" onclick="I18N.setLanguage('es')">ðŸ‡ªðŸ‡¸ EspaÃ±ol</button>
+                    <button class="lang-pill-btn" data-lang="en" onclick="I18N.setLanguage('en')">ðŸ‡¬ðŸ‡§ English</button>
+                    <button class="lang-pill-btn" data-lang="zh" onclick="I18N.setLanguage('zh')">ðŸ‡¨ðŸ‡³ ä¸­æ–‡</button>
                 </div>
                 <picture>
                     <source media="(max-width: 768px) and (orientation: portrait)" srcset="art/brand-terrain/cover-mobile.webp?v=2026090803">
@@ -131,7 +131,7 @@
 
                 <!-- Cloud sync status bar -->
                 <div id="cloud-sync-bar" class="cloud-sync-bar" style="display:none;">
-                    <span class="cloud-icon">☁️</span>
+                    <span class="cloud-icon">â˜ï¸</span>
                     <span id="cloud-sync-status">Loading...</span>
                     <button id="btn-cloud-sync" class="cloud-btn" onclick="CloudSync.showSyncDialog()" data-i18n="cloud_sync">Cloud Sync</button>
                     <span id="cloud-sync-code" style="display:none;"></span>
@@ -153,7 +153,7 @@
             <!-- Update announcement panel -->
             <div id="changelog-panel" class="changelog-panel" style="display: none;">
                 <div class="changelog-header">
-                    <span data-i18n="changelog_title">📜 Update Notes</span>
+                    <span data-i18n="changelog_title">ðŸ“œ Update Notes</span>
                 </div>
                 <div class="changelog-content" id="changelog-content">
                     <!-- Generated dynamically -->
@@ -198,13 +198,13 @@
                 <div class="stat-row"><span data-i18n="stat_ias">Attack Speed</span> <span id="stat-ias" style="color:#ffff00">0%</span></div>
                 <div class="stat-row"><span data-i18n="stat_ll">Life Leech</span> <span id="stat-ll" style="color:#ff0000">0%</span></div>
                 <hr style="border-color: #333">
-                <div class="stat-row"><span data-i18n="stat_res_fire">🔥 Fire Resistance</span> <span id="stat-fire-res" style="color:#ff6644">0%</span>
+                <div class="stat-row"><span data-i18n="stat_res_fire">ðŸ”¥ Fire Resistance</span> <span id="stat-fire-res" style="color:#ff6644">0%</span>
                 </div>
-                <div class="stat-row"><span data-i18n="stat_res_cold">❄️ Cold Resistance</span> <span id="stat-cold-res" style="color:#4488ff">0%</span>
+                <div class="stat-row"><span data-i18n="stat_res_cold">â„ï¸ Cold Resistance</span> <span id="stat-cold-res" style="color:#4488ff">0%</span>
                 </div>
-                <div class="stat-row"><span data-i18n="stat_res_lightning">⚡ Lightning Res.</span> <span id="stat-lightning-res" style="color:#ffff44">0%</span>
+                <div class="stat-row"><span data-i18n="stat_res_lightning">âš¡ Lightning Res.</span> <span id="stat-lightning-res" style="color:#ffff44">0%</span>
                 </div>
-                <div class="stat-row"><span data-i18n="stat_res_poison">☠️ Poison Res.</span> <span id="stat-poison-res" style="color:#44ff44">0%</span>
+                <div class="stat-row"><span data-i18n="stat_res_poison">â˜ ï¸ Poison Res.</span> <span id="stat-poison-res" style="color:#44ff44">0%</span>
                 </div>
             </div>
 
@@ -228,13 +228,13 @@
                 <div style="margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;">
                     <span style="font-size: 0.8em; color: #888;"><span data-i18n="inv_gold">Gold:</span><span id="gold-display" style="color:gold">0</span>
                         <span style="font-size:0.8em; color:#666;" data-i18n="inv_sellable">(Can sell in shop)</span></span>
-                    <button class="sort-btn" onclick="sortInventory()" data-i18n="inv_sort">📦 Sort</button>
+                    <button class="sort-btn" onclick="sortInventory()" data-i18n="inv_sort">ðŸ“¦ Sort</button>
                 </div>
                 <div class="bag-grid" id="bag-grid"></div>
                 <div
                     style="margin-top: 15px; padding: 8px; background: rgba(0, 0, 0, 0.5); border: 1px solid #333; border-radius: 5px; font-size: 11px; color: #aaa; line-height: 1.5;">
-                    <div data-i18n="inv_tips_click">💡 Left click: Use or equip (in stash = store) Right click: Drop (dungeon only)</div>
-                    <div data-i18n="inv_tips_town">💰 Visit Gheed to trade, visit Warriv to access personal stash</div>
+                    <div data-i18n="inv_tips_click">ðŸ’¡ Left click: Use or equip (in stash = store) Right click: Drop (dungeon only)</div>
+                    <div data-i18n="inv_tips_town">ðŸ’° Visit Gheed to trade, visit Warriv to access personal stash</div>
                 </div>
             </div>
 
@@ -244,13 +244,13 @@
                 <div class="skill-tree-points"><span data-i18n="skills_points">Skill Points:</span><span id="skill-points">0</span></div>
                 <div class="skill-tree-tabs">
                     <div class="skill-tree-tab active" data-skill="fireball" data-i18n="tab_fire"
-                        onclick="switchSkillTab('fireball')">🔥 Fire</div>
+                        onclick="switchSkillTab('fireball')">ðŸ”¥ Fire</div>
                     <div class="skill-tree-tab" data-skill="thunder" data-i18n="tab_thunder"
-                        onclick="switchSkillTab('thunder')">⚡ Lightning</div>
+                        onclick="switchSkillTab('thunder')">âš¡ Lightning</div>
                     <div class="skill-tree-tab" data-skill="multishot" data-i18n="tab_multishot"
-                        onclick="switchSkillTab('multishot')">🏹 Archery</div>
+                        onclick="switchSkillTab('multishot')">ðŸ¹ Archery</div>
                     <div class="skill-tree-tab" data-skill="holy_shield" data-i18n="tab_holy_shield"
-                        onclick="switchSkillTab('holy_shield')">🛡️ Shield</div>
+                        onclick="switchSkillTab('holy_shield')">ðŸ›¡ï¸ Shield</div>
                 </div>
                 <div id="skill-tree-content" class="skill-tree-scroll">
                     <!-- Skill tree content generated dynamically -->
@@ -316,7 +316,7 @@
                         <div class="gamble-price">100 G</div>
                     </div>
                     <div class="gamble-slot buy-slot" data-type="xp_scroll" style="border-color:#ffff00;">
-                        <div style="font-size:20px;">⚡</div>
+                        <div style="font-size:20px;">âš¡</div>
                         <div style="font-size:11px;" data-i18n="item_xp_scroll">Double XP</div>
                         <div class="gamble-price" style="color:#ffff00;">1000 G</div>
                     </div>
@@ -366,7 +366,7 @@
                 </div>
                 <!-- Embedded inventory -->
                 <div class="embedded-bag-section">
-                    <div class="embedded-bag-header"><span data-i18n="bag_title">📦 Backpack</span> <span style="color:#888;font-size:11px;"
+                    <div class="embedded-bag-header"><span data-i18n="bag_title">ðŸ“¦ Backpack</span> <span style="color:#888;font-size:11px;"
                             data-i18n="bag_click_sell">(Click to sell)</span> <span
                             id="shop-gold-display" style="color:gold; float:right;">Gold: 0</span></div>
                     <div class="embedded-bag-grid" id="shop-embedded-bag"></div>
@@ -380,13 +380,13 @@
                 </div>
                 <div style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
                     <span style="font-size: 0.9em; color: #888;" data-i18n="stash_subtitle">Linked with bag, freely transfer items</span>
-                    <button class="sort-btn" onclick="sortStash()" data-i18n="inv_sort">📦 Sort</button>
+                    <button class="sort-btn" onclick="sortStash()" data-i18n="inv_sort">ðŸ“¦ Sort</button>
                 </div>
                 <div class="stash-grid" id="stash-grid"></div>
                 <div id="stash-expand-btn" class="stash-expand-btn" onclick="expandStash()"></div>
                 <!-- Embedded inventory -->
                 <div class="embedded-bag-section">
-                    <div class="embedded-bag-header"><span data-i18n="bag_title">📦 Backpack</span> <span style="color:#888;font-size:11px;"
+                    <div class="embedded-bag-header"><span data-i18n="bag_title">ðŸ“¦ Backpack</span> <span style="color:#888;font-size:11px;"
                             data-i18n="bag_click_deposit">(Click to store)</span> <span
                             id="stash-gold-display" style="color:gold; float:right;">Gold: 0</span></div>
                     <div class="embedded-bag-grid" id="stash-embedded-bag"></div>
@@ -492,9 +492,9 @@
                         <span data-i18n="settings_language">Language</span>
                         <select id="select-game-language" onchange="I18N.setLanguage(this.value)"
                             style="background:#222; color:#fff; border:1px solid #c7b377; padding:4px 8px; border-radius:4px; font-weight:bold;">
-                            <option value="es">🇪🇸 Español</option>
-                            <option value="en">🇬🇧 English</option>
-                            <option value="zh">🇨🇳 中文</option>
+                            <option value="es">ðŸ‡ªðŸ‡¸ EspaÃ±ol</option>
+                            <option value="en">ðŸ‡¬ðŸ‡§ English</option>
+                            <option value="zh">ðŸ‡¨ðŸ‡³ ä¸­æ–‡</option>
                         </select>
                     </div>
                     <hr style="border-color: #333; margin: 15px 0;">
@@ -589,16 +589,16 @@
             <div id="talent-shop-overlay">
                 <div id="talent-shop">
                     <div class="talent-shop-header">
-                        <span class="talent-shop-title" data-i18n="talent_shop_title">⚔️ Talent Shop</span>
+                        <span class="talent-shop-title" data-i18n="talent_shop_title">âš”ï¸ Talent Shop</span>
                         <span class="talent-shop-floor" id="talent-shop-floor">Floor 1</span>
                     </div>
-                    <div class="talent-shop-gold">💰 <span id="talent-shop-gold">0</span></div>
+                    <div class="talent-shop-gold">ðŸ’° <span id="talent-shop-gold">0</span></div>
                     <div class="talent-grid" id="talent-grid">
                         <!-- Talent cards are generated dynamically -->
                     </div>
                     <div class="talent-shop-actions">
                         <button class="talent-btn talent-btn-refresh" onclick="refreshTalentShop()">
-                            🔄 <span data-i18n="talent_refresh_btn">Refresh</span> <span class="refresh-cost" id="refresh-cost-display">30G</span>
+                            ðŸ”„ <span data-i18n="talent_refresh_btn">Refresh</span> <span class="refresh-cost" id="refresh-cost-display">30G</span>
                         </button>
                         <button class="talent-btn talent-btn-skip" data-i18n="talent_skip" onclick="closeTalentShop()">Skip</button>
                     </div>
@@ -612,7 +612,7 @@
             <!-- Blacksmith panel -->
             <div id="blacksmith-panel" class="panel" style="display:none; width:360px;">
                 <div class="panel-close" onclick="togglePanel('blacksmith')"></div>
-                <div class="panel-header" data-i18n="forge_title">⚒️ Charsi's Blacksmith</div>
+                <div class="panel-header" data-i18n="forge_title">âš’ï¸ Charsi's Blacksmith</div>
 
                 <div class="forge-container">
                     <!-- Enhance slots (triangular layout) -->
@@ -641,8 +641,8 @@
 
                         <!-- Auxiliary actions -->
                         <div class="forge-tools" style="text-align:center; margin-top:5px;">
-                            <button class="sys-btn small-btn" onclick="autoFillForgeMaterial()" title="Auto-fill eligible equipment from your inventory">⚡
-                                <span data-i18n="forge_autofill">⚡ Auto-fill</span></button>
+                            <button class="sys-btn small-btn" onclick="autoFillForgeMaterial()" title="Auto-fill eligible equipment from your inventory">âš¡
+                                <span data-i18n="forge_autofill">âš¡ Auto-fill</span></button>
                         </div>
                     </div>
 
@@ -650,7 +650,7 @@
                     <div class="forge-info-area">
                         <div id="forge-preview-text" class="forge-preview" style="font-size:12px; padding:8px;">
                             <span data-i18n="forge_preview_tip">Insert equipment to enhance (Up to +9)</span>
-                            <div style="color:#666; font-size:10px; margin-top:4px;" data-i18n="forge_preview_subtip">Same slot and rarity · Boosts stats · Failure risk above +6</div>
+                            <div style="color:#666; font-size:10px; margin-top:4px;" data-i18n="forge_preview_subtip">Same slot and rarity Â· Boosts stats Â· Failure risk above +6</div>
                         </div>
                         <div id="forge-cost-display" class="forge-cost" style="display:none;">
                             <span data-i18n="forge_cost">Cost:</span> <span id="forge-gold-cost">0</span> G
@@ -665,7 +665,7 @@
 
                     <!-- Embedded inventory -->
                     <div class="embedded-bag-section">
-                        <div class="embedded-bag-header">📦 <span data-i18n="menu_inventory">Items</span> <span style="color:#888;font-size:11px;" data-i18n="bag_click_add">(Click to add)</span>
+                        <div class="embedded-bag-header">ðŸ“¦ <span data-i18n="menu_inventory">Items</span> <span style="color:#888;font-size:11px;" data-i18n="bag_click_add">(Click to add)</span>
                             <span id="forge-gold-display" style="color:gold; float:right;">Gold: 0</span>
                         </div>
                         <div class="embedded-bag-grid" id="forge-embedded-bag"></div>
@@ -677,7 +677,7 @@
             <div id="divine-blessing-panel" class="panel"
                 style="display:none; left:50%; top:50%; transform:translate(-50%,-50%); width:auto;">
                 <div class="panel-close" onclick="closeDivineBlessingUI()"></div>
-                <div class="panel-header" data-i18n="divine_title">🌟 Divine Blessing</div>
+                <div class="panel-header" data-i18n="divine_title">ðŸŒŸ Divine Blessing</div>
                 <div style="text-align:center; color:#aaa; font-size:12px; margin-bottom:15px;" data-i18n="divine_subtitle">Choose one permanent enhancement for this run</div>
                 <div id="divine-blessing-grid" style="display:flex; gap:15px;"></div>
             </div>
@@ -686,7 +686,7 @@
             <div id="divine-blessing-list-panel" class="panel"
                 style="display:none; left:50%; top:50%; transform:translate(-50%,-50%); width:320px;">
                 <div class="panel-close" onclick="closeDivineBlessingListUI()"></div>
-                <div class="panel-header" data-i18n="divine_acquired_title">🌟 Acquired Blessings</div>
+                <div class="panel-header" data-i18n="divine_acquired_title">ðŸŒŸ Acquired Blessings</div>
                 <div id="divine-blessing-list" style="max-height:300px; overflow-y:auto;"></div>
                 <div id="divine-blessing-summary" style="border-top:1px solid #444; margin-top:10px; padding-top:10px;">
                 </div>
@@ -696,7 +696,7 @@
             <div id="daily-login-panel" class="panel"
                 style="display:none; left:50%; top:50%; transform:translate(-50%,-50%); width:420px;">
                 <div class="panel-close" onclick="closeDailyLoginPanel()"></div>
-                <div class="panel-header" data-i18n="daily_title">📅 Daily Login Reward</div>
+                <div class="panel-header" data-i18n="daily_title">ðŸ“… Daily Login Reward</div>
                 <div id="daily-login-info" style="text-align:center; color:#ffd700; margin-bottom:10px;"></div>
                 <div id="daily-login-grid" style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center;"></div>
                 <div style="text-align:center; margin-top:15px;">
@@ -706,8 +706,8 @@
 
             <div class="menu-btns" id="menu-btns">
                 <button class="sys-btn db-btn" id="btn-divine-blessing" onclick="onDivineBlessingBtnClick()"
-                    style="display:none">🌟 Blessing<span class="db-count-badge">0</span></button>
-                <button class="sys-btn" id="btn-season" onclick="SeasonSystem.open()" data-i18n="season_btn">🏆 Season S1</button>
+                    style="display:none">ðŸŒŸ Blessing<span class="db-count-badge">0</span></button>
+                <button class="sys-btn" id="btn-season" onclick="SeasonSystem.open()" data-i18n="season_btn">ðŸ† Season S1</button>
                 <button class="sys-btn" id="btn-stats" onclick="togglePanel('stats')">Character<span
                         class="notification-badge" id="badge-stats"></span></button>
                 <button class="sys-btn" id="btn-inventory" onclick="togglePanel('inventory')" data-i18n="menu_inventory">Items</button>
@@ -717,12 +717,12 @@
                         class="notification-badge" id="badge-quest"></span></button>
                 <button class="sys-btn" id="btn-achievements" onclick="togglePanel('achievements')" data-i18n="menu_achievements">Trophies</button>
                 <button class="sys-btn" id="btn-set-collection" onclick="togglePanel('set-collection')" data-i18n="menu_codex">Codex</button>
-                <button class="sys-btn" id="btn-share-hero" onclick="ShareCardSystem.open()" data-i18n="btn_share_hero">📢 Share Build</button>
+                <button class="sys-btn" id="btn-share-hero" onclick="ShareCardSystem.open()" data-i18n="btn_share_hero">ðŸ“¢ Share Build</button>
             </div>
             <button id="mobile-menu-toggle" class="mobile-fab mobile-menu-toggle" onclick="toggleMobileMenu(event)"
-                aria-label="Expand menu">☰<span class="mobile-fab-dot" id="mobile-menu-dot"></span></button>
+                aria-label="Expand menu">â˜°<span class="mobile-fab-dot" id="mobile-menu-dot"></span></button>
             <button id="mobile-chat-toggle" class="mobile-fab mobile-chat-toggle" onclick="toggleMobileChat(event)"
-                aria-label="Expand chat">💬<span class="mobile-fab-dot mobile-chat-dot" id="mobile-chat-dot"></span></button>
+                aria-label="Expand chat">ðŸ’¬<span class="mobile-fab-dot mobile-chat-dot" id="mobile-chat-dot"></span></button>
 
             <div id="bottom-hud">
                 <div class="orb-container" id="health-orb">
@@ -735,12 +735,12 @@
                 <div id="center-hud">
                     <div class="belt-bar" id="belt-bar">
                         <div class="belt-slot" onclick="useQuickItem('health')" id="belt-1"><span
-                                class="belt-key">1</span> 🔴 <span class="belt-count" id="count-health">0</span></div>
+                                class="belt-key">1</span> ðŸ”´ <span class="belt-count" id="count-health">0</span></div>
                         <div class="belt-slot" onclick="useQuickItem('mana')" id="belt-2"><span
-                                class="belt-key">2</span> 🔵 <span class="belt-count" id="count-mana"
+                                class="belt-key">2</span> ðŸ”µ <span class="belt-count" id="count-mana"
                                 style="color:#4d94ff">0</span></div>
                         <div class="belt-slot" onclick="useQuickItem('scroll')" id="belt-3"><span
-                                class="belt-key">3</span> 📜 <span class="belt-count" id="count-scroll">0</span></div>
+                                class="belt-key">3</span> ðŸ“œ <span class="belt-count" id="count-scroll">0</span></div>
                     </div>
                     <div class="xp-container">
                         <div class="xp-bar">
@@ -801,47 +801,47 @@
     </div>
 
     <script src="gsap.min.js"></script>
-    <script src="gsap-animations.js?v=202609271500"></script>
-    <script src="ui-panels.js?v=202609271500"></script>
+    <script src="src/ui/gsap-animations.js?v=202609301610"></script>
+    <script src="src/ui/ui-panels.js?v=202609301610"></script>
     <!-- Game logic scripts -->
-    <script src="i18n.js?v=202609271500"></script>
-    <script src="i18n-content-gear.js?v=202609271500"></script>
-    <script src="i18n-content-skills.js?v=202609271500"></script>
-    <script src="i18n-content-bestiary.js?v=202609271500"></script>
-    <script src="i18n-content-progression.js?v=202609271500"></script>
-    <script src="i18n-content-changelog.js?v=202609271500"></script>
-    <script src="i18n-content-social.js?v=202609271500"></script>
-    <script src="changelog.js?v=202609271500"></script>
-    <script src="constants.js?v=202609281200"></script>
-    <script src="items-data.js?v=202609271500"></script>
-    <script src="set-items.js?v=202609271500"></script>
-    <script src="runes-data.js?v=202609271500"></script>
-    <script src="item-system.js?v=202609271500"></script>
-    <script src="audio.js?v=202609271500"></script>
-    <script src="daily-quest.js?v=202609271500"></script>
-    <script src="talent-draft.js?v=202609271500"></script>
-    <script src="abyss-system.js?v=202609271500"></script>
-    <script src="share-card.js?v=202609271500"></script>
-    <script src="season-system.js?v=202609271500"></script>
-    <script src="return-bonus.js?v=202609271500"></script>
-    <script src="save-system.js?v=202609271500"></script>
-    <script src="combat-tactics.js?v=202609271500"></script>
-    <script src="enemy-system.js?v=202609271500"></script>
-    <script src="auto-battle.js?v=202609271500"></script>
-    <script src="vfx-manifest.js?v=2026090801"></script>
-    <script src="sprite-renderer.js?v=202609271500"></script>
+    <script src="src/i18n/i18n.js?v=202609301610"></script>
+    <script src="src/i18n/i18n-content-gear.js?v=202609301610"></script>
+    <script src="src/i18n/i18n-content-skills.js?v=202609301610"></script>
+    <script src="src/i18n/i18n-content-bestiary.js?v=202609301610"></script>
+    <script src="src/i18n/i18n-content-progression.js?v=202609301610"></script>
+    <script src="src/i18n/i18n-content-changelog.js?v=202609301610"></script>
+    <script src="src/i18n/i18n-content-social.js?v=202609301610"></script>
+    <script src="src/ui/changelog.js?v=202609301610"></script>
+    <script src="src/data/constants.js?v=202609301610"></script>
+    <script src="src/data/items-data.js?v=202609301610"></script>
+    <script src="src/data/set-items.js?v=202609301610"></script>
+    <script src="src/data/runes-data.js?v=202609301610"></script>
+    <script src="src/systems/inventory/item-system.js?v=202609301610"></script>
+    <script src="src/audio/audio.js?v=202609301610"></script>
+    <script src="src/systems/progression/daily-quest.js?v=202609301610"></script>
+    <script src="src/systems/progression/talent-draft.js?v=202609301610"></script>
+    <script src="src/systems/progression/abyss-system.js?v=202609301610"></script>
+    <script src="src/ui/share-card.js?v=202609301610"></script>
+    <script src="src/systems/progression/season-system.js?v=202609301610"></script>
+    <script src="src/systems/progression/return-bonus.js?v=202609301610"></script>
+    <script src="src/systems/save/save-system.js?v=202609301610"></script>
+    <script src="src/systems/combat/combat-tactics.js?v=202609301610"></script>
+    <script src="src/systems/ai/enemy-system.js?v=202609301610"></script>
+    <script src="src/systems/combat/auto-battle.js?v=202609301610"></script>
+    <script src="src/graphics/vfx-manifest.js?v=202609301610"></script>
+    <script src="src/graphics/sprite-renderer.js?v=202609301610"></script>
     <script src="art/atlas-manifest.js?v=2026090801"></script>
-    <script src="art-samples.js?v=202609281900"></script>
-    <script src="environment-art.js?v=202609271500"></script>
-    <script src="elemental-3d.js?v=202609271500"></script>
-    <script src="skill-branches.js?v=202609271500"></script>
-    <script src="shield-3d.js?v=202609271500"></script>
-    <script src="physical-3d.js?v=202609271500"></script>
-    <script src="game.js?v=202609282200"></script>
-    <script src="skill-art.js?v=202609271500"></script>
+    <script src="src/graphics/art-samples.js?v=202609301610"></script>
+    <script src="src/graphics/environment-art.js?v=202609301610"></script>
+    <script src="src/graphics/elemental-3d.js?v=202609301610"></script>
+    <script src="src/systems/skill/skill-branches.js?v=202609301610"></script>
+    <script src="src/graphics/shield-3d.js?v=202609301610"></script>
+    <script src="src/graphics/physical-3d.js?v=202609301610"></script>
+    <script src="src/core/game.js?v=202609301610"></script>
+    <script src="src/data/skill-art.js?v=202609301610"></script>
     <script src="pocketbase.umd.js"></script>
-    <script src="online.js?v=202609271500"></script>
-    <script src="market.js?v=202609271500"></script>
+    <script src="src/net/online.js?v=202609301610"></script>
+    <script src="src/net/market.js?v=202609301610"></script>
     <script>
         // Show welcome-back message
         const savedNickname = localStorage.getItem('pb_nickname');
@@ -860,8 +860,8 @@
         function updateQuickLangButton() {
             const btn = document.getElementById('quick-lang-text');
             if (btn && typeof I18N !== 'undefined') {
-                const map = { es: '🇪🇸 ES', en: '🇬🇧 EN', zh: '🇨🇳 中' };
-                btn.textContent = map[I18N.currentLang] || '🌐';
+                const map = { es: 'ðŸ‡ªðŸ‡¸ ES', en: 'ðŸ‡¬ðŸ‡§ EN', zh: 'ðŸ‡¨ðŸ‡³ ä¸­' };
+                btn.textContent = map[I18N.currentLang] || 'ðŸŒ';
             }
             const sel = document.getElementById('select-game-language');
             if (sel && typeof I18N !== 'undefined') {
@@ -888,7 +888,7 @@
     <div id="offline-rewards-overlay" class="offline-rewards-overlay" onmousedown="event.stopPropagation()">
         <div class="offline-rewards-panel" onmousedown="event.stopPropagation()">
             <div class="offline-rewards-header">
-                <span class="offline-icon">🌙</span>
+                <span class="offline-icon">ðŸŒ™</span>
                 <span class="offline-title" data-i18n="offline_title">Offline Rewards</span>
             </div>
             <div class="offline-rewards-body">
@@ -902,12 +902,12 @@
                 </div>
                 <hr class="offline-divider">
                 <div class="offline-reward-row">
-                    <span class="offline-reward-icon">💰</span>
+                    <span class="offline-reward-icon">ðŸ’°</span>
                     <span class="offline-reward-label" data-i18n="stat_gold">Gold</span>
                     <span class="offline-reward-value gold" id="offline-gold-text">0</span>
                 </div>
                 <div class="offline-reward-row">
-                    <span class="offline-reward-icon">⭐</span>
+                    <span class="offline-reward-icon">â­</span>
                     <span class="offline-reward-label" data-i18n="stat_xp">Experience</span>
                     <span class="offline-reward-value xp" id="offline-xp-text">0</span>
                 </div>
@@ -929,45 +929,45 @@
     <div id="death-panel-overlay" class="death-panel-overlay" onmousedown="event.stopPropagation()">
         <div class="death-panel" onmousedown="event.stopPropagation()">
             <div class="death-panel-header">
-                <span class="death-icon">💀</span>
+                <span class="death-icon">ðŸ’€</span>
                 <span class="death-title" data-i18n="death_title">You Have Died</span>
             </div>
             <div class="death-panel-body">
                 <div class="death-stat-row">
-                    <span class="death-stat-icon">🏆</span>
+                    <span class="death-stat-icon">ðŸ†</span>
                     <span class="death-stat-label" data-i18n="death_floor">Floor Reached</span>
                     <span class="death-stat-value" id="death-floor-text">Floor 1</span>
                 </div>
                 <div class="death-stat-row">
-                    <span class="death-stat-icon">💀</span>
+                    <span class="death-stat-icon">ðŸ’€</span>
                     <span class="death-stat-label" data-i18n="death_kills">Enemies Slain</span>
                     <span class="death-stat-value" id="death-kills-text">0</span>
                 </div>
                 <div class="death-stat-row">
-                    <span class="death-stat-icon">⭐</span>
+                    <span class="death-stat-icon">â­</span>
                     <span class="death-stat-label" data-i18n="death_level">Current Level</span>
                     <span class="death-stat-value" id="death-level-text">Lv.1</span>
                 </div>
                 <hr class="death-divider">
                 <div class="death-cause">
-                    <span class="death-cause-icon">☠️</span>
+                    <span class="death-cause-icon">â˜ ï¸</span>
                     <span class="death-cause-text" id="death-cause-text" data-i18n="death_unknown_cause">Cause of death unknown</span>
                 </div>
             </div>
             <div class="death-panel-footer">
                 <button class="death-btn revive-btn" id="death-revive-btn" onclick="DeathPanel.revive()">
-                    <span class="btn-icon">✨</span>
+                    <span class="btn-icon">âœ¨</span>
                     <span class="btn-text" data-i18n="death_revive_here">Revive Here</span>
-                    <span class="btn-cost">💰 <span id="revive-cost-text">1000</span></span>
+                    <span class="btn-cost">ðŸ’° <span id="revive-cost-text">1000</span></span>
                 </button>
                 <button class="death-btn return-btn" onclick="DeathPanel.returnToTown()">
-                    <span class="btn-icon">🏠</span>
+                    <span class="btn-icon">ðŸ </span>
                     <span class="btn-text" data-i18n="death_return_town">Return to Town</span>
                     <span class="btn-cost" data-i18n="death_free">(Free)</span>
                 </button>
             </div>
             <div class="death-gold-display">
-                💰 <span data-i18n="death_current_gold">Current Gold:</span> <span id="death-gold-text">0</span>
+                ðŸ’° <span data-i18n="death_current_gold">Current Gold:</span> <span id="death-gold-text">0</span>
             </div>
         </div>
     </div>
@@ -976,7 +976,7 @@
     <div id="title-shop-overlay" class="title-shop-overlay" onmousedown="closeTitleShop()">
         <div class="title-shop-panel" onmousedown="event.stopPropagation()">
             <div class="title-shop-header">
-                <span class="title-shop-icon">👑</span>
+                <span class="title-shop-icon">ðŸ‘‘</span>
                 <span class="title-shop-title" data-i18n="title_shop_name">Title Shop</span>
             </div>
             <div class="title-shop-body">
@@ -984,7 +984,7 @@
                     <span data-i18n="title_current">Current Title:</span><span id="title-shop-current"></span>
                 </div>
                 <div class="title-shop-gold">
-                    💰 <span data-i18n="inv_gold">Gold:</span> <span id="title-shop-gold">0</span>
+                    ðŸ’° <span data-i18n="inv_gold">Gold:</span> <span id="title-shop-gold">0</span>
                 </div>
                 <hr class="title-shop-divider">
                 <div id="title-shop-list" class="title-shop-list">
@@ -1001,7 +1001,7 @@
     <div id="auto-battle-fee-overlay" class="auto-battle-fee-overlay" onmousedown="event.stopPropagation()">
         <div class="auto-battle-fee-panel" onmousedown="event.stopPropagation()">
             <div class="auto-battle-fee-header">
-                <span class="fee-icon">⚔️</span>
+                <span class="fee-icon">âš”ï¸</span>
                 <span class="fee-title" data-i18n="ab_fee_title">Auto Battle Service</span>
             </div>
             <div class="auto-battle-fee-body">
@@ -1029,7 +1029,7 @@
     <!-- Delete save confirm dialog -->
     <div id="delete-slot-confirm" class="delete-slot-confirm-overlay">
         <div class="delete-slot-confirm-dialog">
-            <div class="delete-confirm-title" data-i18n="delete_slot_title">⚠️ Delete Character</div>
+            <div class="delete-confirm-title" data-i18n="delete_slot_title">âš ï¸ Delete Character</div>
             <div class="delete-confirm-text">Delete save slot <span id="delete-slot-num">1</span>?<br>This action is <span
                     style="color:#ff4444;">irreversible</span>!</div>
             <div class="delete-confirm-input">

@@ -23,7 +23,7 @@ function loadCatalog(root) {
     // 刻意不注入运行时清单：首次烘焙和新增素材都必须读取原图定义。
     const scope = vm.createContext({console, Image: class {},
         document: {createElement: () => createCanvas(1, 1)}});
-    for (const file of ['art-samples.js', 'environment-art.js']) {
+    for (const file of ['src/graphics/art-samples.js', 'src/graphics/environment-art.js']) {
         vm.runInContext(fs.readFileSync(path.join(root, file), 'utf8'), scope, {filename: file});
     }
     vm.runInContext('this.catalogs = [ArtSamples.definitions, EnvironmentArt.definitions];this.normalizeAtlas = ArtSamples.normalizeAtlas;', scope);

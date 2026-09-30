@@ -2,8 +2,8 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'assert-versioned-asset.ps1')
 
 $root = Split-Path -Parent $PSScriptRoot
-$constantsPath = Join-Path $root 'constants.js'
-$gamePath = Join-Path $root 'game.js'
+$constantsPath = Join-Path $root 'src/data/constants.js'
+$gamePath = Join-Path $root 'src/core/game.js'
 $indexPath = Join-Path $root 'index.html'
 
 $constants = Get-Content -LiteralPath $constantsPath -Raw
@@ -38,7 +38,7 @@ Assert-Contains -Text $game -Pattern 'const f = getCurrentCombatFloor\(\);' -Mes
 Assert-NotContains -Text $game -Pattern 'document\.hasFocus' -Message 'FAIL: visible auto battle should keep respawning even when the browser window is not focused.'
 Assert-NotContains -Text $game -Pattern 'if \(!spawnPos\) break;' -Message 'FAIL: spawn position failure still aborts the whole respawn batch.'
 Assert-Contains -Text $game -Pattern 'Math\.min\(1,\s*0\.65\s*\+\s*f\s*\*\s*0\.05\)' -Message 'FAIL: initial floor population scale should start higher.'
-Assert-VersionedAsset -Index $index -Root $root -Asset 'constants.js'
-Assert-VersionedAsset -Index $index -Root $root -Asset 'game.js'
+Assert-VersionedAsset -Index $index -Root $root -Asset 'src/data/constants.js'
+Assert-VersionedAsset -Index $index -Root $root -Asset 'src/core/game.js'
 
 Write-Host 'PASS: monster density contract'

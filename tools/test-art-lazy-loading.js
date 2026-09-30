@@ -18,7 +18,7 @@ function create(fail=false){
         }
     }
     const scope=vm.createContext({Image,ArtAtlasManifest:manifest,console:{error(){}}});
-    vm.runInContext(fs.readFileSync(path.join(root,'art-samples.js'),'utf8')+';this.art=ArtSamples;',scope);
+    vm.runInContext(fs.readFileSync(path.join(root,'src/graphics/art-samples.js'),'utf8')+';this.art=ArtSamples;',scope);
     return {requests,art:scope.art};
 }
 (async()=>{

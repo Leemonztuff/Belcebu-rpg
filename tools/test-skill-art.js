@@ -3,11 +3,11 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
 const {loadImage,createCanvas}=require('@napi-rs/canvas');
 const root=path.resolve(__dirname,'..');
-const constants=fs.readFileSync(path.join(root,'constants.js'),'utf8');
+const constants=fs.readFileSync(path.join(root,'src/data/constants.js'),'utf8');
 const treeStart=constants.indexOf('const SKILL_TREE ='),treeEnd=constants.indexOf('\n};',treeStart);
 const context=vm.createContext({document:{readyState:'loading',addEventListener(){}},MutationObserver:class{}});
 vm.runInContext(constants.slice(treeStart,treeEnd+3)+';this.tree=SKILL_TREE;',context);
-vm.runInContext(fs.readFileSync(path.join(root,'skill-art.js'),'utf8')+';this.art=SkillArt;',context);
+vm.runInContext(fs.readFileSync(path.join(root,'src/data/skill-art.js'),'utf8')+';this.art=SkillArt;',context);
 (async()=>{
   let count=0;const hashes=new Set();
   for(const [skill,definition] of Object.entries(context.tree)) {
