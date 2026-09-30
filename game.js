@@ -3186,6 +3186,14 @@ function getWallTextureIndex(floor) {
     return 2;                  // Hell walls fit lava
 }
 
+function getFloorTileType(floor) {
+    switch (floor) {
+        case 0: return 'camp';   // Rogue Encampment (grass)
+        case 1: return 'stone';  // normal dungeon floor (stone)
+        default: return 'lava';  // placeholder new floor tile type (lava)
+    }
+}
+
 const floorTiles = new Image();
 floorTiles.src = 'art/brand-terrain/floors.webp?v=2026090803';
 let floorTilesLoaded = false;
@@ -3196,8 +3204,10 @@ floorTiles.onload = () => {
 };
 
 function getFloorTextureIndex(floor) {
-    if (floor === 0) return 0;     // Camp (Grass)
-    return 1;                      // Stone levels (All dungeons)
+    switch (getFloorTileType(floor)) {
+        case 'camp': return 0;     // Camp (Grass)
+        default: return 1;          // Stone levels (All dungeons)
+    }
 }
 
 // Item sprite helpers (moved to item-system.js)
@@ -8459,6 +8469,7 @@ function generateMapCache() {
             } else {
                 // floor
                 if (floorTilesLoaded) {
+                    const floorType = getFloorTileType(player.floor);
                     const floorIndex = getFloorTextureIndex(player.floor);
                     const tileHeight = floorTiles.height / 3;
                     const tileWidth = floorTiles.width / 3;
@@ -8475,7 +8486,7 @@ function generateMapCache() {
                         cctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
 
 // Mark the cache valid only once the required textures are loaded
-                        if (biome.type === 'ice' && (c + r) % 3 === 0) {
+                        if (getFloorTileType(player.floor) === 'lava' && (c + r) % 3 === 0) {
                             cctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
                             cctx.beginPath();
                             cctx.moveTo(x + 10, y + TILE_SIZE - 10);
@@ -8510,7 +8521,7 @@ function generateMapCache() {
 
 // Otherwise a black screen shows (empty cache content)
 // Juice hit-stop logic runs first
-    const texturesReady = floorTilesLoaded && wallTilesLoaded;
+    const texturesReady = floorTilesLoaded && wallTilesLoaded && getFloorTileType(player.floor) !== undefined;
     mapCacheValid = texturesReady;
 }
 
